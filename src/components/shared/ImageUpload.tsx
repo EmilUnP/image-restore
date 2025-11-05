@@ -4,9 +4,16 @@ import { useCallback } from "react";
 interface ImageUploadProps {
   onImageSelect: (file: File) => void;
   disabled?: boolean;
+  label?: string;
+  description?: string;
 }
 
-export const ImageUpload = ({ onImageSelect, disabled }: ImageUploadProps) => {
+export const ImageUpload = ({ 
+  onImageSelect, 
+  disabled,
+  label = "Upload Image",
+  description = "Drag and drop or click to select an image"
+}: ImageUploadProps) => {
   const handleDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
@@ -52,10 +59,8 @@ export const ImageUpload = ({ onImageSelect, disabled }: ImageUploadProps) => {
           <Upload className="w-10 h-10 text-primary-foreground" />
         </div>
         <div>
-          <h3 className="text-xl font-semibold mb-2">Upload Image</h3>
-          <p className="text-muted-foreground">
-            Drag and drop or click to select an image to enhance
-          </p>
+          <h3 className="text-xl font-semibold mb-2">{label}</h3>
+          <p className="text-muted-foreground">{description}</p>
           <p className="text-sm text-muted-foreground mt-2">
             Supports JPG, PNG, WEBP, and other image formats
           </p>
@@ -64,3 +69,4 @@ export const ImageUpload = ({ onImageSelect, disabled }: ImageUploadProps) => {
     </div>
   );
 };
+

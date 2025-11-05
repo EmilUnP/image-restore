@@ -180,11 +180,133 @@ app.post('/api/enhance-image', async (req, res) => {
   }
 });
 
+// Image text translation endpoint
+app.post('/api/translate-image', async (req, res) => {
+  try {
+    const { image, targetLanguage = 'en' } = req.body;
+    
+    if (!image) {
+      return res.status(400).json({ error: 'No image provided' });
+    }
+
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
+      return res.status(500).json({ 
+        error: 'AI service not configured. Please set GEMINI_API_KEY in server/.env file',
+        instructions: 'Get your API key from https://aistudio.google.com/app/apikey and add it to server/.env'
+      });
+    }
+
+    // Language name mapping for better prompts
+    const languageNames = {
+      'en': 'English',
+      'ru': 'Russian',
+      'tr': 'Turkish',
+      'uk': 'Ukrainian',
+    };
+
+    const targetLangName = languageNames[targetLanguage] || targetLanguage;
+
+    const prompt = `Translate all text in this image to ${targetLangName}. 
+    
+Important requirements:
+1. Identify ALL text in the image (signs, labels, captions, subtitles, etc.)
+2. Translate every piece of text to ${targetLangName}
+3. Preserve the original image quality, colors, style, and visual appearance exactly
+4. Maintain the same font style, size, and positioning as the original text
+5. Keep all non-text elements (backgrounds, images, graphics) completely unchanged
+6. Output a new image with the translated text overlaid in the same positions and styles as the original
+
+The output should be an image that looks identical to the original, but with all text translated to ${targetLangName}.`;
+
+    // Initialize Google Generative AI
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });
+
+    try {
+      // Determine MIME type from base64 string
+      let mimeType = "image/jpeg";
+      if (image.includes('data:image/')) {
+        const mimeMatch = image.match(/data:image\/([^;]+)/);
+        if (mimeMatch) {
+          mimeType = `image/${mimeMatch[1]}`;
+        }
+      }
+      
+      const base64Data = image.split(',')[1] || image;
+      const result = await model.generateContent([
+        prompt,
+        { inlineData: { data: base64Data, mimeType } }
+      ]);
+
+      const response = await result.response;
+      
+      // Try to get image from response
+      let translatedImageBase64 = null;
+      
+      if (response.candidates && response.candidates[0]) {
+        const parts = response.candidates[0].content?.parts || [];
+        for (const part of parts) {
+          if (part.inlineData?.data) {
+            translatedImageBase64 = part.inlineData.data;
+            break;
+          }
+        }
+      }
+      
+      // If translated image is returned, use it
+      if (translatedImageBase64) {
+        return res.json({ 
+          translatedImage: `data:${mimeType};base64,${translatedImageBase64}`,
+          message: `Image text translated successfully to ${targetLangName}.`,
+          targetLanguage: targetLangName
+        });
+      } else {
+        // Return original image with analysis
+        const text = response.text();
+        return res.json({ 
+          translatedImage: image,
+          analysis: text,
+          message: `Translation processed. Note: Gemini may provide analysis instead of translated images.`,
+          targetLanguage: targetLangName
+        });
+      }
+
+    } catch (error) {
+      console.error('Gemini API error:', error);
+      
+      if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('401')) {
+        return res.status(401).json({ error: 'Invalid API key. Please check your GEMINI_API_KEY.' });
+      }
+      
+      if (error.message?.includes('QUOTA_EXCEEDED') || error.message?.includes('429') || error.message?.includes('quota')) {
+        return res.status(429).json({ 
+          error: 'API quota exceeded. You have used up your free tier limit.',
+          message: 'Please wait a few minutes and try again, or upgrade your API plan.',
+          retryAfter: '42 seconds'
+        });
+      }
+
+      return res.status(500).json({ 
+        error: 'Failed to translate image', 
+        details: error.message || 'Unknown error'
+      });
+    }
+
+  } catch (error) {
+    return res.status(500).json({ 
+      error: 'An unexpected error occurred', 
+      details: error.message || 'Unknown error'
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Image Optimizer AI Backend running on http://localhost:${PORT}`);
   console.log('📝 Make sure you have GEMINI_API_KEY set in server/.env file');
   console.log('🔗 Get your API key from: https://aistudio.google.com/app/apikey');
   console.log(`📸 Available enhancement modes: ${Object.keys(enhancementPrompts).join(', ')}`);
+  console.log('🌍 Image translation feature enabled');
   console.log('');
   console.log('✅ Backend is ready! You can now start the frontend with: npm run dev');
 });
