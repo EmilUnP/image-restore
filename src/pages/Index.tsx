@@ -38,7 +38,8 @@ const Index = () => {
       // Start enhancement
       setIsProcessing(true);
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        // Use relative URL for Vercel, or localhost for development
+        const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '');
         const response = await fetch(`${API_URL}/api/enhance-image`, {
           method: 'POST',
           headers: {
@@ -143,7 +144,8 @@ const Index = () => {
   };
 
   const processBatchImages = async (images: ProcessedImage[]) => {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    // Use relative URL for Vercel, or localhost for development
+    const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '');
     
     for (let i = 0; i < images.length; i++) {
       const image = images[i];
@@ -449,7 +451,8 @@ const Index = () => {
                         // Re-enhance with current settings
                         setIsProcessing(true);
                         try {
-                          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+                          // Use relative URL for Vercel, or localhost for development
+                          const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '');
                           const response = await fetch(`${API_URL}/api/enhance-image`, {
                             method: 'POST',
                             headers: {
