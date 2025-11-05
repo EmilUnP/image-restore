@@ -513,39 +513,6 @@ const Index = () => {
           </div>
         </main>
 
-        {/* Features */}
-        <section className="mt-16 grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          {[
-            {
-              title: "Multiple Enhancement Modes",
-              description: "8 specialized modes for documents, photos, portraits, landscapes, and more",
-              icon: ImageIcon,
-            },
-            {
-              title: "Batch Processing",
-              description: "Process up to 10 images at once with progress tracking and bulk download",
-              icon: Layers,
-            },
-            {
-              title: "AI-Powered Quality",
-              description: "Powered by Gemini AI for professional-grade image enhancement",
-              icon: Sparkles,
-            },
-          ].map((feature, index) => (
-            <div
-              key={index}
-              className="bg-card rounded-xl p-6 border border-border shadow-soft hover:shadow-strong transition-all"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <feature.icon className="w-5 h-5 text-primary" />
-                </div>
-                <h3 className="font-semibold text-lg">{feature.title}</h3>
-              </div>
-              <p className="text-muted-foreground text-sm">{feature.description}</p>
-            </div>
-          ))}
-        </section>
       </div>
     </div>
   );
