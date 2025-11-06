@@ -16,31 +16,66 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Create upload directories if they don't exist
-const UPLOAD_DIRS = {
-  enhancement: path.join(__dirname, 'uploads', 'enhancement'),
-  translation: path.join(__dirname, 'uploads', 'translation')
+// Detect if running on Vercel
+const IS_VERCEL = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+
+// Create upload directories - use /tmp on Vercel (temporary storage)
+// Note: Files in /tmp are deleted after function execution on Vercel
+// For persistent storage, consider using Vercel Blob Storage or another cloud storage service
+const getUploadDirs = () => {
+  if (IS_VERCEL) {
+    // On Vercel, use /tmp directory (temporary, files are deleted after function execution)
+    return {
+      enhancement: path.join('/tmp', 'uploads', 'enhancement'),
+      translation: path.join('/tmp', 'uploads', 'translation')
+    };
+  } else {
+    // Local development - use project directory
+    return {
+      enhancement: path.join(__dirname, 'uploads', 'enhancement'),
+      translation: path.join(__dirname, 'uploads', 'translation')
+    };
+  }
 };
+
+const UPLOAD_DIRS = getUploadDirs();
 
 // Ensure upload directories exist
 Object.entries(UPLOAD_DIRS).forEach(([type, dir]) => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-    console.log(`📁 Created upload directory: ${dir} (${type})`);
-  } else {
-    console.log(`📁 Upload directory exists: ${dir} (${type})`);
-  }
-  
-  // Verify directory is writable
   try {
-    const testFile = path.join(dir, '.test-write');
-    fs.writeFileSync(testFile, 'test');
-    fs.unlinkSync(testFile);
-    console.log(`✅ Directory is writable: ${dir}`);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      console.log(`📁 Created upload directory: ${dir} (${type})`);
+    } else {
+      console.log(`📁 Upload directory exists: ${dir} (${type})`);
+    }
+    
+    // Verify directory is writable
+    try {
+      const testFile = path.join(dir, '.test-write');
+      fs.writeFileSync(testFile, 'test');
+      fs.unlinkSync(testFile);
+      console.log(`✅ Directory is writable: ${dir}`);
+    } catch (error) {
+      console.error(`❌ Directory is NOT writable: ${dir}`, error);
+      if (IS_VERCEL) {
+        console.warn('⚠️  On Vercel, files saved to /tmp are temporary and will be deleted after function execution.');
+        console.warn('⚠️  For persistent storage, consider using Vercel Blob Storage or another cloud storage service.');
+      }
+    }
   } catch (error) {
-    console.error(`❌ Directory is NOT writable: ${dir}`, error);
+    console.error(`❌ Error creating directory ${dir}:`, error);
+    if (IS_VERCEL) {
+      console.warn('⚠️  File saving is disabled on Vercel. Files will not be saved.');
+    }
   }
 });
+
+if (IS_VERCEL) {
+  console.log('⚠️  Running on Vercel - files will be saved to /tmp (temporary storage)');
+  console.log('⚠️  Files in /tmp are deleted after each function execution');
+  console.log('💡 For persistent storage, consider using Vercel Blob Storage');
+}
 
 // Helper function to save uploaded image
 function saveUploadedImage(base64Image, folderType, metadata = {}) {
@@ -51,11 +86,32 @@ function saveUploadedImage(base64Image, folderType, metadata = {}) {
       return null;
     }
     
-    // Ensure directory exists
+    // On Vercel, skip file saving if /tmp is not accessible
+    // Or implement Vercel Blob Storage here
+    if (IS_VERCEL) {
+      // For now, just log that we would save the file
+      // In production, you should use Vercel Blob Storage or another cloud storage
+      console.log(`💾 [Vercel] Would save image to ${folderType} folder (not persisted - using /tmp)`);
+      console.log(`💾 [Vercel] Image metadata:`, {
+        mode: metadata.mode || metadata.stage,
+        language: metadata.targetLanguage || metadata.language,
+        size: base64Image.length,
+        timestamp: new Date().toISOString()
+      });
+      // Return early - files won't be persisted on Vercel without Blob Storage
+      return null;
+    }
+    
+    // Ensure directory exists (local development only)
     const targetDir = UPLOAD_DIRS[folderType];
     if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true });
-      console.log(`📁 Created upload directory: ${targetDir}`);
+      try {
+        fs.mkdirSync(targetDir, { recursive: true });
+        console.log(`📁 Created upload directory: ${targetDir}`);
+      } catch (error) {
+        console.error(`❌ Failed to create directory ${targetDir}:`, error);
+        return null;
+      }
     }
     
     // Extract image data and MIME type
@@ -133,6 +189,10 @@ function saveUploadedImage(base64Image, folderType, metadata = {}) {
   } catch (error) {
     console.error('Error saving uploaded image:', error);
     console.error('Error stack:', error.stack);
+    if (IS_VERCEL) {
+      console.warn('⚠️  This error occurred on Vercel. File saving requires Vercel Blob Storage or another cloud storage solution.');
+      console.warn('💡 See VERCEL_STORAGE_SETUP.md for setup instructions.');
+    }
     return null;
   }
 }
@@ -202,6 +262,15 @@ app.get('/api/admin/images/:folderType', (req, res) => {
     
     if (folderType !== 'enhancement' && folderType !== 'translation') {
       return res.status(400).json({ error: 'Invalid folder type' });
+    }
+    
+    // On Vercel, return empty array with message
+    if (IS_VERCEL) {
+      return res.json({ 
+        images: [],
+        message: 'File storage not available on Vercel. Files are not persisted. See VERCEL_STORAGE_SETUP.md for setup instructions.',
+        vercel: true
+      });
     }
     
     const folderPath = UPLOAD_DIRS[folderType];
