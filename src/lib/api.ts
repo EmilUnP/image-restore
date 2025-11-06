@@ -19,6 +19,7 @@ export interface EnhanceImageResponse {
 export interface TranslateImageRequest {
   image: string;
   targetLanguage: string;
+  correctedTexts?: string[];
 }
 
 export interface TranslateImageResponse {
@@ -26,6 +27,28 @@ export interface TranslateImageResponse {
   targetLanguage?: string;
   message?: string;
   analysis?: string;
+  error?: string;
+}
+
+export interface DetectTextRequest {
+  image: string;
+}
+
+export interface DetectedTextItem {
+  id: string;
+  text: string;
+  confidence: number;
+  boundingBox?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+export interface DetectTextResponse {
+  detectedTexts?: DetectedTextItem[];
+  message?: string;
   error?: string;
 }
 
@@ -60,6 +83,24 @@ export const translateImage = async (request: TranslateImageRequest): Promise<Tr
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.error || `Failed to translate image. Error: ${response.status}`);
+  }
+
+  return await response.json();
+};
+
+export const detectText = async (request: DetectTextRequest): Promise<DetectTextResponse> => {
+  const API_URL = getApiUrl();
+  const response = await fetch(`${API_URL}/api/detect-text`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || `Failed to detect text. Error: ${response.status}`);
   }
 
   return await response.json();

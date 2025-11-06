@@ -180,10 +180,118 @@ app.post('/api/enhance-image', async (req, res) => {
   }
 });
 
+// Text detection endpoint
+app.post('/api/detect-text', async (req, res) => {
+  try {
+    const { image } = req.body;
+    
+    if (!image) {
+      return res.status(400).json({ error: 'No image provided' });
+    }
+
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
+      return res.status(500).json({ 
+        error: 'AI service not configured. Please set GEMINI_API_KEY in server/.env file',
+        instructions: 'Get your API key from https://aistudio.google.com/app/apikey and add it to server/.env'
+      });
+    }
+
+    const prompt = `Analyze this image and detect all text blocks. For each text block, provide:
+1. The exact text content
+2. A confidence score (0.0 to 1.0) indicating how confident you are in the text detection
+3. The bounding box coordinates (x, y, width, height) if possible
+
+Return the results as a JSON array with this structure:
+[
+  {
+    "text": "detected text",
+    "confidence": 0.95,
+    "boundingBox": {"x": 10, "y": 20, "width": 100, "height": 30}
+  }
+]
+
+If you cannot provide bounding boxes, omit that field. Focus on accuracy of text detection and confidence scores.`;
+
+    // Initialize Google Generative AI
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });
+
+    try {
+      // Determine MIME type from base64 string
+      let mimeType = "image/jpeg";
+      if (image.includes('data:image/')) {
+        const mimeMatch = image.match(/data:image\/([^;]+)/);
+        if (mimeMatch) {
+          mimeType = `image/${mimeMatch[1]}`;
+        }
+      }
+      
+      const base64Data = image.split(',')[1] || image;
+      const result = await model.generateContent([
+        prompt,
+        { inlineData: { data: base64Data, mimeType } }
+      ]);
+
+      const response = await result.response;
+      const text = response.text();
+      
+      // Try to parse JSON from response
+      let detectedTexts = [];
+      try {
+        // Extract JSON from markdown code blocks if present
+        const jsonMatch = text.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
+        const jsonText = jsonMatch ? jsonMatch[1] : text;
+        detectedTexts = JSON.parse(jsonText);
+      } catch (parseError) {
+        // If JSON parsing fails, try to extract text from response
+        // Split by lines and create basic text blocks
+        const lines = text.split('\n').filter(line => line.trim().length > 0);
+        detectedTexts = lines.map((line, index) => ({
+          id: `text-${index + 1}`,
+          text: line.trim(),
+          confidence: 0.7, // Default confidence
+        }));
+      }
+
+      // Ensure we have an array with proper structure
+      if (!Array.isArray(detectedTexts)) {
+        detectedTexts = [];
+      }
+
+      // Add IDs and ensure proper structure
+      detectedTexts = detectedTexts.map((item, index) => ({
+        id: item.id || `text-${index + 1}`,
+        text: item.text || String(item),
+        confidence: typeof item.confidence === 'number' ? item.confidence : 0.7,
+        boundingBox: item.boundingBox || undefined,
+      }));
+
+      return res.json({ 
+        detectedTexts,
+        message: `Detected ${detectedTexts.length} text block(s)`,
+      });
+
+    } catch (error) {
+      console.error('Gemini API error:', error);
+      return res.status(500).json({ 
+        error: 'Failed to detect text in image',
+        details: error.message || 'Unknown error'
+      });
+    }
+  } catch (error) {
+    console.error('Text detection error:', error);
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message || 'Unknown error'
+    });
+  }
+});
+
 // Image text translation endpoint
 app.post('/api/translate-image', async (req, res) => {
   try {
-    const { image, targetLanguage = 'en' } = req.body;
+    const { image, targetLanguage = 'en', correctedTexts } = req.body;
     
     if (!image) {
       return res.status(400).json({ error: 'No image provided' });
@@ -207,9 +315,14 @@ app.post('/api/translate-image', async (req, res) => {
 
     const targetLangName = languageNames[targetLanguage] || targetLanguage;
 
-    const prompt = `Translate all text in this image to ${targetLangName}. 
+    let prompt = `Translate all text in this image to ${targetLangName}. `;
     
-Important requirements:
+    // If corrected texts are provided, use them for better accuracy
+    if (correctedTexts && Array.isArray(correctedTexts) && correctedTexts.length > 0) {
+      prompt += `\n\nThe following text blocks have been identified and corrected by the user:\n${correctedTexts.map((text, i) => `${i + 1}. "${text}"`).join('\n')}\n\n`;
+    }
+    
+    prompt += `\nImportant requirements:
 1. Identify ALL text in the image (signs, labels, captions, subtitles, etc.)
 2. Translate every piece of text to ${targetLangName}
 3. Preserve the original image quality, colors, style, and visual appearance exactly

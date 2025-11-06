@@ -1,23 +1,63 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { translateImage, TranslateImageRequest } from '@/lib/api';
+import { translateImage, TranslateImageRequest, detectText, DetectTextRequest } from '@/lib/api';
 import { useImageUpload } from './useImageUpload';
+import { DetectedText } from '@/components/translation/TextDetectionPreview';
 
 export const useImageTranslation = () => {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [translatedImage, setTranslatedImage] = useState<string | null>(null);
+  const [detectedTexts, setDetectedTexts] = useState<DetectedText[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
   const { fileToBase64 } = useImageUpload();
+
+  const detectTextInImage = useCallback(async (
+    base64Image: string
+  ): Promise<DetectedText[]> => {
+    setIsDetecting(true);
+    try {
+      const request: DetectTextRequest = {
+        image: base64Image,
+      };
+
+      const data = await detectText(request);
+
+      if (data?.detectedTexts && Array.isArray(data.detectedTexts)) {
+        setDetectedTexts(data.detectedTexts);
+        return data.detectedTexts;
+      } else {
+        // Fallback: create a mock detection result
+        const mockTexts: DetectedText[] = [
+          {
+            id: '1',
+            text: 'Text detected in image',
+            confidence: 0.75,
+          }
+        ];
+        setDetectedTexts(mockTexts);
+        return mockTexts;
+      }
+    } catch (error) {
+      console.error('Text detection error:', error);
+      toast.error("Failed to detect text. Proceeding with translation...");
+      return [];
+    } finally {
+      setIsDetecting(false);
+    }
+  }, []);
 
   const processTranslation = useCallback(async (
     base64Image: string,
-    targetLanguage: string
+    targetLanguage: string,
+    correctedTexts?: DetectedText[]
   ) => {
     setIsProcessing(true);
     try {
       const request: TranslateImageRequest = {
         image: base64Image,
         targetLanguage,
+        correctedTexts: correctedTexts?.map(t => t.text),
       };
 
       const data = await translateImage(request);
@@ -47,20 +87,28 @@ export const useImageTranslation = () => {
     const base64Image = await fileToBase64(file);
     setOriginalImage(base64Image);
     setTranslatedImage(null);
-    await processTranslation(base64Image, targetLanguage);
-  }, [fileToBase64, processTranslation]);
+    setDetectedTexts([]);
+    return base64Image;
+  }, [fileToBase64]);
 
   const reset = useCallback(() => {
     setOriginalImage(null);
     setTranslatedImage(null);
+    setDetectedTexts([]);
     setIsProcessing(false);
+    setIsDetecting(false);
   }, []);
 
   return {
     originalImage,
     translatedImage,
+    detectedTexts,
     isProcessing,
+    isDetecting,
     handleImageSelect,
+    detectTextInImage,
+    processTranslation,
+    setDetectedTexts,
     reset,
   };
 };

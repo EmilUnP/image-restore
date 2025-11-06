@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Languages } from "lucide-react";
+import { Languages, Loader2 } from "lucide-react";
 import { LanguageSelector } from "./LanguageSelector";
 import { ImageUpload } from "@/components/shared/ImageUpload";
 import { ImageComparison } from "@/components/shared/ImageComparison";
+import { TextDetectionPreview, DetectedText } from "./TextDetectionPreview";
 import { BackButton } from "@/components/shared/BackButton";
 import { useImageTranslation } from "@/hooks/useImageTranslation";
 import { downloadImage } from "@/lib/utils";
@@ -17,17 +18,54 @@ interface TranslationWorkflowProps {
 export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
   const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
   const [settingsConfigured, setSettingsConfigured] = useState<boolean>(false);
+  const [showPreview, setShowPreview] = useState<boolean>(false);
   
   const {
     originalImage,
     translatedImage,
+    detectedTexts,
     isProcessing,
+    isDetecting,
     handleImageSelect,
+    detectTextInImage,
+    processTranslation,
+    setDetectedTexts,
     reset,
   } = useImageTranslation();
 
   const handleSettingsReady = () => {
     setSettingsConfigured(true);
+  };
+
+  const handleImageUpload = async (file: File) => {
+    // Set image in hook and get base64
+    const base64Image = await handleImageSelect(file, selectedLanguage);
+    
+    if (base64Image) {
+      // Auto-detect text after image is set
+      const texts = await detectTextInImage(base64Image);
+      if (texts.length > 0) {
+        setShowPreview(true);
+      } else {
+        // If no text detected, proceed directly to translation
+        await processTranslation(base64Image, selectedLanguage);
+      }
+    }
+  };
+
+  const handlePreviewContinue = async (correctedTexts: DetectedText[]) => {
+    setDetectedTexts(correctedTexts);
+    setShowPreview(false);
+    if (originalImage) {
+      await processTranslation(originalImage, selectedLanguage, correctedTexts);
+    }
+  };
+
+  const handlePreviewSkip = async () => {
+    setShowPreview(false);
+    if (originalImage) {
+      await processTranslation(originalImage, selectedLanguage);
+    }
   };
 
   const handleDownload = () => {
@@ -97,10 +135,48 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
             </div>
           </div>
           <ImageUpload
-            onImageSelect={(file) => handleImageSelect(file, selectedLanguage)}
-            disabled={isProcessing}
+            onImageSelect={handleImageUpload}
+            disabled={isProcessing || isDetecting}
             label="Upload Image"
             description="Drag and drop or click to select an image with text to translate"
+          />
+          {isDetecting && (
+            <div className="flex items-center justify-center gap-2 text-muted-foreground mt-4">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Detecting text in image...</span>
+            </div>
+          )}
+        </>
+      ) : showPreview && originalImage ? (
+        <>
+          <div className="text-center mb-6 animate-fade-in">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                ✓
+              </div>
+              <div className="h-1 w-16 bg-primary rounded-full" />
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                ✓
+              </div>
+              <div className="h-1 w-16 bg-muted rounded-full">
+                <div className="h-full w-0 bg-primary rounded-full transition-all duration-300" />
+              </div>
+              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold text-sm">
+                3
+              </div>
+            </div>
+            <h2 className="text-xl md:text-2xl font-semibold mb-2">Review Detected Text</h2>
+            <p className="text-muted-foreground">
+              Review and correct the detected text before translation. Target language: <span className="font-semibold">{languageName}</span>
+            </p>
+          </div>
+          <TextDetectionPreview
+            image={originalImage}
+            detectedTexts={detectedTexts}
+            onTextsUpdate={setDetectedTexts}
+            onContinue={handlePreviewContinue}
+            onSkip={handlePreviewSkip}
+            isProcessing={isProcessing}
           />
         </>
       ) : (
