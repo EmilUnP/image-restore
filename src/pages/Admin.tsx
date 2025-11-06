@@ -112,23 +112,43 @@ export const Admin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Admin - Uploaded Images</h1>
-          <p className="text-muted-foreground">View and manage uploaded images</p>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-accent/5 p-4 md:p-8">
+      {/* Background decorative elements */}
+      <div className="fixed top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+      <div className="fixed bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl -translate-x-1/2 translate-y-1/2 pointer-events-none" />
+      
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Enhanced Header */}
+        <div className="mb-8 md:mb-12 text-center md:text-left">
+          <div className="inline-flex items-center gap-3 mb-4">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-2xl blur-lg opacity-50" />
+              <div className="relative p-3 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-glow">
+                <Folder className="w-6 h-6 text-primary-foreground" />
+              </div>
+            </div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold gradient-text tracking-tight">
+              Admin - Uploaded Images
+            </h1>
+          </div>
+          <p className="text-lg md:text-xl text-muted-foreground font-light">View and manage uploaded images</p>
         </div>
 
-        {/* Folder Tabs */}
-        <Tabs value={selectedFolder} onValueChange={(v) => setSelectedFolder(v as 'enhancement' | 'translation')} className="mb-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="enhancement" className="gap-2">
-              <Folder className="w-4 h-4" />
+        {/* Enhanced Folder Tabs */}
+        <Tabs value={selectedFolder} onValueChange={(v) => setSelectedFolder(v as 'enhancement' | 'translation')} className="mb-8">
+          <TabsList className="grid w-full max-w-lg grid-cols-2 bg-card/80 backdrop-blur-md border border-border/50 shadow-lg rounded-2xl p-1.5">
+            <TabsTrigger 
+              value="enhancement" 
+              className="gap-2 rounded-xl font-semibold text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/90 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+            >
+              <Folder className="w-5 h-5" />
               Enhancement ({enhancementImages.length})
             </TabsTrigger>
-            <TabsTrigger value="translation" className="gap-2">
-              <Folder className="w-4 h-4" />
+            <TabsTrigger 
+              value="translation" 
+              className="gap-2 rounded-xl font-semibold text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-accent/90 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+            >
+              <Folder className="w-5 h-5" />
               Translation ({translationImages.length})
             </TabsTrigger>
           </TabsList>
@@ -147,21 +167,25 @@ export const Admin = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {enhancementImages.map((image) => (
-                  <Card key={image.filename} className="overflow-hidden hover:shadow-lg transition-shadow">
-                    <div className="relative aspect-square bg-muted/30">
+                  <Card key={image.filename} className="overflow-hidden hover:shadow-2xl transition-all duration-500 hover-lift group border-border/50 rounded-2xl bg-gradient-to-br from-card/95 to-card/90 backdrop-blur-sm">
+                    <div className="relative aspect-square bg-gradient-to-br from-muted/40 to-muted/20">
                       <img
                         src={`${API_URL}${image.url}`}
                         alt={image.filename}
-                        className="w-full h-full object-contain cursor-pointer"
+                        className="w-full h-full object-contain cursor-pointer transition-transform duration-500 group-hover:scale-105"
                         onClick={() => setSelectedImage(image)}
                       />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       <Button
                         variant="destructive"
                         size="icon"
-                        className="absolute top-2 right-2 h-8 w-8"
-                        onClick={() => handleDelete(image.filename)}
+                        className="absolute top-3 right-3 h-9 w-9 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(image.filename);
+                        }}
                         disabled={deleting === image.filename}
                       >
                         {deleting === image.filename ? (
@@ -171,15 +195,15 @@ export const Admin = () => {
                         )}
                       </Button>
                     </div>
-                    <CardContent className="p-3">
-                      <p className="text-xs font-medium truncate mb-1" title={image.filename}>
+                    <CardContent className="p-4">
+                      <p className="text-sm font-semibold truncate mb-2" title={image.filename}>
                         {image.filename}
                       </p>
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <p>{formatFileSize(image.size)}</p>
-                        {image.mode && <p>Mode: {image.mode}</p>}
-                        {image.targetLanguage && <p>Language: {image.targetLanguage}</p>}
-                        <p className="text-[10px]">{formatDate(image.created)}</p>
+                      <div className="text-xs text-muted-foreground space-y-1.5">
+                        <p className="font-medium">{formatFileSize(image.size)}</p>
+                        {image.mode && <p>Mode: <span className="font-semibold">{image.mode}</span></p>}
+                        {image.targetLanguage && <p>Language: <span className="font-semibold">{image.targetLanguage}</span></p>}
+                        <p className="text-[10px] opacity-70">{formatDate(image.created)}</p>
                       </div>
                     </CardContent>
                   </Card>
