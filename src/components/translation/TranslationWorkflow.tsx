@@ -104,20 +104,20 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
       <BackButton onClick={onBack} variant="floating" />
       {!settingsConfigured ? (
         <>
-          <div className="text-center mb-6 animate-fade-in">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+          <div className="text-center mb-8 animate-fade-in">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-base shadow-md">
                 1
               </div>
-              <div className="h-1 w-16 bg-muted rounded-full">
+              <div className="h-1 w-20 bg-muted rounded-full">
                 <div className="h-full w-0 bg-primary rounded-full transition-all duration-300" />
               </div>
-              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold text-sm">
+              <div className="w-10 h-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold text-base">
                 2
               </div>
             </div>
-            <h2 className="text-xl md:text-2xl font-semibold mb-2">Configure Translation Settings</h2>
-            <p className="text-muted-foreground text-sm md:text-base">Select language and adjust translation quality options</p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight">Configure Translation Settings</h2>
+            <p className="text-muted-foreground text-base md:text-lg">Select language and adjust translation quality options</p>
           </div>
           <LanguageSelector
             language={selectedLanguage}
@@ -131,11 +131,11 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
               disabled={isProcessing}
             />
           </div>
-          <div className="flex justify-center pt-6">
+          <div className="flex justify-center pt-8">
             <Button
               onClick={handleSettingsReady}
               size="lg"
-              className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 hover:shadow-lg transition-all duration-300"
+              className="gap-2.5 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-md hover:shadow-glow-accent transition-all duration-300 h-12 md:h-14 text-base md:text-lg rounded-xl px-8"
             >
               Continue to Upload
               <Languages className="w-5 h-5" />
@@ -144,22 +144,22 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
         </>
       ) : !originalImage ? (
         <>
-          <div className="text-center mb-6 animate-fade-in">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+          <div className="text-center mb-8 animate-fade-in">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-base shadow-md">
                 ✓
               </div>
-              <div className="h-1 w-16 bg-primary rounded-full" />
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+              <div className="h-1 w-20 bg-primary rounded-full" />
+              <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-base shadow-md">
                 2
               </div>
             </div>
-            <h2 className="text-xl md:text-2xl font-semibold mb-2">Upload Your Image</h2>
-            <p className="text-muted-foreground">
-              Target language: <span className="font-semibold">{languageName}</span>
+            <h2 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight">Upload Your Image</h2>
+            <p className="text-muted-foreground text-base md:text-lg mb-4">
+              Target language: <span className="font-semibold text-foreground">{languageName}</span>
             </p>
-            <div className="flex items-center justify-center gap-4 mt-4">
-              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
+            <div className="flex items-center justify-center gap-4 mt-6">
+              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="rounded-lg">
                 Change Language
               </Button>
             </div>
@@ -179,19 +179,19 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
         </>
       ) : showTextDetection && originalImage ? (
         <>
-          <div className="text-center mb-6 animate-fade-in">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+          <div className="text-center mb-8 animate-fade-in">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-base shadow-md">
                 ✓
               </div>
-              <div className="h-1 w-16 bg-primary rounded-full" />
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+              <div className="h-1 w-20 bg-primary rounded-full" />
+              <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-base shadow-md">
                 2
               </div>
             </div>
-            <h2 className="text-xl md:text-2xl font-semibold mb-2">Detect & Translate Text</h2>
-            <p className="text-muted-foreground">
-              Review detected text, edit if needed, then translate to <span className="font-semibold">{languageName}</span>
+            <h2 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight">Detect & Translate Text</h2>
+            <p className="text-muted-foreground text-base md:text-lg">
+              Review detected text, edit if needed, then translate to <span className="font-semibold text-foreground">{languageName}</span>
             </p>
           </div>
           <TextDetectionAndTranslation
@@ -208,17 +208,17 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
         </>
       ) : (
         <>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
-              <h2 className="text-2xl font-semibold mb-1">Translation Results</h2>
-              <p className="text-muted-foreground text-sm">
-                Target language: <span className="font-semibold">{languageName}</span> • 
-                Quality: <span className="font-semibold capitalize">{translationSettings.quality}</span> • 
-                Style: <span className="font-semibold capitalize">{translationSettings.textStyle}</span>
+              <h2 className="text-2xl md:text-3xl font-bold mb-2 tracking-tight">Translation Results</h2>
+              <p className="text-muted-foreground text-sm md:text-base">
+                Target language: <span className="font-semibold text-foreground">{languageName}</span> • 
+                Quality: <span className="font-semibold text-foreground capitalize">{translationSettings.quality}</span> • 
+                Style: <span className="font-semibold text-foreground capitalize">{translationSettings.textStyle}</span>
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
+              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="rounded-lg">
                 Change Settings
               </Button>
             </div>

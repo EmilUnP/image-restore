@@ -203,41 +203,43 @@ export const TextDetectionAndTranslation = ({
       : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 md:space-y-8">
       {/* Summary Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Languages className="w-5 h-5 text-primary" />
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-xl md:text-2xl font-bold tracking-tight">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Languages className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+            </div>
             Text Detection & Translation
           </CardTitle>
-          <CardDescription>
-            Review detected text, edit if needed, then translate to {targetLanguageName}
+          <CardDescription className="text-base md:text-lg mt-2">
+            Review detected text, edit if needed, then translate to <span className="font-semibold text-foreground">{targetLanguageName}</span>
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div className="p-4 rounded-lg bg-muted/50">
-              <div className="text-2xl font-bold text-foreground">{originalTexts.length}</div>
-              <div className="text-sm text-muted-foreground">Text Blocks</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="p-5 rounded-xl bg-gradient-to-br from-muted/60 to-muted/40 border border-border/50">
+              <div className="text-3xl font-bold text-foreground mb-1">{originalTexts.length}</div>
+              <div className="text-sm text-muted-foreground font-medium">Text Blocks</div>
             </div>
-            <div className="p-4 rounded-lg bg-muted/50">
-              <div className="text-2xl font-bold text-foreground">
-                {(averageConfidence * 100).toFixed(1)}%
+            <div className="p-5 rounded-xl bg-gradient-to-br from-muted/60 to-muted/40 border border-border/50">
+              <div className="text-3xl font-bold text-foreground mb-1">
+                {(averageConfidence * 100).toFixed(0)}%
               </div>
-              <div className="text-sm text-muted-foreground">Avg Confidence</div>
+              <div className="text-sm text-muted-foreground font-medium">Avg Confidence</div>
             </div>
-            <div className="p-4 rounded-lg bg-muted/50">
-              <div className="text-2xl font-bold text-foreground">
+            <div className="p-5 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+              <div className="text-3xl font-bold text-primary mb-1">
                 {translatedTexts.filter((t) => t.translatedText.trim().length > 0).length}
               </div>
-              <div className="text-sm text-muted-foreground">Translated</div>
+              <div className="text-sm text-muted-foreground font-medium">Translated</div>
             </div>
-            <div className="p-4 rounded-lg bg-muted/50">
-              <div className="text-2xl font-bold text-foreground">
+            <div className="p-5 rounded-xl bg-gradient-to-br from-muted/60 to-muted/40 border border-border/50">
+              <div className="text-3xl font-bold text-foreground mb-1">
                 {translatedTexts.filter((t) => t.translatedText.trim().length === 0).length}
               </div>
-              <div className="text-sm text-muted-foreground">Pending</div>
+              <div className="text-sm text-muted-foreground font-medium">Pending</div>
             </div>
           </div>
 
@@ -253,9 +255,9 @@ export const TextDetectionAndTranslation = ({
       </Card>
 
       {/* Image Preview */}
-      <Card>
-        <CardContent className="p-4 md:p-6">
-          <div className="relative aspect-video bg-muted/50 rounded-lg overflow-hidden">
+      <Card className="border-border/60 shadow-sm">
+        <CardContent className="p-5 md:p-7">
+          <div className="relative aspect-video bg-muted/30 rounded-xl overflow-hidden border border-border/50">
             <img
               src={image}
               alt="Preview"
@@ -267,19 +269,19 @@ export const TextDetectionAndTranslation = ({
 
       {/* Translate Button - Prominent placement */}
       {!hasTranslated && originalTexts.length > 0 && (
-        <Card className="border-2 border-primary/20 bg-primary/5">
-          <CardContent className="p-6">
-            <div className="flex flex-col items-center justify-center gap-4">
-              <div className="text-center">
-                <h3 className="text-lg font-semibold mb-2">Ready to Translate?</h3>
-                <p className="text-sm text-muted-foreground">
-                  Review the detected text below, then click the button to translate all text to {targetLanguageName}
+        <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 shadow-md">
+          <CardContent className="p-8">
+            <div className="flex flex-col items-center justify-center gap-5">
+              <div className="text-center space-y-2">
+                <h3 className="text-xl md:text-2xl font-bold tracking-tight">Ready to Translate?</h3>
+                <p className="text-base text-muted-foreground max-w-md">
+                  Review the detected text below, then click the button to translate all text to <span className="font-semibold text-foreground">{targetLanguageName}</span>
                 </p>
               </div>
               <Button
                 onClick={handleTranslate}
                 size="lg"
-                className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 hover:shadow-lg transition-all duration-300 min-w-[250px]"
+                className="gap-2.5 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-md hover:shadow-glow-accent transition-all duration-300 min-w-[280px] h-12 md:h-14 text-base md:text-lg rounded-xl"
                 disabled={isTranslating || originalTexts.length === 0}
               >
                 {isTranslating ? (
@@ -300,10 +302,10 @@ export const TextDetectionAndTranslation = ({
       )}
 
       {/* Text Blocks */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Text Blocks</CardTitle>
-          <CardDescription>
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl md:text-2xl font-bold tracking-tight">Text Blocks</CardTitle>
+          <CardDescription className="text-base md:text-lg mt-2">
             {hasTranslated 
               ? "Review and edit original text and translations before applying to image"
               : "Review and edit detected text, then click Translate button above"}
@@ -520,11 +522,11 @@ export const TextDetectionAndTranslation = ({
 
       {/* Apply Button */}
       {hasTranslated && allTranslated && (
-        <div className="flex justify-center pt-4">
+        <div className="flex justify-center pt-6">
           <Button
             onClick={handleApply}
             size="lg"
-            className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 hover:shadow-lg transition-all duration-300"
+            className="gap-2.5 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-md hover:shadow-glow-accent transition-all duration-300 h-12 md:h-14 text-base md:text-lg rounded-xl px-8"
             disabled={isApplying || !allTranslated}
           >
             {isApplying ? (

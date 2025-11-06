@@ -30,17 +30,17 @@ export const ImageComparison = ({
   const [imageLoaded, setImageLoaded] = useState(false);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* View Mode Toggle */}
       {enhancedImage && !isProcessing && (
-        <div className="flex items-center justify-center gap-2 mb-4">
+        <div className="flex items-center justify-center gap-3 mb-6">
           <Tooltip>
             <TooltipTrigger asChild>
               <Toggle
                 pressed={viewMode === "side-by-side"}
                 onPressedChange={(pressed) => setViewMode(pressed ? "side-by-side" : "slider")}
                 aria-label="Side by side view"
-                className="gap-2"
+                className="gap-2 rounded-lg h-10 px-4 transition-all duration-300"
               >
                 <LayoutGrid className="w-4 h-4" />
                 Side by Side
@@ -54,7 +54,7 @@ export const ImageComparison = ({
                 pressed={viewMode === "slider"}
                 onPressedChange={(pressed) => setViewMode(pressed ? "slider" : "side-by-side")}
                 aria-label="Slider view"
-                className="gap-2"
+                className="gap-2 rounded-lg h-10 px-4 transition-all duration-300"
               >
                 <SlidersHorizontal className="w-4 h-4" />
                 Slider
@@ -77,63 +77,63 @@ export const ImageComparison = ({
         </div>
       ) : (
         /* Side by Side View */
-        <div className="grid md:grid-cols-2 gap-4 md:gap-6">
+        <div className="grid md:grid-cols-2 gap-6 md:gap-8">
           {/* Original Image */}
-          <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg">
-            <CardContent className="p-4 md:p-6">
-              <h3 className="text-base md:text-lg font-semibold mb-4 text-center text-muted-foreground">
+          <Card className="overflow-hidden transition-all duration-500 hover:shadow-lg border-border/60">
+            <CardContent className="p-5 md:p-7">
+              <h3 className="text-lg md:text-xl font-bold mb-5 text-center text-muted-foreground tracking-tight">
                 {originalLabel}
               </h3>
               {originalImage ? (
-                <div className="relative aspect-video bg-muted/50 rounded-lg overflow-hidden group">
+                <div className="relative aspect-video bg-muted/30 rounded-xl overflow-hidden group border border-border/50">
                   <img
                     src={originalImage}
                     alt="Original"
-                    className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                    className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.02]"
                     onLoad={() => setImageLoaded(true)}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
               ) : (
-                <div className="aspect-video bg-muted/50 rounded-lg flex items-center justify-center border-2 border-dashed border-border">
-                  <p className="text-muted-foreground text-sm">No image uploaded</p>
+                <div className="aspect-video bg-muted/30 rounded-xl flex items-center justify-center border-2 border-dashed border-border/60">
+                  <p className="text-muted-foreground text-sm md:text-base">No image uploaded</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Enhanced/Translated Image */}
-          <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg">
-            <CardContent className="p-4 md:p-6">
-              <h3 className="text-base md:text-lg font-semibold mb-4 text-center flex items-center justify-center gap-2">
+          <Card className="overflow-hidden transition-all duration-500 hover:shadow-lg border-border/60">
+            <CardContent className="p-5 md:p-7">
+              <h3 className="text-lg md:text-xl font-bold mb-5 text-center flex items-center justify-center gap-2 tracking-tight">
                 {processedLabel}
                 {enhancedImage && !isProcessing && (
-                  <Sparkles className="w-4 h-4 text-primary animate-pulse-slow" />
+                  <Sparkles className="w-5 h-5 text-primary animate-pulse-slow" />
                 )}
               </h3>
               {isProcessing ? (
-                <div className="aspect-video bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg flex flex-col items-center justify-center gap-4 border-2 border-dashed border-primary/30">
+                <div className="aspect-video bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl flex flex-col items-center justify-center gap-5 border-2 border-dashed border-primary/40">
                   <div className="relative">
-                    <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                    <div className="absolute inset-0 w-10 h-10 border-4 border-primary/20 rounded-full" />
+                    <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                    <div className="absolute inset-0 w-12 h-12 border-4 border-primary/20 rounded-full" />
                   </div>
-                  <div className="text-center">
-                    <p className="text-foreground font-medium">Processing...</p>
-                    <p className="text-xs text-muted-foreground mt-1">This may take a few moments</p>
+                  <div className="text-center space-y-1">
+                    <p className="text-foreground font-semibold text-base">Processing...</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">This may take a few moments</p>
                   </div>
                 </div>
               ) : enhancedImage ? (
-                <div className="relative aspect-video bg-muted/50 rounded-lg overflow-hidden group animate-scale-in">
+                <div className="relative aspect-video bg-muted/30 rounded-xl overflow-hidden group animate-scale-in border border-border/50">
                   <img
                     src={enhancedImage}
                     alt="Processed"
-                    className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                    className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.02]"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
               ) : (
-                <div className="aspect-video bg-muted/50 rounded-lg flex items-center justify-center border-2 border-dashed border-border">
-                  <p className="text-muted-foreground text-sm text-center px-4">
+                <div className="aspect-video bg-muted/30 rounded-xl flex items-center justify-center border-2 border-dashed border-border/60">
+                  <p className="text-muted-foreground text-sm md:text-base text-center px-4">
                     Processing result will appear here
                   </p>
                 </div>
@@ -145,7 +145,7 @@ export const ImageComparison = ({
 
       {/* Quick Actions */}
       {enhancedImage && !isProcessing && (
-        <div className="flex justify-center animate-fade-in pt-4">
+        <div className="flex justify-center animate-fade-in pt-6">
           <QuickActions
             onDownload={onDownload}
             label={processedLabel}
