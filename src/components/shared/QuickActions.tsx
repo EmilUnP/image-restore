@@ -1,4 +1,4 @@
-import { Download, Copy, Share2, Maximize2, RotateCcw } from "lucide-react";
+import { Download, Copy, Maximize2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -35,27 +35,6 @@ export const QuickActions = ({
     }
   };
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        const response = await fetch(image);
-        const blob = await response.blob();
-        const file = new File([blob], fileName, { type: blob.type });
-        await navigator.share({
-          title: "Processed Image",
-          files: [file],
-        });
-        toast.success("Image shared!");
-      } catch (error) {
-        if ((error as Error).name !== "AbortError") {
-          toast.error("Failed to share image");
-        }
-      }
-    } else {
-      handleCopy();
-    }
-  };
-
   return (
     <div className="flex items-center gap-2 flex-wrap justify-center">
       {onDownload && (
@@ -87,21 +66,6 @@ export const QuickActions = ({
           </Button>
         </TooltipTrigger>
         <TooltipContent>Copy image to clipboard</TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            onClick={handleShare}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-          >
-            <Share2 className="w-4 h-4" />
-            Share
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Share image</TooltipContent>
       </Tooltip>
 
       {onFullscreen && (

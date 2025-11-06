@@ -68,7 +68,7 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
             onLanguageChange={setSelectedLanguage}
             disabled={isProcessing}
           />
-          <div className="flex flex-col items-center gap-3 pt-6">
+          <div className="flex justify-center pt-6">
             <Button
               onClick={handleSettingsReady}
               size="lg"
@@ -77,7 +77,6 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
               Continue to Upload
               <Languages className="w-5 h-5" />
             </Button>
-            <BackButton onClick={onBack} variant="inline" />
           </div>
         </>
       ) : !originalImage ? (
@@ -100,7 +99,6 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
               <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
                 Change Language
               </Button>
-              <BackButton onClick={onBack} variant="inline" />
             </div>
           </div>
           <ImageUpload
@@ -123,7 +121,6 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
               <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
                 Change Language
               </Button>
-              <BackButton onClick={onBack} variant="inline" />
             </div>
           </div>
           <ImageComparison
@@ -140,7 +137,6 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
               <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
                 Start Over
               </Button>
-              <BackButton onClick={onBack} variant="default" className="disabled:opacity-50" />
             </div>
           )}
           {!translatedImage && (
@@ -148,7 +144,6 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
               <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
                 Cancel & Start Over
               </Button>
-              <BackButton onClick={onBack} variant="default" className="disabled:opacity-50" />
             </div>
           )}
         </>

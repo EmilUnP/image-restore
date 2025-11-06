@@ -160,7 +160,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             onIntensityChange={setEnhancementIntensity}
             disabled={isProcessing}
           />
-          <div className="flex flex-col items-center gap-3 pt-6">
+          <div className="flex justify-center pt-6">
             <Button
               onClick={handleSettingsReady}
               size="lg"
@@ -169,7 +169,6 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
               Continue to Upload
               <ImageIcon className="w-5 h-5" />
             </Button>
-            <BackButton onClick={onBack} variant="inline" />
           </div>
         </>
       ) : processingMode === 'single' && !originalImage ? (
@@ -213,9 +212,6 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             label="Upload Image"
             description="Drag and drop or click to select an image to enhance"
           />
-          <div className="flex justify-center pt-6">
-            <BackButton onClick={onBack} variant="inline" />
-          </div>
         </>
       ) : processingMode === 'batch' && batchImages.length === 0 ? (
         <>
@@ -257,9 +253,6 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             disabled={isProcessing}
             maxImages={10}
           />
-          <div className="flex justify-center pt-6">
-            <BackButton onClick={onBack} variant="inline" />
-          </div>
         </>
       ) : processingMode === 'batch' && batchImages.length > 0 ? (
         <>
@@ -284,7 +277,6 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
               <Button onClick={handleReset} variant="outline" size="sm">
                 Start Over
               </Button>
-              <BackButton onClick={onBack} variant="inline" />
             </div>
           </div>
           <BatchResults
@@ -308,7 +300,6 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
               <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
                 Change Settings
               </Button>
-              <BackButton onClick={onBack} variant="inline" />
             </div>
           </div>
           <ImageComparison
@@ -335,7 +326,6 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
               <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
                 Cancel & Start Over
               </Button>
-              <BackButton onClick={onBack} variant="default" className="disabled:opacity-50" />
             </div>
           )}
         </>
