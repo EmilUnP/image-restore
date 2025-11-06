@@ -43,11 +43,6 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
     toast.success("Image downloaded!");
   };
 
-  const handleReset = () => {
-    reset();
-    setSettingsConfigured(false);
-  };
-
   const handleReEnhance = async () => {
     if (!originalImage) return;
     setIsProcessing(true);
@@ -264,7 +259,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 Intensity: <span className="font-semibold capitalize">{enhancementIntensity}</span>
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
               <Button
                 onClick={() => {
                   setBatchImages([]);
@@ -273,9 +268,6 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 size="sm"
               >
                 Process More
-              </Button>
-              <Button onClick={handleReset} variant="outline" size="sm">
-                Start Over
               </Button>
             </div>
           </div>
@@ -296,7 +288,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 Intensity: <span className="font-semibold capitalize">{enhancementIntensity}</span>
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
               <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
                 Change Settings
               </Button>
@@ -307,24 +299,19 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             enhancedImage={enhancedImage}
             isProcessing={isProcessing}
             onDownload={handleDownload}
-            onReset={handleReset}
             originalLabel="Original"
             processedLabel="Enhanced"
           />
           {enhancedImage && !isProcessing && (
-            <div className="flex justify-center gap-4">
-              <Button onClick={handleReEnhance} variant="default" size="lg" disabled={isProcessing}>
+            <div className="flex justify-center pt-4">
+              <Button 
+                onClick={handleReEnhance} 
+                variant="outline" 
+                size="lg" 
+                disabled={isProcessing}
+                className="gap-2"
+              >
                 Re-enhance with Current Settings
-              </Button>
-              <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
-                Start Over
-              </Button>
-            </div>
-          )}
-          {!enhancedImage && (
-            <div className="flex justify-center gap-4 flex-wrap">
-              <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
-                Cancel & Start Over
               </Button>
             </div>
           )}

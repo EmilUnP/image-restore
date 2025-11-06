@@ -12,7 +12,6 @@ interface ImageComparisonProps {
   enhancedImage: string | null;
   isProcessing: boolean;
   onDownload: () => void;
-  onReset?: () => void;
   originalLabel?: string;
   processedLabel?: string;
 }
@@ -24,7 +23,6 @@ export const ImageComparison = ({
   enhancedImage,
   isProcessing,
   onDownload,
-  onReset,
   originalLabel = "Original",
   processedLabel = "Processed",
 }: ImageComparisonProps) => {
@@ -149,10 +147,8 @@ export const ImageComparison = ({
       {enhancedImage && !isProcessing && (
         <div className="flex justify-center animate-fade-in pt-4">
           <QuickActions
-            image={enhancedImage}
-            fileName={`${processedLabel.toLowerCase()}-image.png`}
             onDownload={onDownload}
-            onReset={onReset}
+            label={processedLabel}
           />
         </div>
       )}

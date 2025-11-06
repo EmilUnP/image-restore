@@ -36,11 +36,6 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
     toast.success("Image downloaded!");
   };
 
-  const handleReset = () => {
-    reset();
-    setSettingsConfigured(false);
-  };
-
   const languageName = LANGUAGES.find(l => l.code === selectedLanguage)?.name || selectedLanguage;
 
   return (
@@ -95,7 +90,7 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
             <p className="text-muted-foreground">
               Target language: <span className="font-semibold">{languageName}</span>
             </p>
-            <div className="flex items-center justify-center gap-4 mt-4 flex-wrap">
+            <div className="flex items-center justify-center gap-4 mt-4">
               <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
                 Change Language
               </Button>
@@ -110,14 +105,14 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
         </>
       ) : (
         <>
-            <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-2xl font-semibold mb-1">Translation Results</h2>
               <p className="text-muted-foreground text-sm">
                 Target language: <span className="font-semibold">{languageName}</span>
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
               <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
                 Change Language
               </Button>
@@ -128,24 +123,9 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
             enhancedImage={translatedImage}
             isProcessing={isProcessing}
             onDownload={handleDownload}
-            onReset={handleReset}
             originalLabel="Original"
             processedLabel="Translated"
           />
-          {translatedImage && !isProcessing && (
-            <div className="flex justify-center gap-4 flex-wrap">
-              <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
-                Start Over
-              </Button>
-            </div>
-          )}
-          {!translatedImage && (
-            <div className="flex justify-center gap-4 flex-wrap">
-              <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
-                Cancel & Start Over
-              </Button>
-            </div>
-          )}
         </>
       )}
     </>
