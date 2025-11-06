@@ -60,12 +60,8 @@ export const useImageTranslation = () => {
     originalImage,
     translatedImage,
     isProcessing,
-    processTranslation,
     handleImageSelect,
     reset,
-    setOriginalImage,
-    setTranslatedImage,
-    setIsProcessing,
   };
 };
 

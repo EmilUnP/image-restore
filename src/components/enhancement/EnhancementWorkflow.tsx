@@ -195,6 +195,11 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             label="Upload Image"
             description="Drag and drop or click to select an image to enhance"
           />
+          <div className="flex justify-center pt-4">
+            <Button onClick={onBack} variant="ghost" size="sm">
+              ← Back to Function Selection
+            </Button>
+          </div>
         </>
       ) : processingMode === 'batch' && batchImages.length === 0 ? (
         <>
@@ -227,6 +232,11 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             disabled={isProcessing}
             maxImages={10}
           />
+          <div className="flex justify-center pt-4">
+            <Button onClick={onBack} variant="ghost" size="sm">
+              ← Back to Function Selection
+            </Button>
+          </div>
         </>
       ) : processingMode === 'batch' && batchImages.length > 0 ? (
         <>
@@ -251,6 +261,9 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
               <Button onClick={handleReset} variant="outline" size="sm">
                 Start Over
               </Button>
+              <Button onClick={onBack} variant="ghost" size="sm">
+                ← Back to Function Selection
+              </Button>
             </div>
           </div>
           <BatchResults
@@ -270,9 +283,14 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 Intensity: <span className="font-semibold capitalize">{enhancementIntensity}</span>
               </p>
             </div>
-            <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
-              Change Settings
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
+                Change Settings
+              </Button>
+              <Button onClick={onBack} variant="ghost" size="sm">
+                ← Back to Function Selection
+              </Button>
+            </div>
           </div>
           <ImageComparison
             originalImage={originalImage || ''}
@@ -293,9 +311,12 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             </div>
           )}
           {!enhancedImage && (
-            <div className="flex justify-center">
+            <div className="flex justify-center gap-4">
               <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
                 Cancel & Start Over
+              </Button>
+              <Button onClick={onBack} variant="ghost" size="lg" disabled={isProcessing}>
+                ← Back to Function Selection
               </Button>
             </div>
           )}

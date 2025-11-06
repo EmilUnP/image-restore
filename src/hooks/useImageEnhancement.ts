@@ -79,8 +79,6 @@ export const useImageEnhancement = () => {
     processImage,
     handleImageSelect,
     reset,
-    setOriginalImage,
-    setEnhancedImage,
     setIsProcessing,
   };
 };

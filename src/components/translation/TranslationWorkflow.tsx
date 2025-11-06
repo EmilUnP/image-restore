@@ -96,16 +96,21 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
         </>
       ) : (
         <>
-          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-2xl font-semibold mb-1">Translation Results</h2>
               <p className="text-muted-foreground text-sm">
                 Target language: <span className="font-semibold">{languageName}</span>
               </p>
             </div>
-            <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
-              Change Language
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
+                Change Language
+              </Button>
+              <Button onClick={onBack} variant="ghost" size="sm">
+                ← Back to Function Selection
+              </Button>
+            </div>
           </div>
           <ImageComparison
             originalImage={originalImage || ''}
@@ -120,12 +125,18 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
               <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
                 Start Over
               </Button>
+              <Button onClick={onBack} variant="ghost" size="lg" disabled={isProcessing}>
+                ← Back to Function Selection
+              </Button>
             </div>
           )}
           {!translatedImage && (
-            <div className="flex justify-center">
+            <div className="flex justify-center gap-4">
               <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
                 Cancel & Start Over
+              </Button>
+              <Button onClick={onBack} variant="ghost" size="lg" disabled={isProcessing}>
+                ← Back to Function Selection
               </Button>
             </div>
           )}

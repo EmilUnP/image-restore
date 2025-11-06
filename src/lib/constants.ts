@@ -5,12 +5,3 @@ export const LANGUAGES = [
   { code: 'uk', name: 'Ukrainian' },
 ] as const;
 
-export type LanguageCode = typeof LANGUAGES[number]['code'];
-
-export const LANGUAGE_NAMES: Record<string, string> = {
-  'en': 'English',
-  'ru': 'Russian',
-  'tr': 'Turkish',
-  'uk': 'Ukrainian',
-};
-
