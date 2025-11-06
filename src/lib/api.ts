@@ -20,6 +20,11 @@ export interface TranslateImageRequest {
   image: string;
   targetLanguage: string;
   correctedTexts?: string[];
+  quality?: "standard" | "premium" | "ultra";
+  fontMatching?: "auto" | "preserve" | "native";
+  textStyle?: "exact" | "natural" | "adaptive";
+  preserveFormatting?: boolean;
+  enhanceReadability?: boolean;
 }
 
 export interface TranslateImageResponse {

@@ -50,7 +50,14 @@ export const useImageTranslation = () => {
   const processTranslation = useCallback(async (
     base64Image: string,
     targetLanguage: string,
-    correctedTexts?: DetectedText[]
+    correctedTexts?: DetectedText[],
+    settings?: {
+      quality?: "standard" | "premium" | "ultra";
+      fontMatching?: "auto" | "preserve" | "native";
+      textStyle?: "exact" | "natural" | "adaptive";
+      preserveFormatting?: boolean;
+      enhanceReadability?: boolean;
+    }
   ) => {
     setIsProcessing(true);
     try {
@@ -58,6 +65,11 @@ export const useImageTranslation = () => {
         image: base64Image,
         targetLanguage,
         correctedTexts: correctedTexts?.map(t => t.text),
+        quality: settings?.quality || "premium",
+        fontMatching: settings?.fontMatching || "auto",
+        textStyle: settings?.textStyle || "adaptive",
+        preserveFormatting: settings?.preserveFormatting !== false,
+        enhanceReadability: settings?.enhanceReadability !== false,
       };
 
       const data = await translateImage(request);

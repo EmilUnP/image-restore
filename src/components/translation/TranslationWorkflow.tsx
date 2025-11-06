@@ -5,6 +5,7 @@ import { LanguageSelector } from "./LanguageSelector";
 import { ImageUpload } from "@/components/shared/ImageUpload";
 import { ImageComparison } from "@/components/shared/ImageComparison";
 import { TextDetectionPreview, DetectedText } from "./TextDetectionPreview";
+import { TranslationSettingsComponent, TranslationSettings as TranslationSettingsType } from "./TranslationSettings";
 import { BackButton } from "@/components/shared/BackButton";
 import { useImageTranslation } from "@/hooks/useImageTranslation";
 import { downloadImage } from "@/lib/utils";
@@ -19,6 +20,13 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
   const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
   const [settingsConfigured, setSettingsConfigured] = useState<boolean>(false);
   const [showPreview, setShowPreview] = useState<boolean>(false);
+  const [translationSettings, setTranslationSettings] = useState<TranslationSettingsType>({
+    quality: "premium",
+    fontMatching: "auto",
+    textStyle: "adaptive",
+    preserveFormatting: true,
+    enhanceReadability: true,
+  });
   
   const {
     originalImage,
@@ -48,7 +56,7 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
         setShowPreview(true);
       } else {
         // If no text detected, proceed directly to translation
-        await processTranslation(base64Image, selectedLanguage);
+        await processTranslation(base64Image, selectedLanguage, undefined, translationSettings);
       }
     }
   };
@@ -57,14 +65,14 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
     setDetectedTexts(correctedTexts);
     setShowPreview(false);
     if (originalImage) {
-      await processTranslation(originalImage, selectedLanguage, correctedTexts);
+      await processTranslation(originalImage, selectedLanguage, correctedTexts, translationSettings);
     }
   };
 
   const handlePreviewSkip = async () => {
     setShowPreview(false);
     if (originalImage) {
-      await processTranslation(originalImage, selectedLanguage);
+      await processTranslation(originalImage, selectedLanguage, undefined, translationSettings);
     }
   };
 
@@ -93,14 +101,21 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
                 2
               </div>
             </div>
-            <h2 className="text-xl md:text-2xl font-semibold mb-2">Choose Target Language</h2>
-            <p className="text-muted-foreground text-sm md:text-base">Select the language you want to translate the text to</p>
+            <h2 className="text-xl md:text-2xl font-semibold mb-2">Configure Translation Settings</h2>
+            <p className="text-muted-foreground text-sm md:text-base">Select language and adjust translation quality options</p>
           </div>
           <LanguageSelector
             language={selectedLanguage}
             onLanguageChange={setSelectedLanguage}
             disabled={isProcessing}
           />
+          <div className="mt-6">
+            <TranslationSettingsComponent
+              settings={translationSettings}
+              onSettingsChange={setTranslationSettings}
+              disabled={isProcessing}
+            />
+          </div>
           <div className="flex justify-center pt-6">
             <Button
               onClick={handleSettingsReady}
@@ -185,12 +200,14 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
             <div>
               <h2 className="text-2xl font-semibold mb-1">Translation Results</h2>
               <p className="text-muted-foreground text-sm">
-                Target language: <span className="font-semibold">{languageName}</span>
+                Target language: <span className="font-semibold">{languageName}</span> • 
+                Quality: <span className="font-semibold capitalize">{translationSettings.quality}</span> • 
+                Style: <span className="font-semibold capitalize">{translationSettings.textStyle}</span>
               </p>
             </div>
             <div className="flex items-center gap-2">
               <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
-                Change Language
+                Change Settings
               </Button>
             </div>
           </div>

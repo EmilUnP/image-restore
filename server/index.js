@@ -291,7 +291,16 @@ If you cannot provide bounding boxes, omit that field. Focus on accuracy of text
 // Image text translation endpoint
 app.post('/api/translate-image', async (req, res) => {
   try {
-    const { image, targetLanguage = 'en', correctedTexts } = req.body;
+    const { 
+      image, 
+      targetLanguage = 'en', 
+      correctedTexts,
+      quality = 'premium',
+      fontMatching = 'auto',
+      textStyle = 'adaptive',
+      preserveFormatting = true,
+      enhanceReadability = true
+    } = req.body;
     
     if (!image) {
       return res.status(400).json({ error: 'No image provided' });
@@ -315,22 +324,79 @@ app.post('/api/translate-image', async (req, res) => {
 
     const targetLangName = languageNames[targetLanguage] || targetLanguage;
 
-    let prompt = `Translate all text in this image to ${targetLangName}. `;
+    // Build comprehensive prompt based on settings
+    let prompt = `You are an expert image translation specialist. Translate ALL text in this image to ${targetLangName} with professional quality and attention to detail.\n\n`;
     
-    // If corrected texts are provided, use them for better accuracy
+    // Add corrected texts if provided
     if (correctedTexts && Array.isArray(correctedTexts) && correctedTexts.length > 0) {
-      prompt += `\n\nThe following text blocks have been identified and corrected by the user:\n${correctedTexts.map((text, i) => `${i + 1}. "${text}"`).join('\n')}\n\n`;
+      prompt += `IMPORTANT: The following text blocks have been verified and corrected by the user. Use these exact texts for translation:\n${correctedTexts.map((text, i) => `${i + 1}. "${text}"`).join('\n')}\n\n`;
     }
     
-    prompt += `\nImportant requirements:
-1. Identify ALL text in the image (signs, labels, captions, subtitles, etc.)
-2. Translate every piece of text to ${targetLangName}
-3. Preserve the original image quality, colors, style, and visual appearance exactly
-4. Maintain the same font style, size, and positioning as the original text
-5. Keep all non-text elements (backgrounds, images, graphics) completely unchanged
-6. Output a new image with the translated text overlaid in the same positions and styles as the original
-
-The output should be an image that looks identical to the original, but with all text translated to ${targetLangName}.`;
+    // Quality-specific instructions
+    const qualityInstructions = {
+      standard: "Provide accurate translation with good text rendering.",
+      premium: "Provide highly accurate translation with excellent text rendering, precise font matching, and perfect positioning. Pay extra attention to details.",
+      ultra: "Provide perfect translation with pixel-perfect text rendering, exact font matching, perfect positioning, and flawless visual integration. Maximum attention to every detail."
+    };
+    
+    // Font matching instructions
+    const fontInstructions = {
+      auto: "Intelligently match fonts that are visually similar to the original, considering the target language's typography conventions.",
+      preserve: "Preserve the exact original fonts as much as possible, adapting only the characters to the target language.",
+      native: "Use fonts that are native and natural for the target language while maintaining visual harmony with the original design."
+    };
+    
+    // Text style instructions
+    const styleInstructions = {
+      exact: "Preserve the exact original text style, formatting, and visual appearance.",
+      natural: "Adapt the text style to be natural and readable in the target language while maintaining visual coherence.",
+      adaptive: "Balance between preserving original style and adapting to target language conventions for optimal readability and visual appeal."
+    };
+    
+    prompt += `TRANSLATION REQUIREMENTS:\n\n`;
+    prompt += `1. TEXT DETECTION & TRANSLATION:\n`;
+    prompt += `   - Identify EVERY piece of text in the image (signs, labels, captions, subtitles, buttons, menus, headers, footers, watermarks, etc.)\n`;
+    prompt += `   - Translate ALL text accurately to ${targetLangName}\n`;
+    prompt += `   - Maintain proper grammar, context, and meaning\n`;
+    prompt += `   - Preserve numbers, dates, and special characters unless they need localization\n\n`;
+    
+    prompt += `2. VISUAL PRESERVATION:\n`;
+    prompt += `   - Preserve 100% of the original image quality, resolution, and clarity\n`;
+    prompt += `   - Keep ALL colors, gradients, shadows, and visual effects exactly as they are\n`;
+    prompt += `   - Maintain the exact same background, images, graphics, and non-text elements\n`;
+    prompt += `   - Do NOT alter, remove, or modify any visual elements except text\n\n`;
+    
+    prompt += `3. TEXT RENDERING (${quality.toUpperCase()} Quality):\n`;
+    prompt += `   - ${qualityInstructions[quality]}\n`;
+    prompt += `   - ${fontInstructions[fontMatching]}\n`;
+    prompt += `   - ${styleInstructions[textStyle]}\n`;
+    prompt += `   - Maintain exact text positioning, alignment, and spacing\n`;
+    prompt += `   - Preserve text size relationships (headings vs body text)\n`;
+    prompt += `   - Keep text colors, shadows, outlines, and effects identical\n`;
+    if (preserveFormatting) {
+      prompt += `   - Preserve ALL formatting: bold, italic, underline, strikethrough, colors, sizes\n`;
+    }
+    if (enhanceReadability) {
+      prompt += `   - Optimize text for maximum readability in ${targetLangName}\n`;
+      prompt += `   - Ensure proper spacing and line breaks for target language\n`;
+    }
+    prompt += `\n`;
+    
+    prompt += `4. TECHNICAL REQUIREMENTS:\n`;
+    prompt += `   - Output a high-resolution image matching the original dimensions\n`;
+    prompt += `   - Ensure text is crisp, clear, and properly rendered\n`;
+    prompt += `   - Maintain aspect ratio and image proportions\n`;
+    prompt += `   - Preserve image format and quality settings\n`;
+    prompt += `   - Ensure translated text is perfectly integrated and looks natural\n\n`;
+    
+    prompt += `5. QUALITY STANDARDS:\n`;
+    prompt += `   - The translated image should look like it was originally created in ${targetLangName}\n`;
+    prompt += `   - Text should appear natural and professionally rendered\n`;
+    prompt += `   - No artifacts, blur, or quality degradation\n`;
+    prompt += `   - Perfect alignment and positioning of all text elements\n`;
+    prompt += `   - Seamless visual integration of translated text\n\n`;
+    
+    prompt += `OUTPUT: Return ONLY the translated image with all text translated to ${targetLangName}. The image should be visually identical to the original except for the translated text.`;
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
