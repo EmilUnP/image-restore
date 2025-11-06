@@ -17,26 +17,21 @@ export const LanguageSelector = ({
   disabled = false,
 }: LanguageSelectorProps) => {
   return (
-    <Card className="border-border">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Languages className="w-5 h-5 text-primary" />
+    <Card className="border-border/60">
+      <CardHeader className="pb-2 px-4 pt-4">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
           Target Language
           <HelpTooltip content="Choose the language you want to translate the text in your image to. The AI will detect and translate all text while preserving the original image quality and style." />
         </CardTitle>
-        <CardDescription>
-          Select the language you want to translate the text to
-        </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          <Label htmlFor="language-select">Language</Label>
+      <CardContent className="px-4 pb-4 pt-0">
+        <div className="space-y-1.5">
           <Select
             value={language}
             onValueChange={onLanguageChange}
             disabled={disabled}
           >
-            <SelectTrigger id="language-select" className="w-full">
+            <SelectTrigger id="language-select" className="w-full h-9 text-sm">
               <SelectValue placeholder="Select a language" />
             </SelectTrigger>
             <SelectContent>
@@ -47,8 +42,8 @@ export const LanguageSelector = ({
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground mt-2">
-            The text in your image will be translated to <strong>{LANGUAGES.find(l => l.code === language)?.name || 'the selected language'}</strong> while preserving the original image quality and style.
+          <p className="text-xs text-muted-foreground">
+            Translating to <strong>{LANGUAGES.find(l => l.code === language)?.name || 'selected language'}</strong>
           </p>
         </div>
       </CardContent>

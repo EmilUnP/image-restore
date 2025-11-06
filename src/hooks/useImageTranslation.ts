@@ -55,28 +55,61 @@ export const useImageTranslation = () => {
     targetLanguage: string
   ): Promise<string[]> => {
     try {
-      console.log('Translating texts:', texts, 'to language:', targetLanguage);
+      console.log('useImageTranslation: Translating texts:', texts);
+      console.log('useImageTranslation: Target language:', targetLanguage);
+      console.log('useImageTranslation: Number of texts:', texts.length);
+      
+      if (!texts || texts.length === 0) {
+        console.error('useImageTranslation: No texts to translate');
+        toast.error("No texts provided for translation");
+        return [];
+      }
       
       const request: TranslateTextRequest = {
         texts,
         targetLanguage,
       };
 
+      console.log('useImageTranslation: Sending request:', request);
       const data = await translateText(request);
-      console.log('Translation response:', data);
+      console.log('useImageTranslation: Full response:', data);
+      console.log('useImageTranslation: Translations array:', data?.translations);
+      console.log('useImageTranslation: Translations length:', data?.translations?.length);
 
-      if (data?.translations && Array.isArray(data.translations) && data.translations.length > 0) {
-        console.log('Successfully received translations:', data.translations);
-        return data.translations;
+      if (data?.translations && Array.isArray(data.translations)) {
+        // Filter out empty translations and log them
+        const validTranslations = data.translations.filter((t, i) => {
+          if (!t || t.trim().length === 0) {
+            console.warn(`useImageTranslation: Empty translation at index ${i} for text: "${texts[i]}"`);
+            return false;
+          }
+          return true;
+        });
+        
+        if (validTranslations.length > 0) {
+          console.log('useImageTranslation: Successfully received translations:', validTranslations);
+          // Return the same number of translations as input texts, filling empty ones
+          return texts.map((text, index) => data.translations[index] || "");
+        } else {
+          console.error('useImageTranslation: All translations are empty!', data.translations);
+          toast.error("Translation failed - all translations are empty");
+          return [];
+        }
       } else {
-        console.error('Invalid translation response:', data);
-        toast.error("Failed to get translations - invalid response");
+        console.error('useImageTranslation: Invalid translation response:', data);
+        console.error('useImageTranslation: Response type:', typeof data);
+        console.error('useImageTranslation: Has translations?', !!data?.translations);
+        toast.error("Failed to get translations - invalid response format");
         return [];
       }
     } catch (error) {
-      console.error('Translation error:', error);
+      console.error('useImageTranslation: Translation error:', error);
+      if (error instanceof Error) {
+        console.error('useImageTranslation: Error message:', error.message);
+        console.error('useImageTranslation: Error stack:', error.stack);
+      }
       const errorMessage = error instanceof Error ? error.message : "Failed to translate text";
-      toast.error(errorMessage);
+      toast.error(`Translation error: ${errorMessage}`);
       return [];
     }
   }, []);

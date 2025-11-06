@@ -417,40 +417,122 @@ app.post('/api/translate-text', async (req, res) => {
 
     const targetLangName = languageNames[targetLanguage] || targetLanguage;
 
-    const prompt = `Translate the following texts to ${targetLangName}. Return ONLY a JSON array of translations in the same order, with no additional text or explanation.
+    const prompt = `You are a professional translator. Translate the following texts to ${targetLangName}. 
+
+CRITICAL REQUIREMENTS:
+1. Return ONLY a valid JSON array
+2. Maintain the exact same order as the input texts
+3. Translate each text accurately and completely
+4. Do not add explanations, comments, or markdown
+5. Return the JSON array directly, no code blocks
 
 Texts to translate:
 ${texts.map((text, i) => `${i + 1}. "${text}"`).join('\n')}
 
-Return format (JSON array only):
-["translation1", "translation2", "translation3", ...]`;
+Return ONLY this format (JSON array):
+["translation1", "translation2", "translation3"]`;
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });
 
     try {
-      const result = await model.generateContent([prompt]);
+      const generationConfig = {
+        temperature: 0.3, // Lower temperature for more consistent translations
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 2048,
+      };
+      
+      console.log('Sending translation request to Gemini API...');
+      const result = await model.generateContent([prompt], { generationConfig });
       const response = await result.response;
       const text = response.text();
+      console.log('Received response from Gemini API, length:', text.length);
       
       // Try to parse JSON from response
       let translations = [];
+      console.log('Raw AI response:', text);
+      
       try {
-        // Extract JSON from markdown code blocks if present
+        // Strategy 1: Extract JSON from markdown code blocks
         const jsonMatch = text.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
-        const jsonText = jsonMatch ? jsonMatch[1] : text.trim();
-        translations = JSON.parse(jsonText);
+        if (jsonMatch) {
+          console.log('Found JSON in code block');
+          translations = JSON.parse(jsonMatch[1]);
+        } else {
+          // Strategy 2: Try to find JSON array in the text
+          const arrayMatch = text.match(/\[[\s\S]*\]/);
+          if (arrayMatch) {
+            console.log('Found JSON array in text');
+            translations = JSON.parse(arrayMatch[0]);
+          } else {
+            // Strategy 3: Try parsing the entire response
+            console.log('Trying to parse entire response as JSON');
+            translations = JSON.parse(text.trim());
+          }
+        }
+        console.log('Parsed translations:', translations);
       } catch (parseError) {
-        // If JSON parsing fails, try to extract translations from lines
-        const lines = text.split('\n').filter(line => line.trim().length > 0);
-        translations = lines.map(line => line.replace(/^\d+\.\s*["']?|["']?$/g, '').trim());
+        console.error('JSON parsing failed:', parseError);
+        console.log('Attempting fallback extraction...');
+        
+        // Fallback: Try to extract translations from numbered list or quoted strings
+        try {
+          // Try to find quoted strings
+          const quotedMatches = text.matchAll(/"([^"]+)"/g);
+          const quoted = Array.from(quotedMatches).map(m => m[1]);
+          
+          if (quoted.length >= texts.length) {
+            console.log('Using quoted strings as translations');
+            translations = quoted.slice(0, texts.length);
+          } else {
+            // Try numbered list format
+            const lines = text.split('\n')
+              .filter(line => line.trim().length > 0)
+              .filter(line => /^\d+\./.test(line.trim()));
+            
+            if (lines.length >= texts.length) {
+              console.log('Using numbered list as translations');
+              translations = lines.slice(0, texts.length).map(line => 
+                line.replace(/^\d+\.\s*["']?|["']?$/g, '').trim()
+              );
+            } else {
+              // Last resort: split by lines and take first N
+              const allLines = text.split('\n')
+                .filter(line => line.trim().length > 0)
+                .filter(line => !line.match(/^[\[\]{}",\s]*$/))
+                .slice(0, texts.length);
+              
+              translations = allLines.map(line => line.trim().replace(/^["']|["']$/g, ''));
+            }
+          }
+        } catch (fallbackError) {
+          console.error('Fallback extraction also failed:', fallbackError);
+          translations = [];
+        }
       }
 
-      // Ensure we have the same number of translations as texts
-      if (!Array.isArray(translations) || translations.length !== texts.length) {
-        // Fallback: return texts as-is if translation fails
-        translations = texts;
+      // Validate translations
+      if (!Array.isArray(translations)) {
+        console.error('Translations is not an array:', translations);
+        translations = [];
       }
+      
+      // Ensure we have the same number of translations as texts
+      if (translations.length !== texts.length) {
+        console.warn(`Translation count mismatch: expected ${texts.length}, got ${translations.length}`);
+        // Pad with empty strings or truncate
+        while (translations.length < texts.length) {
+          translations.push("");
+        }
+        translations = translations.slice(0, texts.length);
+      }
+      
+      // Log final translations
+      console.log(`Final translations (${translations.length}):`, translations);
+      texts.forEach((text, i) => {
+        console.log(`  "${text}" -> "${translations[i]}"`);
+      });
 
       return res.json({ 
         translations,

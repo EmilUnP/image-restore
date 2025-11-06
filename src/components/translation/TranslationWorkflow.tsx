@@ -66,17 +66,41 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
     setIsTranslatingText(true);
     try {
       const textsToTranslate = texts.map(t => t.text);
+      console.log('TranslationWorkflow: Translating texts:', textsToTranslate, 'to:', selectedLanguage);
+      
       const translations = await translateTexts(textsToTranslate, selectedLanguage);
+      console.log('TranslationWorkflow: Received translations:', translations);
+      
+      if (!translations || translations.length === 0) {
+        console.error('TranslationWorkflow: No translations received');
+        toast.error("Failed to translate text - no translations received");
+        return [];
+      }
       
       // Create translated text pairs
-      const translatedPairs: TranslatedText[] = texts.map((text, index) => ({
-        ...text,
-        translatedText: translations[index] || "",
-      }));
+      const translatedPairs: TranslatedText[] = texts.map((text, index) => {
+        const translation = translations[index];
+        console.log(`TranslationWorkflow: Pair ${index}: "${text.text}" -> "${translation}"`);
+        return {
+          ...text,
+          translatedText: translation || "",
+        };
+      });
       
+      // Verify we have at least some translations
+      const hasValidTranslations = translatedPairs.some(t => t.translatedText && t.translatedText.trim().length > 0);
+      if (!hasValidTranslations) {
+        console.error('TranslationWorkflow: All translations are empty');
+        toast.error("Translation failed - all translations are empty");
+        return [];
+      }
+      
+      console.log('TranslationWorkflow: Returning translated pairs:', translatedPairs);
       return translatedPairs;
     } catch (error) {
-      toast.error("Failed to translate text");
+      console.error('TranslationWorkflow: Translation error:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to translate text";
+      toast.error(`Translation failed: ${errorMessage}`);
       return [];
     } finally {
       setIsTranslatingText(false);
@@ -104,41 +128,41 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
       <BackButton onClick={onBack} variant="floating" />
       {!settingsConfigured ? (
         <>
-          <div className="text-center mb-8 animate-fade-in">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-base shadow-md">
+          <div className="text-center mb-6 animate-fade-in">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-xs">
                 1
               </div>
-              <div className="h-1 w-20 bg-muted rounded-full">
+              <div className="h-0.5 w-16 bg-muted rounded-full">
                 <div className="h-full w-0 bg-primary rounded-full transition-all duration-300" />
               </div>
-              <div className="w-10 h-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold text-base">
+              <div className="w-7 h-7 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-semibold text-xs">
                 2
               </div>
             </div>
-            <h2 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight">Configure Translation Settings</h2>
-            <p className="text-muted-foreground text-base md:text-lg">Select language and adjust translation quality options</p>
+            <h2 className="text-xl md:text-2xl font-semibold mb-1.5 tracking-tight">Configure Translation Settings</h2>
+            <p className="text-muted-foreground text-sm">Select language and adjust translation quality options</p>
           </div>
           <LanguageSelector
             language={selectedLanguage}
             onLanguageChange={setSelectedLanguage}
             disabled={isProcessing}
           />
-          <div className="mt-6">
+          <div className="mt-4">
             <TranslationSettingsComponent
               settings={translationSettings}
               onSettingsChange={setTranslationSettings}
               disabled={isProcessing}
             />
           </div>
-          <div className="flex justify-center pt-8">
+          <div className="flex justify-center pt-6">
             <Button
               onClick={handleSettingsReady}
               size="lg"
-              className="gap-2.5 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-md hover:shadow-glow-accent transition-all duration-300 h-12 md:h-14 text-base md:text-lg rounded-xl px-8"
+              className="gap-2 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-medium shadow-md hover:shadow-glow-accent transition-all duration-300 h-11 text-base rounded-lg px-6"
             >
               Continue to Upload
-              <Languages className="w-5 h-5" />
+              <Languages className="w-4 h-4" />
             </Button>
           </div>
         </>
@@ -220,7 +244,7 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
             <div className="flex items-center gap-2">
               <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="rounded-lg">
                 Change Settings
-              </Button>
+            </Button>
             </div>
           </div>
           <ImageComparison
