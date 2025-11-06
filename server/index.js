@@ -198,18 +198,15 @@ app.post('/api/detect-text', async (req, res) => {
     }
 
     // Model selection: Use requested model or default to best text detection model
-    // gemini-1.5-pro is better for complex text detection, gemini-1.5-flash is faster
-    // gemini-2.0-flash-exp is experimental but may have better OCR
-    const availableModels = [
+     const availableModels = [
       'gemini-2.0-flash-exp',      // Best for text detection (experimental)
-      'gemini-1.5-pro',            // Excellent accuracy
-      'gemini-1.5-flash',          // Fast and accurate
-      'gemini-2.5-flash-image-preview' // Current default
+      'gemini-2.5-flash-image-preview', // Current default
     ];
     
+    // Default to flash which is more stable and available
     const modelName = requestedModel && availableModels.includes(requestedModel) 
       ? requestedModel 
-      : 'gemini-1.5-pro'; // Default to pro for better text detection
+      : 'gemini-2.0-flash-exp'; // Default to flash for better availability
 
     const prompt = `You are an expert OCR (Optical Character Recognition) specialist. Analyze this image and detect ALL text content with maximum accuracy.
 
@@ -262,15 +259,11 @@ IMPORTANT:
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    let model;
-    
-    try {
-      model = genAI.getGenerativeModel({ model: modelName });
-    } catch (modelError) {
-      console.warn(`Model ${modelName} not available, falling back to gemini-1.5-flash`);
-      // Fallback to a more stable model
-      model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    }
+    // Note: getGenerativeModel doesn't validate the model until generateContent is called
+    // So we'll handle model errors in the API call catch block
+    const model = genAI.getGenerativeModel({ model: modelName });
+    let actualModelName = modelName;
+    console.log(`Attempting to use model: ${modelName} for text detection`);
 
     try {
       // Determine MIME type from base64 string
@@ -292,16 +285,47 @@ IMPORTANT:
         maxOutputTokens: 8192,
       };
       
-      const result = await model.generateContent(
-        [
-          prompt,
-          { inlineData: { data: base64Data, mimeType } }
-        ],
-        { generationConfig }
-      );
-
-      const response = await result.response;
-      const text = response.text();
+      let result;
+      let response;
+      let text;
+      
+      try {
+        result = await model.generateContent(
+          [
+            prompt,
+            { inlineData: { data: base64Data, mimeType } }
+          ],
+          { generationConfig }
+        );
+        response = await result.response;
+        text = response.text();
+      } catch (apiError) {
+        // If the model fails (404 or other API error), try fallback models
+        if (apiError.status === 404 || apiError.message?.includes('not found') || apiError.message?.includes('not supported')) {
+          console.warn(`Model ${actualModelName} failed with error:`, apiError.message);
+          console.log('Attempting to use fallback model: gemini-2.0-flash');
+          
+          try {
+            const fallbackModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+            result = await fallbackModel.generateContent(
+              [
+                prompt,
+                { inlineData: { data: base64Data, mimeType } }
+              ],
+              { generationConfig }
+            );
+            response = await result.response;
+            text = response.text();
+            actualModelName = 'gemini-2.0-flash-exp';
+            console.log('Successfully used fallback model');
+          } catch (fallbackError) {
+            console.error('Fallback model also failed:', fallbackError);
+            throw apiError; // Throw original error
+          }
+        } else {
+          throw apiError; // Re-throw if it's not a model availability error
+        }
+      }
       
       // Try to parse JSON from response with multiple strategies
       let detectedTexts = [];
@@ -368,11 +392,11 @@ IMPORTANT:
         boundingBox: item.boundingBox || undefined,
       }));
 
-      return res.json({ 
-        detectedTexts,
-        message: `Detected ${detectedTexts.length} text block(s) using ${modelName}`,
-        model: modelName,
-      });
+            return res.json({ 
+              detectedTexts,
+              message: `Detected ${detectedTexts.length} text block(s) using ${actualModelName}`,
+              model: actualModelName,
+            });
 
     } catch (error) {
       console.error('Gemini API error:', error);
