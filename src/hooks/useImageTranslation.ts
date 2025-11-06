@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { translateImage, TranslateImageRequest, detectText, DetectTextRequest } from '@/lib/api';
+import { translateImage, TranslateImageRequest, detectText, DetectTextRequest, translateText, TranslateTextRequest } from '@/lib/api';
 import { useImageUpload } from './useImageUpload';
 import { DetectedText } from '@/components/translation/TextDetectionPreview';
+import { TranslatedText } from '@/components/translation/TextTranslationPreview';
 
 export const useImageTranslation = () => {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
@@ -13,12 +14,14 @@ export const useImageTranslation = () => {
   const { fileToBase64 } = useImageUpload();
 
   const detectTextInImage = useCallback(async (
-    base64Image: string
+    base64Image: string,
+    model?: string
   ): Promise<DetectedText[]> => {
     setIsDetecting(true);
     try {
       const request: DetectTextRequest = {
         image: base64Image,
+        model: model, // Pass model if specified
       };
 
       const data = await detectText(request);
@@ -47,10 +50,41 @@ export const useImageTranslation = () => {
     }
   }, []);
 
+  const translateTexts = useCallback(async (
+    texts: string[],
+    targetLanguage: string
+  ): Promise<string[]> => {
+    try {
+      console.log('Translating texts:', texts, 'to language:', targetLanguage);
+      
+      const request: TranslateTextRequest = {
+        texts,
+        targetLanguage,
+      };
+
+      const data = await translateText(request);
+      console.log('Translation response:', data);
+
+      if (data?.translations && Array.isArray(data.translations) && data.translations.length > 0) {
+        console.log('Successfully received translations:', data.translations);
+        return data.translations;
+      } else {
+        console.error('Invalid translation response:', data);
+        toast.error("Failed to get translations - invalid response");
+        return [];
+      }
+    } catch (error) {
+      console.error('Translation error:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to translate text";
+      toast.error(errorMessage);
+      return [];
+    }
+  }, []);
+
   const processTranslation = useCallback(async (
     base64Image: string,
     targetLanguage: string,
-    correctedTexts?: DetectedText[],
+    translatedTexts?: TranslatedText[],
     settings?: {
       quality?: "standard" | "premium" | "ultra";
       fontMatching?: "auto" | "preserve" | "native";
@@ -61,10 +95,18 @@ export const useImageTranslation = () => {
   ) => {
     setIsProcessing(true);
     try {
+      const textPairs = translatedTexts?.map(t => ({
+        original: t.text || "",
+        translated: t.translatedText || "",
+      })).filter(pair => pair.original && pair.translated);
+      
+      console.log('Processing translation with text pairs:', textPairs);
+      console.log('Settings:', settings);
+      
       const request: TranslateImageRequest = {
         image: base64Image,
         targetLanguage,
-        correctedTexts: correctedTexts?.map(t => t.text),
+        translatedTexts: textPairs && textPairs.length > 0 ? textPairs : undefined,
         quality: settings?.quality || "premium",
         fontMatching: settings?.fontMatching || "auto",
         textStyle: settings?.textStyle || "adaptive",
@@ -72,7 +114,14 @@ export const useImageTranslation = () => {
         enhanceReadability: settings?.enhanceReadability !== false,
       };
 
+      console.log('Sending translation request:', {
+        ...request,
+        image: request.image.substring(0, 50) + '...',
+        translatedTexts: request.translatedTexts,
+      });
+
       const data = await translateImage(request);
+      console.log('Translation response:', data);
 
       if (data?.translatedImage) {
         setTranslatedImage(data.translatedImage);
@@ -119,6 +168,7 @@ export const useImageTranslation = () => {
     isDetecting,
     handleImageSelect,
     detectTextInImage,
+    translateTexts,
     processTranslation,
     setDetectedTexts,
     reset,

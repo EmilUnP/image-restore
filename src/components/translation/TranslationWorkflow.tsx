@@ -4,7 +4,7 @@ import { Languages, Loader2 } from "lucide-react";
 import { LanguageSelector } from "./LanguageSelector";
 import { ImageUpload } from "@/components/shared/ImageUpload";
 import { ImageComparison } from "@/components/shared/ImageComparison";
-import { TextDetectionPreview, DetectedText } from "./TextDetectionPreview";
+import { TextDetectionAndTranslation, DetectedText, TranslatedText } from "./TextDetectionAndTranslation";
 import { TranslationSettingsComponent, TranslationSettings as TranslationSettingsType } from "./TranslationSettings";
 import { BackButton } from "@/components/shared/BackButton";
 import { useImageTranslation } from "@/hooks/useImageTranslation";
@@ -19,7 +19,8 @@ interface TranslationWorkflowProps {
 export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
   const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
   const [settingsConfigured, setSettingsConfigured] = useState<boolean>(false);
-  const [showPreview, setShowPreview] = useState<boolean>(false);
+  const [showTextDetection, setShowTextDetection] = useState<boolean>(false);
+  const [isTranslatingText, setIsTranslatingText] = useState<boolean>(false);
   const [translationSettings, setTranslationSettings] = useState<TranslationSettingsType>({
     quality: "premium",
     fontMatching: "auto",
@@ -36,6 +37,7 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
     isDetecting,
     handleImageSelect,
     detectTextInImage,
+    translateTexts,
     processTranslation,
     setDetectedTexts,
     reset,
@@ -53,26 +55,39 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
       // Auto-detect text after image is set
       const texts = await detectTextInImage(base64Image);
       if (texts.length > 0) {
-        setShowPreview(true);
+        setShowTextDetection(true);
       } else {
-        // If no text detected, proceed directly to translation
-        await processTranslation(base64Image, selectedLanguage, undefined, translationSettings);
+        toast.error("No text detected in the image");
       }
     }
   };
 
-  const handlePreviewContinue = async (correctedTexts: DetectedText[]) => {
-    setDetectedTexts(correctedTexts);
-    setShowPreview(false);
-    if (originalImage) {
-      await processTranslation(originalImage, selectedLanguage, correctedTexts, translationSettings);
+  const handleTranslateTexts = async (texts: DetectedText[]): Promise<TranslatedText[]> => {
+    setIsTranslatingText(true);
+    try {
+      const textsToTranslate = texts.map(t => t.text);
+      const translations = await translateTexts(textsToTranslate, selectedLanguage);
+      
+      // Create translated text pairs
+      const translatedPairs: TranslatedText[] = texts.map((text, index) => ({
+        ...text,
+        translatedText: translations[index] || "",
+      }));
+      
+      return translatedPairs;
+    } catch (error) {
+      toast.error("Failed to translate text");
+      return [];
+    } finally {
+      setIsTranslatingText(false);
     }
   };
 
-  const handlePreviewSkip = async () => {
-    setShowPreview(false);
+  const handleApplyTranslation = async (finalTranslatedTexts: TranslatedText[]) => {
+    setShowTextDetection(false);
+    
     if (originalImage) {
-      await processTranslation(originalImage, selectedLanguage, undefined, translationSettings);
+      await processTranslation(originalImage, selectedLanguage, finalTranslatedTexts, translationSettings);
     }
   };
 
@@ -162,7 +177,7 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
             </div>
           )}
         </>
-      ) : showPreview && originalImage ? (
+      ) : showTextDetection && originalImage ? (
         <>
           <div className="text-center mb-6 animate-fade-in">
             <div className="flex items-center justify-center gap-2 mb-3">
@@ -171,27 +186,24 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
               </div>
               <div className="h-1 w-16 bg-primary rounded-full" />
               <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                ✓
-              </div>
-              <div className="h-1 w-16 bg-muted rounded-full">
-                <div className="h-full w-0 bg-primary rounded-full transition-all duration-300" />
-              </div>
-              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold text-sm">
-                3
+                2
               </div>
             </div>
-            <h2 className="text-xl md:text-2xl font-semibold mb-2">Review Detected Text</h2>
+            <h2 className="text-xl md:text-2xl font-semibold mb-2">Detect & Translate Text</h2>
             <p className="text-muted-foreground">
-              Review and correct the detected text before translation. Target language: <span className="font-semibold">{languageName}</span>
+              Review detected text, edit if needed, then translate to <span className="font-semibold">{languageName}</span>
             </p>
           </div>
-          <TextDetectionPreview
+          <TextDetectionAndTranslation
             image={originalImage}
             detectedTexts={detectedTexts}
+            targetLanguage={selectedLanguage}
+            targetLanguageName={languageName}
             onTextsUpdate={setDetectedTexts}
-            onContinue={handlePreviewContinue}
-            onSkip={handlePreviewSkip}
-            isProcessing={isProcessing}
+            onTranslate={handleTranslateTexts}
+            onApply={handleApplyTranslation}
+            isTranslating={isTranslatingText}
+            isApplying={isProcessing}
           />
         </>
       ) : (

@@ -183,7 +183,7 @@ app.post('/api/enhance-image', async (req, res) => {
 // Text detection endpoint
 app.post('/api/detect-text', async (req, res) => {
   try {
-    const { image } = req.body;
+    const { image, model: requestedModel } = req.body;
     
     if (!image) {
       return res.status(400).json({ error: 'No image provided' });
@@ -197,25 +197,80 @@ app.post('/api/detect-text', async (req, res) => {
       });
     }
 
-    const prompt = `Analyze this image and detect all text blocks. For each text block, provide:
-1. The exact text content
-2. A confidence score (0.0 to 1.0) indicating how confident you are in the text detection
-3. The bounding box coordinates (x, y, width, height) if possible
+    // Model selection: Use requested model or default to best text detection model
+    // gemini-1.5-pro is better for complex text detection, gemini-1.5-flash is faster
+    // gemini-2.0-flash-exp is experimental but may have better OCR
+    const availableModels = [
+      'gemini-2.0-flash-exp',      // Best for text detection (experimental)
+      'gemini-1.5-pro',            // Excellent accuracy
+      'gemini-1.5-flash',          // Fast and accurate
+      'gemini-2.5-flash-image-preview' // Current default
+    ];
+    
+    const modelName = requestedModel && availableModels.includes(requestedModel) 
+      ? requestedModel 
+      : 'gemini-1.5-pro'; // Default to pro for better text detection
 
-Return the results as a JSON array with this structure:
+    const prompt = `You are an expert OCR (Optical Character Recognition) specialist. Analyze this image and detect ALL text content with maximum accuracy.
+
+CRITICAL REQUIREMENTS:
+1. Detect EVERY piece of text in the image, including:
+   - Headers, titles, subtitles
+   - Body text, paragraphs, sentences
+   - Labels, captions, annotations
+   - Buttons, menu items, navigation text
+   - Watermarks, copyright notices
+   - Numbers, dates, prices, codes
+   - Text in different languages
+   - Text in various fonts, sizes, and styles
+   - Text on different backgrounds (light, dark, colored)
+
+2. For each text block, provide:
+   - The EXACT text content as it appears (preserve capitalization, punctuation, spacing)
+   - A confidence score (0.0 to 1.0) - be honest about uncertainty
+   - Bounding box coordinates if possible (x, y, width, height in pixels)
+
+3. Text detection guidelines:
+   - Read text in reading order (top to bottom, left to right)
+   - Group related text together (e.g., a sentence as one block)
+   - Separate distinct text elements (e.g., title vs body text)
+   - Preserve line breaks and formatting where important
+   - Handle rotated or skewed text if present
+   - Detect text in multiple languages if present
+
+4. Confidence scoring:
+   - 0.9-1.0: Very clear, high-quality text
+   - 0.7-0.89: Clear text with minor uncertainty
+   - 0.5-0.69: Text is readable but may have some errors
+   - Below 0.5: Low confidence, text may be unclear or partially obscured
+
+Return the results as a JSON array with this EXACT structure:
 [
   {
-    "text": "detected text",
+    "text": "exact text content here",
     "confidence": 0.95,
     "boundingBox": {"x": 10, "y": 20, "width": 100, "height": 30}
   }
 ]
 
-If you cannot provide bounding boxes, omit that field. Focus on accuracy of text detection and confidence scores.`;
+IMPORTANT: 
+- Return ONLY valid JSON, no markdown, no explanations
+- If bounding boxes cannot be determined, omit the "boundingBox" field
+- Be thorough - detect ALL text, even small or partially visible text
+- Maintain the exact text as it appears (don't correct spelling or grammar)
+- Order text blocks in reading order when possible`;
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });
+    let model;
+    
+    try {
+      model = genAI.getGenerativeModel({ model: modelName });
+    } catch (modelError) {
+      console.warn(`Model ${modelName} not available, falling back to gemini-1.5-flash`);
+      // Fallback to a more stable model
+      model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    }
 
     try {
       // Determine MIME type from base64 string
@@ -228,30 +283,76 @@ If you cannot provide bounding boxes, omit that field. Focus on accuracy of text
       }
       
       const base64Data = image.split(',')[1] || image;
-      const result = await model.generateContent([
-        prompt,
-        { inlineData: { data: base64Data, mimeType } }
-      ]);
+      
+      // Use generation config for better JSON output
+      const generationConfig = {
+        temperature: 0.1, // Low temperature for more deterministic, accurate text detection
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 8192,
+      };
+      
+      const result = await model.generateContent(
+        [
+          prompt,
+          { inlineData: { data: base64Data, mimeType } }
+        ],
+        { generationConfig }
+      );
 
       const response = await result.response;
       const text = response.text();
       
-      // Try to parse JSON from response
+      // Try to parse JSON from response with multiple strategies
       let detectedTexts = [];
       try {
-        // Extract JSON from markdown code blocks if present
+        // Strategy 1: Extract JSON from markdown code blocks
         const jsonMatch = text.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
-        const jsonText = jsonMatch ? jsonMatch[1] : text;
-        detectedTexts = JSON.parse(jsonText);
+        if (jsonMatch) {
+          detectedTexts = JSON.parse(jsonMatch[1]);
+        } else {
+          // Strategy 2: Find JSON array in the text
+          const arrayMatch = text.match(/\[[\s\S]*\]/);
+          if (arrayMatch) {
+            detectedTexts = JSON.parse(arrayMatch[0]);
+          } else {
+            // Strategy 3: Try parsing the entire response as JSON
+            detectedTexts = JSON.parse(text.trim());
+          }
+        }
       } catch (parseError) {
-        // If JSON parsing fails, try to extract text from response
-        // Split by lines and create basic text blocks
-        const lines = text.split('\n').filter(line => line.trim().length > 0);
-        detectedTexts = lines.map((line, index) => ({
-          id: `text-${index + 1}`,
-          text: line.trim(),
-          confidence: 0.7, // Default confidence
-        }));
+        console.warn('JSON parsing failed, attempting fallback extraction:', parseError.message);
+        // Fallback: Try to extract structured data from text response
+        // Look for patterns like: "text": "...", "confidence": ...
+        try {
+          const textMatches = Array.from(text.matchAll(/"text"\s*:\s*"([^"]+)"/g));
+          const confidenceMatches = Array.from(text.matchAll(/"confidence"\s*:\s*([\d.]+)/g));
+          
+          const texts = textMatches.map(m => m[1]);
+          const confidences = confidenceMatches.map(m => parseFloat(m[1]));
+          
+          if (texts.length > 0) {
+            detectedTexts = texts.map((text, index) => ({
+              text: text,
+              confidence: confidences[index] || 0.7,
+            }));
+          } else {
+            // Last resort: Split by lines and create basic text blocks
+            const lines = text.split('\n')
+              .filter(line => line.trim().length > 0)
+              .filter(line => !line.match(/^[\[\]{}",\s]*$/)) // Filter out JSON structure lines
+              .slice(0, 50); // Limit to 50 lines
+            
+            detectedTexts = lines.map((line, index) => ({
+              id: `text-${index + 1}`,
+              text: line.trim().replace(/^["']|["']$/g, ''), // Remove quotes
+              confidence: 0.7,
+            }));
+          }
+        } catch (fallbackError) {
+          console.error('Fallback extraction also failed:', fallbackError);
+          detectedTexts = [];
+        }
       }
 
       // Ensure we have an array with proper structure
@@ -269,7 +370,8 @@ If you cannot provide bounding boxes, omit that field. Focus on accuracy of text
 
       return res.json({ 
         detectedTexts,
-        message: `Detected ${detectedTexts.length} text block(s)`,
+        message: `Detected ${detectedTexts.length} text block(s) using ${modelName}`,
+        model: modelName,
       });
 
     } catch (error) {
@@ -288,12 +390,96 @@ If you cannot provide bounding boxes, omit that field. Focus on accuracy of text
   }
 });
 
+// Text translation endpoint (translates text only, not images)
+app.post('/api/translate-text', async (req, res) => {
+  try {
+    const { texts, targetLanguage = 'en' } = req.body;
+    
+    if (!texts || !Array.isArray(texts) || texts.length === 0) {
+      return res.status(400).json({ error: 'No texts provided' });
+    }
+
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
+      return res.status(500).json({ 
+        error: 'AI service not configured. Please set GEMINI_API_KEY in server/.env file',
+        instructions: 'Get your API key from https://aistudio.google.com/app/apikey and add it to server/.env'
+      });
+    }
+
+    // Language name mapping
+    const languageNames = {
+      'en': 'English',
+      'ru': 'Russian',
+      'tr': 'Turkish',
+      'uk': 'Ukrainian',
+    };
+
+    const targetLangName = languageNames[targetLanguage] || targetLanguage;
+
+    const prompt = `Translate the following texts to ${targetLangName}. Return ONLY a JSON array of translations in the same order, with no additional text or explanation.
+
+Texts to translate:
+${texts.map((text, i) => `${i + 1}. "${text}"`).join('\n')}
+
+Return format (JSON array only):
+["translation1", "translation2", "translation3", ...]`;
+
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });
+
+    try {
+      const result = await model.generateContent([prompt]);
+      const response = await result.response;
+      const text = response.text();
+      
+      // Try to parse JSON from response
+      let translations = [];
+      try {
+        // Extract JSON from markdown code blocks if present
+        const jsonMatch = text.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
+        const jsonText = jsonMatch ? jsonMatch[1] : text.trim();
+        translations = JSON.parse(jsonText);
+      } catch (parseError) {
+        // If JSON parsing fails, try to extract translations from lines
+        const lines = text.split('\n').filter(line => line.trim().length > 0);
+        translations = lines.map(line => line.replace(/^\d+\.\s*["']?|["']?$/g, '').trim());
+      }
+
+      // Ensure we have the same number of translations as texts
+      if (!Array.isArray(translations) || translations.length !== texts.length) {
+        // Fallback: return texts as-is if translation fails
+        translations = texts;
+      }
+
+      return res.json({ 
+        translations,
+        message: `Translated ${translations.length} text(s) to ${targetLangName}`,
+      });
+
+    } catch (error) {
+      console.error('Gemini API error:', error);
+      return res.status(500).json({ 
+        error: 'Failed to translate text',
+        details: error.message || 'Unknown error'
+      });
+    }
+  } catch (error) {
+    console.error('Text translation error:', error);
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message || 'Unknown error'
+    });
+  }
+});
+
 // Image text translation endpoint
 app.post('/api/translate-image', async (req, res) => {
   try {
     const { 
       image, 
       targetLanguage = 'en', 
+      translatedTexts,
       correctedTexts,
       quality = 'premium',
       fontMatching = 'auto',
@@ -324,12 +510,41 @@ app.post('/api/translate-image', async (req, res) => {
 
     const targetLangName = languageNames[targetLanguage] || targetLanguage;
 
-    // Build comprehensive prompt based on settings
-    let prompt = `You are an expert image translation specialist. Translate ALL text in this image to ${targetLangName} with professional quality and attention to detail.\n\n`;
+    // Log received data for debugging
+    console.log('Translation request received:');
+    console.log('- Target language:', targetLangName);
+    console.log('- Translated texts pairs:', translatedTexts ? translatedTexts.length : 0);
+    console.log('- Corrected texts:', correctedTexts ? correctedTexts.length : 0);
+    if (translatedTexts && translatedTexts.length > 0) {
+      console.log('- Text pairs:', translatedTexts.map(p => `${p.original} → ${p.translated}`));
+    }
     
-    // Add corrected texts if provided
-    if (correctedTexts && Array.isArray(correctedTexts) && correctedTexts.length > 0) {
-      prompt += `IMPORTANT: The following text blocks have been verified and corrected by the user. Use these exact texts for translation:\n${correctedTexts.map((text, i) => `${i + 1}. "${text}"`).join('\n')}\n\n`;
+    // Build comprehensive prompt based on settings
+    let prompt = `You are an expert image translation specialist. Replace ALL text in this image with the provided translations, maintaining professional quality and attention to detail.\n\n`;
+    
+    // Add translated text pairs if provided (preferred method)
+    if (translatedTexts && Array.isArray(translatedTexts) && translatedTexts.length > 0) {
+      prompt += `CRITICAL INSTRUCTIONS - READ CAREFULLY:\n\n`;
+      prompt += `You MUST find and replace the following text in the image EXACTLY as specified:\n\n`;
+      translatedTexts.forEach((pair, i) => {
+        if (pair.original && pair.translated) {
+          prompt += `${i + 1}. Find the text: "${pair.original}"\n`;
+          prompt += `   Replace it with: "${pair.translated}"\n`;
+          prompt += `   Keep the same position, size, font, and style\n\n`;
+        }
+      });
+      prompt += `VERY IMPORTANT:\n`;
+      prompt += `- Search for each original text EXACTLY as written above\n`;
+      prompt += `- Replace it with the corresponding translation EXACTLY as provided\n`;
+      prompt += `- Maintain the exact same visual appearance (font, size, color, position)\n`;
+      prompt += `- Do NOT translate any other text that is not in the list above\n`;
+      prompt += `- Do NOT modify the image in any other way\n\n`;
+    } else if (correctedTexts && Array.isArray(correctedTexts) && correctedTexts.length > 0) {
+      // Fallback to old method if translatedTexts not provided
+      prompt += `IMPORTANT: The following text blocks have been verified and corrected by the user. Translate these texts to ${targetLangName}:\n${correctedTexts.map((text, i) => `${i + 1}. "${text}"`).join('\n')}\n\n`;
+    } else {
+      // If no specific texts provided, detect and translate all
+      prompt += `Detect ALL text in the image and translate it to ${targetLangName}.\n\n`;
     }
     
     // Quality-specific instructions
@@ -354,10 +569,20 @@ app.post('/api/translate-image', async (req, res) => {
     };
     
     prompt += `TRANSLATION REQUIREMENTS:\n\n`;
-    prompt += `1. TEXT DETECTION & TRANSLATION:\n`;
-    prompt += `   - Identify EVERY piece of text in the image (signs, labels, captions, subtitles, buttons, menus, headers, footers, watermarks, etc.)\n`;
-    prompt += `   - Translate ALL text accurately to ${targetLangName}\n`;
-    prompt += `   - Maintain proper grammar, context, and meaning\n`;
+    if (translatedTexts && translatedTexts.length > 0) {
+      prompt += `1. TEXT REPLACEMENT (MANDATORY):\n`;
+      prompt += `   - You have been given ${translatedTexts.length} specific text replacement pairs\n`;
+      prompt += `   - For EACH pair, find the original text in the image and replace it with the translation\n`;
+      prompt += `   - Use the EXACT translations provided - do NOT modify, improve, or change them\n`;
+      prompt += `   - Match text positions, sizes, fonts, colors, and styles EXACTLY\n`;
+      prompt += `   - If you cannot find a text, try variations (case-insensitive, with/without spaces)\n`;
+      prompt += `   - DO NOT translate any text that is NOT in the provided list\n`;
+    } else {
+      prompt += `1. TEXT DETECTION & TRANSLATION:\n`;
+      prompt += `   - Identify EVERY piece of text in the image (signs, labels, captions, subtitles, buttons, menus, headers, footers, watermarks, etc.)\n`;
+      prompt += `   - Translate ALL text accurately to ${targetLangName}\n`;
+      prompt += `   - Maintain proper grammar, context, and meaning\n`;
+    }
     prompt += `   - Preserve numbers, dates, and special characters unless they need localization\n\n`;
     
     prompt += `2. VISUAL PRESERVATION:\n`;
