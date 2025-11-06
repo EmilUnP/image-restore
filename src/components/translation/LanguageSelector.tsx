@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Languages } from "lucide-react";
 import { LANGUAGES } from "@/lib/constants";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 
 interface LanguageSelectorProps {
   language: string;
@@ -21,6 +22,7 @@ export const LanguageSelector = ({
         <CardTitle className="flex items-center gap-2">
           <Languages className="w-5 h-5 text-primary" />
           Target Language
+          <HelpTooltip content="Choose the language you want to translate the text in your image to. The AI will detect and translate all text while preserving the original image quality and style." />
         </CardTitle>
         <CardDescription>
           Select the language you want to translate the text to

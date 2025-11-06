@@ -5,6 +5,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Sparkles, Zap, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface EnhancementMode {
   id: string;
@@ -105,6 +111,7 @@ export const EnhancementModeSelector = ({
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
             Enhancement Mode
+            <HelpTooltip content="Select the enhancement mode that best matches your image type. Each mode is optimized for specific use cases to deliver the best results." />
           </CardTitle>
           <CardDescription>
             Choose the best enhancement type for your image
@@ -118,34 +125,41 @@ export const EnhancementModeSelector = ({
             className="grid grid-cols-2 md:grid-cols-4 gap-4"
           >
             {modes.map((enhancementMode) => (
-              <div key={enhancementMode.id}>
-                <RadioGroupItem
-                  value={enhancementMode.id}
-                  id={enhancementMode.id}
-                  className="peer sr-only"
-                />
-                <Label
-                  htmlFor={enhancementMode.id}
-                  className="flex flex-col items-center justify-between rounded-lg border-2 border-border bg-card p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
-                >
-                  <div className="text-2xl mb-2">
-                    {modeIcons[enhancementMode.id] || '✨'}
+              <Tooltip key={enhancementMode.id}>
+                <TooltipTrigger asChild>
+                  <div>
+                    <RadioGroupItem
+                      value={enhancementMode.id}
+                      id={enhancementMode.id}
+                      className="peer sr-only"
+                    />
+                    <Label
+                      htmlFor={enhancementMode.id}
+                      className="flex flex-col items-center justify-between rounded-lg border-2 border-border bg-card p-4 hover:bg-accent hover:text-accent-foreground hover:border-primary peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all duration-200 hover:shadow-md"
+                    >
+                      <div className="text-3xl mb-2 transition-transform duration-200 hover:scale-110">
+                        {modeIcons[enhancementMode.id] || '✨'}
+                      </div>
+                      <div className="text-center">
+                        <div className="font-semibold text-sm mb-1">
+                          {enhancementMode.name}
+                        </div>
+                        <div className="text-xs text-muted-foreground line-clamp-2">
+                          {enhancementMode.description}
+                        </div>
+                      </div>
+                      {mode === enhancementMode.id && (
+                        <Badge className="mt-2 bg-primary" variant="default">
+                          Selected
+                        </Badge>
+                      )}
+                    </Label>
                   </div>
-                  <div className="text-center">
-                    <div className="font-semibold text-sm mb-1">
-                      {enhancementMode.name}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {enhancementMode.description}
-                    </div>
-                  </div>
-                  {mode === enhancementMode.id && (
-                    <Badge className="mt-2" variant="default">
-                      Selected
-                    </Badge>
-                  )}
-                </Label>
-              </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-sm">{enhancementMode.description}</p>
+                </TooltipContent>
+              </Tooltip>
             ))}
           </RadioGroup>
         </CardContent>
@@ -157,6 +171,7 @@ export const EnhancementModeSelector = ({
           <CardTitle className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" />
             Enhancement Intensity
+            <HelpTooltip content="Control how strong the enhancements are applied. Low preserves more of the original, while High applies maximum improvements." />
           </CardTitle>
           <CardDescription>
             Adjust the strength of enhancements

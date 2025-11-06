@@ -4,6 +4,7 @@ import { Languages } from "lucide-react";
 import { LanguageSelector } from "./LanguageSelector";
 import { ImageUpload } from "@/components/shared/ImageUpload";
 import { ImageComparison } from "@/components/shared/ImageComparison";
+import { BackButton } from "@/components/shared/BackButton";
 import { useImageTranslation } from "@/hooks/useImageTranslation";
 import { downloadImage } from "@/lib/utils";
 import { toast } from "sonner";
@@ -44,47 +45,62 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
 
   return (
     <>
+      <BackButton onClick={onBack} variant="floating" />
       {!settingsConfigured ? (
         <>
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-semibold mb-2">Step 1: Choose Target Language</h2>
-            <p className="text-muted-foreground">Select the language you want to translate the text to</p>
+          <div className="text-center mb-6 animate-fade-in">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                1
+              </div>
+              <div className="h-1 w-16 bg-muted rounded-full">
+                <div className="h-full w-0 bg-primary rounded-full transition-all duration-300" />
+              </div>
+              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold text-sm">
+                2
+              </div>
+            </div>
+            <h2 className="text-xl md:text-2xl font-semibold mb-2">Choose Target Language</h2>
+            <p className="text-muted-foreground text-sm md:text-base">Select the language you want to translate the text to</p>
           </div>
           <LanguageSelector
             language={selectedLanguage}
             onLanguageChange={setSelectedLanguage}
             disabled={isProcessing}
           />
-          <div className="flex justify-center pt-4">
+          <div className="flex flex-col items-center gap-3 pt-6">
             <Button
               onClick={handleSettingsReady}
               size="lg"
-              className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+              className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 hover:shadow-lg transition-all duration-300"
             >
               Continue to Upload
               <Languages className="w-5 h-5" />
             </Button>
-          </div>
-          <div className="flex justify-center pt-2">
-            <Button onClick={onBack} variant="ghost" size="sm">
-              ← Back to Function Selection
-            </Button>
+            <BackButton onClick={onBack} variant="inline" />
           </div>
         </>
       ) : !originalImage ? (
         <>
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-semibold mb-2">Step 2: Upload Your Image</h2>
+          <div className="text-center mb-6 animate-fade-in">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                ✓
+              </div>
+              <div className="h-1 w-16 bg-primary rounded-full" />
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                2
+              </div>
+            </div>
+            <h2 className="text-xl md:text-2xl font-semibold mb-2">Upload Your Image</h2>
             <p className="text-muted-foreground">
               Target language: <span className="font-semibold">{languageName}</span>
             </p>
-            <div className="flex items-center justify-center gap-4 mt-4">
+            <div className="flex items-center justify-center gap-4 mt-4 flex-wrap">
               <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
                 Change Language
               </Button>
-              <Button onClick={onBack} variant="ghost" size="sm">
-                ← Back to Function Selection
-              </Button>
+              <BackButton onClick={onBack} variant="inline" />
             </div>
           </div>
           <ImageUpload
@@ -103,13 +119,11 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
                 Target language: <span className="font-semibold">{languageName}</span>
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
                 Change Language
               </Button>
-              <Button onClick={onBack} variant="ghost" size="sm">
-                ← Back to Function Selection
-              </Button>
+              <BackButton onClick={onBack} variant="inline" />
             </div>
           </div>
           <ImageComparison
@@ -117,27 +131,24 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
             enhancedImage={translatedImage}
             isProcessing={isProcessing}
             onDownload={handleDownload}
+            onReset={handleReset}
             originalLabel="Original"
             processedLabel="Translated"
           />
           {translatedImage && !isProcessing && (
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-4 flex-wrap">
               <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
                 Start Over
               </Button>
-              <Button onClick={onBack} variant="ghost" size="lg" disabled={isProcessing}>
-                ← Back to Function Selection
-              </Button>
+              <BackButton onClick={onBack} variant="default" className="disabled:opacity-50" />
             </div>
           )}
           {!translatedImage && (
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-4 flex-wrap">
               <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
                 Cancel & Start Over
               </Button>
-              <Button onClick={onBack} variant="ghost" size="lg" disabled={isProcessing}>
-                ← Back to Function Selection
-              </Button>
+              <BackButton onClick={onBack} variant="default" className="disabled:opacity-50" />
             </div>
           )}
         </>

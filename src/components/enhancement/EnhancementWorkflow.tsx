@@ -6,6 +6,7 @@ import { ImageUpload } from "@/components/shared/ImageUpload";
 import { ImageComparison } from "@/components/shared/ImageComparison";
 import { BatchImageUpload } from "./BatchImageUpload";
 import { BatchResults } from "./BatchResults";
+import { BackButton } from "@/components/shared/BackButton";
 import { useImageEnhancement } from "@/hooks/useImageEnhancement";
 import { downloadImage } from "@/lib/utils";
 import { toast } from "sonner";
@@ -134,11 +135,23 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
 
   return (
     <>
+      <BackButton onClick={onBack} variant="floating" />
       {!settingsConfigured ? (
         <>
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-semibold mb-2">Step 1: Choose Enhancement Settings</h2>
-            <p className="text-muted-foreground">Select your enhancement mode and intensity level</p>
+          <div className="text-center mb-6 animate-fade-in">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                1
+              </div>
+              <div className="h-1 w-16 bg-muted rounded-full">
+                <div className="h-full w-0 bg-primary rounded-full transition-all duration-300" />
+              </div>
+              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold text-sm">
+                2
+              </div>
+            </div>
+            <h2 className="text-xl md:text-2xl font-semibold mb-2">Choose Enhancement Settings</h2>
+            <p className="text-muted-foreground text-sm md:text-base">Select your enhancement mode and intensity level</p>
           </div>
           <EnhancementModeSelector
             mode={enhancementMode}
@@ -147,26 +160,31 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             onIntensityChange={setEnhancementIntensity}
             disabled={isProcessing}
           />
-          <div className="flex justify-center pt-4">
+          <div className="flex flex-col items-center gap-3 pt-6">
             <Button
               onClick={handleSettingsReady}
               size="lg"
-              className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+              className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 hover:shadow-lg transition-all duration-300"
             >
               Continue to Upload
               <ImageIcon className="w-5 h-5" />
             </Button>
-          </div>
-          <div className="flex justify-center pt-2">
-            <Button onClick={onBack} variant="ghost" size="sm">
-              ← Back to Function Selection
-            </Button>
+            <BackButton onClick={onBack} variant="inline" />
           </div>
         </>
       ) : processingMode === 'single' && !originalImage ? (
         <>
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-semibold mb-2">Step 2: Upload Your Image</h2>
+          <div className="text-center mb-6 animate-fade-in">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                ✓
+              </div>
+              <div className="h-1 w-16 bg-primary rounded-full" />
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                2
+              </div>
+            </div>
+            <h2 className="text-xl md:text-2xl font-semibold mb-2">Upload Your Image</h2>
             <p className="text-muted-foreground">
               Selected mode: <span className="font-semibold capitalize">{enhancementMode}</span> • 
               Intensity: <span className="font-semibold capitalize">{enhancementIntensity}</span>
@@ -195,16 +213,23 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             label="Upload Image"
             description="Drag and drop or click to select an image to enhance"
           />
-          <div className="flex justify-center pt-4">
-            <Button onClick={onBack} variant="ghost" size="sm">
-              ← Back to Function Selection
-            </Button>
+          <div className="flex justify-center pt-6">
+            <BackButton onClick={onBack} variant="inline" />
           </div>
         </>
       ) : processingMode === 'batch' && batchImages.length === 0 ? (
         <>
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-semibold mb-2">Step 2: Upload Multiple Images</h2>
+          <div className="text-center mb-6 animate-fade-in">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                ✓
+              </div>
+              <div className="h-1 w-16 bg-primary rounded-full" />
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                2
+              </div>
+            </div>
+            <h2 className="text-xl md:text-2xl font-semibold mb-2">Upload Multiple Images</h2>
             <p className="text-muted-foreground">
               Selected mode: <span className="font-semibold capitalize">{enhancementMode}</span> • 
               Intensity: <span className="font-semibold capitalize">{enhancementIntensity}</span>
@@ -232,10 +257,8 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             disabled={isProcessing}
             maxImages={10}
           />
-          <div className="flex justify-center pt-4">
-            <Button onClick={onBack} variant="ghost" size="sm">
-              ← Back to Function Selection
-            </Button>
+          <div className="flex justify-center pt-6">
+            <BackButton onClick={onBack} variant="inline" />
           </div>
         </>
       ) : processingMode === 'batch' && batchImages.length > 0 ? (
@@ -248,7 +271,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 Intensity: <span className="font-semibold capitalize">{enhancementIntensity}</span>
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button
                 onClick={() => {
                   setBatchImages([]);
@@ -261,9 +284,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
               <Button onClick={handleReset} variant="outline" size="sm">
                 Start Over
               </Button>
-              <Button onClick={onBack} variant="ghost" size="sm">
-                ← Back to Function Selection
-              </Button>
+              <BackButton onClick={onBack} variant="inline" />
             </div>
           </div>
           <BatchResults
@@ -283,13 +304,11 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 Intensity: <span className="font-semibold capitalize">{enhancementIntensity}</span>
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
                 Change Settings
               </Button>
-              <Button onClick={onBack} variant="ghost" size="sm">
-                ← Back to Function Selection
-              </Button>
+              <BackButton onClick={onBack} variant="inline" />
             </div>
           </div>
           <ImageComparison
@@ -297,6 +316,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             enhancedImage={enhancedImage}
             isProcessing={isProcessing}
             onDownload={handleDownload}
+            onReset={handleReset}
             originalLabel="Original"
             processedLabel="Enhanced"
           />
@@ -311,13 +331,11 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             </div>
           )}
           {!enhancedImage && (
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-4 flex-wrap">
               <Button onClick={handleReset} variant="outline" size="lg" disabled={isProcessing}>
                 Cancel & Start Over
               </Button>
-              <Button onClick={onBack} variant="ghost" size="lg" disabled={isProcessing}>
-                ← Back to Function Selection
-              </Button>
+              <BackButton onClick={onBack} variant="default" className="disabled:opacity-50" />
             </div>
           )}
         </>

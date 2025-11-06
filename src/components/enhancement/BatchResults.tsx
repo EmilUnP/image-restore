@@ -40,7 +40,7 @@ export const BatchResults = ({
       <Card className="border-border">
         <CardContent className="pt-6">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h3 className="text-lg font-semibold mb-1">Processing Progress</h3>
                 <p className="text-sm text-muted-foreground">
@@ -53,40 +53,45 @@ export const BatchResults = ({
                   <Button
                     onClick={onDownloadAll}
                     size="sm"
-                    className="gap-2"
+                    className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90"
                   >
                     <Download className="w-4 h-4" />
-                    Download All
+                    Download All ({completedCount})
                   </Button>
                 )}
               </div>
             </div>
-            <Progress value={progress} className="h-2" />
-            {isProcessing && processingCount > 0 && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Processing {processingCount} image{processingCount !== 1 ? 's' : ''}...</span>
+            <div className="space-y-2">
+              <Progress value={progress} className="h-3" />
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{Math.round(progress)}% complete</span>
+                {isProcessing && processingCount > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>Processing {processingCount} image{processingCount !== 1 ? 's' : ''}...</span>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Results Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {images.map((image) => (
-          <Card key={image.id} className="border-border overflow-hidden">
+          <Card key={image.id} className="border-border overflow-hidden transition-all duration-200 hover:shadow-lg hover:scale-[1.02]">
             <CardContent className="p-0">
               <div className="relative">
                 {/* Original Image */}
-                <div className="relative aspect-square bg-muted/20">
+                <div className="relative aspect-square bg-muted/20 group">
                   <img
                     src={image.original}
                     alt={image.fileName}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
                   />
                   <div className="absolute top-2 left-2">
-                    <Badge variant="outline" className="bg-background/80">
+                    <Badge variant="outline" className="bg-background/90 backdrop-blur-sm">
                       Original
                     </Badge>
                   </div>
@@ -114,14 +119,14 @@ export const BatchResults = ({
 
               {/* Enhanced Image */}
               {image.enhanced && (
-                <div className="relative aspect-square bg-muted/20 border-t border-border">
+                <div className="relative aspect-square bg-muted/20 border-t border-border group">
                   <img
                     src={image.enhanced}
                     alt={`Enhanced ${image.fileName}`}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
                   />
                   <div className="absolute top-2 left-2">
-                    <Badge variant="default" className="bg-primary/80">
+                    <Badge variant="default" className="bg-primary/90 backdrop-blur-sm">
                       Enhanced
                     </Badge>
                   </div>
@@ -153,11 +158,16 @@ export const BatchResults = ({
                     onClick={() => onDownload(image)}
                     size="sm"
                     variant="outline"
-                    className="w-full gap-2"
+                    className="w-full gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
                   >
                     <Download className="w-4 h-4" />
                     Download
                   </Button>
+                )}
+                {image.status === 'error' && (
+                  <p className="text-xs text-red-500 bg-red-50 dark:bg-red-950/20 p-2 rounded">
+                    {image.error || "Processing failed"}
+                  </p>
                 )}
               </div>
             </CardContent>
