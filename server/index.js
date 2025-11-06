@@ -4,15 +4,145 @@ import express from 'express';
 import cors from 'cors';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Create upload directories if they don't exist
+const UPLOAD_DIRS = {
+  enhancement: path.join(__dirname, 'uploads', 'enhancement'),
+  translation: path.join(__dirname, 'uploads', 'translation')
+};
+
+// Ensure upload directories exist
+Object.entries(UPLOAD_DIRS).forEach(([type, dir]) => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log(`📁 Created upload directory: ${dir} (${type})`);
+  } else {
+    console.log(`📁 Upload directory exists: ${dir} (${type})`);
+  }
+  
+  // Verify directory is writable
+  try {
+    const testFile = path.join(dir, '.test-write');
+    fs.writeFileSync(testFile, 'test');
+    fs.unlinkSync(testFile);
+    console.log(`✅ Directory is writable: ${dir}`);
+  } catch (error) {
+    console.error(`❌ Directory is NOT writable: ${dir}`, error);
+  }
+});
+
+// Helper function to save uploaded image
+function saveUploadedImage(base64Image, folderType, metadata = {}) {
+  try {
+    // Validate folderType
+    if (!folderType || (folderType !== 'enhancement' && folderType !== 'translation')) {
+      console.error(`Invalid folderType: ${folderType}`);
+      return null;
+    }
+    
+    // Ensure directory exists
+    const targetDir = UPLOAD_DIRS[folderType];
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+      console.log(`📁 Created upload directory: ${targetDir}`);
+    }
+    
+    // Extract image data and MIME type
+    let mimeType = "image/jpeg";
+    let base64Data = base64Image;
+    
+    if (!base64Image || typeof base64Image !== 'string') {
+      console.error('Invalid base64Image: not a string or empty');
+      return null;
+    }
+    
+    if (base64Image.includes('data:image/')) {
+      const mimeMatch = base64Image.match(/data:image\/([^;]+)/);
+      if (mimeMatch) {
+        mimeType = `image/${mimeMatch[1]}`;
+      }
+      base64Data = base64Image.split(',')[1] || base64Image;
+    }
+    
+    // Validate base64 data
+    if (!base64Data || base64Data.length === 0) {
+      console.error('Invalid base64 data: empty after extraction');
+      return null;
+    }
+    
+    // Determine file extension
+    const extMap = {
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'image/png': 'png',
+      'image/gif': 'gif',
+      'image/webp': 'webp',
+      'image/bmp': 'bmp'
+    };
+    const extension = extMap[mimeType] || 'jpg';
+    
+    // Generate filename with timestamp and metadata
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5); // Remove milliseconds for cleaner filename
+    const mode = (metadata.mode || metadata.stage || 'unknown').replace(/[^a-zA-Z0-9]/g, '_');
+    const language = (metadata.targetLanguage || metadata.language || 'unknown').replace(/[^a-zA-Z0-9]/g, '_');
+    const filename = `${timestamp}_${mode}_${language}.${extension}`;
+    const metadataFilename = `${timestamp}_${mode}_${language}.json`;
+    
+    // Save file
+    const filePath = path.join(targetDir, filename);
+    let buffer;
+    try {
+      buffer = Buffer.from(base64Data, 'base64');
+      if (buffer.length === 0) {
+        console.error('Failed to decode base64: buffer is empty');
+        return null;
+      }
+    } catch (decodeError) {
+      console.error('Error decoding base64:', decodeError);
+      return null;
+    }
+    
+    fs.writeFileSync(filePath, buffer);
+    console.log(`💾 Saved uploaded image: ${filename} (${(buffer.length / 1024).toFixed(2)} KB) in ${folderType} folder`);
+    console.log(`   Full path: ${filePath}`);
+    
+    // Save metadata as JSON file
+    const metadataPath = path.join(targetDir, metadataFilename);
+    const metadataContent = {
+      filename,
+      timestamp: new Date().toISOString(),
+      mimeType,
+      size: buffer.length,
+      ...metadata
+    };
+    fs.writeFileSync(metadataPath, JSON.stringify(metadataContent, null, 2));
+    console.log(`💾 Saved metadata: ${metadataFilename}`);
+    
+    return { filename, filePath, metadataPath };
+  } catch (error) {
+    console.error('Error saving uploaded image:', error);
+    console.error('Error stack:', error.stack);
+    return null;
+  }
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+
+// Serve uploaded images statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Enhancement mode prompts
 const enhancementPrompts = {
@@ -65,6 +195,99 @@ app.get('/api/enhancement-modes', (req, res) => {
   res.json({ modes });
 });
 
+// Admin API endpoints for viewing uploaded images
+app.get('/api/admin/images/:folderType', (req, res) => {
+  try {
+    const { folderType } = req.params;
+    
+    if (folderType !== 'enhancement' && folderType !== 'translation') {
+      return res.status(400).json({ error: 'Invalid folder type' });
+    }
+    
+    const folderPath = UPLOAD_DIRS[folderType];
+    
+    if (!fs.existsSync(folderPath)) {
+      return res.json({ images: [] });
+    }
+    
+    const files = fs.readdirSync(folderPath);
+    const images = files
+      .filter(file => {
+        const ext = path.extname(file).toLowerCase();
+        return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext);
+      })
+      .map(file => {
+        const filePath = path.join(folderPath, file);
+        const stats = fs.statSync(filePath);
+        const metadataFile = file.replace(/\.[^/.]+$/, '') + '.json';
+        const metadataPath = path.join(folderPath, metadataFile);
+        
+        let metadata = {};
+        if (fs.existsSync(metadataPath)) {
+          try {
+            metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+          } catch (e) {
+            console.error('Error reading metadata:', e);
+          }
+        }
+        
+        return {
+          filename: file,
+          url: `/uploads/${folderType}/${file}`,
+          size: stats.size,
+          created: stats.birthtime,
+          modified: stats.mtime,
+          ...metadata
+        };
+      })
+      .sort((a, b) => new Date(b.created) - new Date(a.created)); // Newest first
+    
+    res.json({ images });
+  } catch (error) {
+    console.error('Error listing images:', error);
+    res.status(500).json({ error: 'Failed to list images', details: error.message });
+  }
+});
+
+// Delete image endpoint
+app.delete('/api/admin/images/:folderType/:filename', (req, res) => {
+  try {
+    const { folderType, filename } = req.params;
+    
+    if (folderType !== 'enhancement' && folderType !== 'translation') {
+      return res.status(400).json({ error: 'Invalid folder type' });
+    }
+    
+    // Security: prevent directory traversal
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    
+    const folderPath = UPLOAD_DIRS[folderType];
+    const filePath = path.join(folderPath, filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    // Delete the image file
+    fs.unlinkSync(filePath);
+    
+    // Try to delete associated metadata file
+    const metadataFile = filename.replace(/\.[^/.]+$/, '') + '.json';
+    const metadataPath = path.join(folderPath, metadataFile);
+    if (fs.existsSync(metadataPath)) {
+      fs.unlinkSync(metadataPath);
+    }
+    
+    console.log(`🗑️ Deleted image: ${filename} from ${folderType} folder`);
+    res.json({ success: true, message: 'Image deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting image:', error);
+    res.status(500).json({ error: 'Failed to delete image', details: error.message });
+  }
+});
+
 // Image enhancement endpoint
 app.post('/api/enhance-image', async (req, res) => {
   try {
@@ -73,6 +296,14 @@ app.post('/api/enhance-image', async (req, res) => {
     if (!image) {
       return res.status(400).json({ error: 'No image provided' });
     }
+
+    // Save uploaded image for analysis
+    saveUploadedImage(image, 'enhancement', {
+      mode,
+      intensity,
+      type: 'enhancement',
+      endpoint: '/api/enhance-image'
+    });
 
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
@@ -188,6 +419,14 @@ app.post('/api/detect-text', async (req, res) => {
     if (!image) {
       return res.status(400).json({ error: 'No image provided' });
     }
+
+    // Save uploaded image for analysis (this is part of translation workflow)
+    saveUploadedImage(image, 'translation', {
+      model: requestedModel || 'default',
+      type: 'translation',
+      stage: 'text-detection',
+      endpoint: '/api/detect-text'
+    });
 
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
@@ -598,6 +837,20 @@ app.post('/api/translate-image', async (req, res) => {
       return res.status(400).json({ error: 'No image provided' });
     }
 
+    // Save uploaded image for analysis (final translation stage)
+    saveUploadedImage(image, 'translation', {
+      targetLanguage,
+      quality,
+      fontMatching,
+      textStyle,
+      preserveFormatting,
+      enhanceReadability,
+      translatedTextsCount: translatedTexts ? translatedTexts.length : 0,
+      type: 'translation',
+      stage: 'image-translation',
+      endpoint: '/api/translate-image'
+    });
+
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
       return res.status(500).json({ 
@@ -817,6 +1070,15 @@ app.listen(PORT, () => {
   console.log('🔗 Get your API key from: https://aistudio.google.com/app/apikey');
   console.log(`📸 Available enhancement modes: ${Object.keys(enhancementPrompts).join(', ')}`);
   console.log('🌍 Image translation feature enabled');
+  console.log('');
+  console.log('📁 Upload directories (for analysis):');
+  console.log(`   - Enhancement: ${UPLOAD_DIRS.enhancement}`);
+  console.log(`   - Translation: ${UPLOAD_DIRS.translation}`);
+  console.log('');
+  console.log('🔐 Admin endpoints available:');
+  console.log(`   - GET /api/admin/images/:folderType`);
+  console.log(`   - DELETE /api/admin/images/:folderType/:filename`);
+  console.log(`   - Admin page: http://localhost:5173/admin`);
   console.log('');
   console.log('✅ Backend is ready! You can now start the frontend with: npm run dev');
 });

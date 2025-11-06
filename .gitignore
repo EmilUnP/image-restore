@@ -34,3 +34,7 @@ server/.env
 # Build artifacts
 vite.config.ts.timestamp-*.mjs
 *.lockb
+
+# Uploaded images (for analysis)
+server/uploads/
+uploads/

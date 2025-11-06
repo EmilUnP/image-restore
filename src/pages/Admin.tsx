@@ -1,0 +1,301 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Trash2, Image as ImageIcon, Folder, X, Download } from "lucide-react";
+import { toast } from "sonner";
+
+interface ImageItem {
+  filename: string;
+  url: string;
+  size: number;
+  created: string;
+  modified: string;
+  mode?: string;
+  stage?: string;
+  targetLanguage?: string;
+  type?: string;
+  [key: string]: any;
+}
+
+// Get API URL from environment or use default
+const getApiUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  // In production, use relative URL; in development, use localhost
+  if (import.meta.env.PROD) {
+    return '';
+  }
+  return 'http://localhost:3001';
+};
+
+const API_URL = getApiUrl();
+
+export const Admin = () => {
+  const [selectedFolder, setSelectedFolder] = useState<'enhancement' | 'translation'>('enhancement');
+  const [enhancementImages, setEnhancementImages] = useState<ImageItem[]>([]);
+  const [translationImages, setTranslationImages] = useState<ImageItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const loadImages = async (folderType: 'enhancement' | 'translation') => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/admin/images/${folderType}`);
+      if (!response.ok) {
+        throw new Error('Failed to load images');
+      }
+      const data = await response.json();
+      const images = data.images || [];
+      
+      if (folderType === 'enhancement') {
+        setEnhancementImages(images);
+      } else {
+        setTranslationImages(images);
+      }
+    } catch (error) {
+      console.error('Error loading images:', error);
+      toast.error('Failed to load images');
+      if (folderType === 'enhancement') {
+        setEnhancementImages([]);
+      } else {
+        setTranslationImages([]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load images when folder changes or on mount
+  useEffect(() => {
+    loadImages(selectedFolder);
+    // Also load the other folder in background
+    const otherFolder = selectedFolder === 'enhancement' ? 'translation' : 'enhancement';
+    loadImages(otherFolder);
+  }, [selectedFolder]);
+
+  const handleDelete = async (filename: string) => {
+    if (!confirm(`Are you sure you want to delete ${filename}?`)) {
+      return;
+    }
+
+    setDeleting(filename);
+    try {
+      const response = await fetch(`${API_URL}/api/admin/images/${selectedFolder}/${filename}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete image');
+      }
+
+      toast.success('Image deleted successfully');
+      loadImages(selectedFolder); // Reload images
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      toast.error('Failed to delete image');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString();
+  };
+
+  return (
+    <div className="min-h-screen bg-background p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Admin - Uploaded Images</h1>
+          <p className="text-muted-foreground">View and manage uploaded images</p>
+        </div>
+
+        {/* Folder Tabs */}
+        <Tabs value={selectedFolder} onValueChange={(v) => setSelectedFolder(v as 'enhancement' | 'translation')} className="mb-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="enhancement" className="gap-2">
+              <Folder className="w-4 h-4" />
+              Enhancement ({enhancementImages.length})
+            </TabsTrigger>
+            <TabsTrigger value="translation" className="gap-2">
+              <Folder className="w-4 h-4" />
+              Translation ({translationImages.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="enhancement" className="mt-6">
+            {loading && selectedFolder === 'enhancement' ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <p className="mt-4 text-muted-foreground">Loading images...</p>
+              </div>
+            ) : enhancementImages.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <ImageIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="text-muted-foreground">No images found in enhancement folder</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {enhancementImages.map((image) => (
+                  <Card key={image.filename} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <div className="relative aspect-square bg-muted/30">
+                      <img
+                        src={`${API_URL}${image.url}`}
+                        alt={image.filename}
+                        className="w-full h-full object-contain cursor-pointer"
+                        onClick={() => setSelectedImage(image)}
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-8 w-8"
+                        onClick={() => handleDelete(image.filename)}
+                        disabled={deleting === image.filename}
+                      >
+                        {deleting === image.filename ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <CardContent className="p-3">
+                      <p className="text-xs font-medium truncate mb-1" title={image.filename}>
+                        {image.filename}
+                      </p>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>{formatFileSize(image.size)}</p>
+                        {image.mode && <p>Mode: {image.mode}</p>}
+                        {image.targetLanguage && <p>Language: {image.targetLanguage}</p>}
+                        <p className="text-[10px]">{formatDate(image.created)}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="translation" className="mt-6">
+            {loading && selectedFolder === 'translation' ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <p className="mt-4 text-muted-foreground">Loading images...</p>
+              </div>
+            ) : translationImages.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <ImageIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="text-muted-foreground">No images found in translation folder</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {translationImages.map((image) => (
+                  <Card key={image.filename} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <div className="relative aspect-square bg-muted/30">
+                      <img
+                        src={`${API_URL}${image.url}`}
+                        alt={image.filename}
+                        className="w-full h-full object-contain cursor-pointer"
+                        onClick={() => setSelectedImage(image)}
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-8 w-8"
+                        onClick={() => handleDelete(image.filename)}
+                        disabled={deleting === image.filename}
+                      >
+                        {deleting === image.filename ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <CardContent className="p-3">
+                      <p className="text-xs font-medium truncate mb-1" title={image.filename}>
+                        {image.filename}
+                      </p>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>{formatFileSize(image.size)}</p>
+                        {image.stage && <p>Stage: {image.stage}</p>}
+                        {image.targetLanguage && <p>Language: {image.targetLanguage}</p>}
+                        <p className="text-[10px]">{formatDate(image.created)}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {/* Image Modal */}
+        {selectedImage && (
+          <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setSelectedImage(null)}>
+            <div className="relative max-w-5xl max-h-[90vh] bg-card rounded-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
+              <div className="absolute top-4 right-4 z-10 flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = `${API_URL}${selectedImage.url}`;
+                    link.download = selectedImage.filename;
+                    link.click();
+                  }}
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  onClick={() => {
+                    handleDelete(selectedImage.filename);
+                    setSelectedImage(null);
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+                <Button variant="secondary" size="icon" onClick={() => setSelectedImage(null)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <img
+                src={`${API_URL}${selectedImage.url}`}
+                alt={selectedImage.filename}
+                className="w-full h-full object-contain max-h-[90vh]"
+              />
+              <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-4">
+                <p className="font-medium mb-2">{selectedImage.filename}</p>
+                <div className="text-sm space-y-1">
+                  <p>Size: {formatFileSize(selectedImage.size)}</p>
+                  <p>Uploaded: {formatDate(selectedImage.created)}</p>
+                  {selectedImage.mode && <p>Mode: {selectedImage.mode}</p>}
+                  {selectedImage.stage && <p>Stage: {selectedImage.stage}</p>}
+                  {selectedImage.targetLanguage && <p>Target Language: {selectedImage.targetLanguage}</p>}
+                  {selectedImage.quality && <p>Quality: {selectedImage.quality}</p>}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
