@@ -38,3 +38,7 @@ vite.config.ts.timestamp-*.mjs
 # Uploaded images (for analysis)
 server/uploads/
 uploads/
+server/.env
+.env
+.env.local
+.env.*.local

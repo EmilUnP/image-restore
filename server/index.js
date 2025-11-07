@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { put, list, del } from '@vercel/blob';
 
 dotenv.config();
 
@@ -72,46 +73,23 @@ Object.entries(UPLOAD_DIRS).forEach(([type, dir]) => {
 });
 
 if (IS_VERCEL) {
-  console.log('⚠️  Running on Vercel - files will be saved to /tmp (temporary storage)');
-  console.log('⚠️  Files in /tmp are deleted after each function execution');
-  console.log('💡 For persistent storage, consider using Vercel Blob Storage');
+  const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+  if (BLOB_TOKEN) {
+    console.log('✅ Running on Vercel with Blob Storage enabled');
+    console.log('💾 Files will be saved to Vercel Blob Storage');
+  } else {
+    console.log('⚠️  Running on Vercel - BLOB_READ_WRITE_TOKEN not set');
+    console.log('⚠️  Files will NOT be saved without Blob Storage token');
+  }
 }
 
 // Helper function to save uploaded image
-function saveUploadedImage(base64Image, folderType, metadata = {}) {
+async function saveUploadedImage(base64Image, folderType, metadata = {}) {
   try {
     // Validate folderType
     if (!folderType || (folderType !== 'enhancement' && folderType !== 'translation')) {
       console.error(`Invalid folderType: ${folderType}`);
       return null;
-    }
-    
-    // On Vercel, skip file saving if /tmp is not accessible
-    // Or implement Vercel Blob Storage here
-    if (IS_VERCEL) {
-      // For now, just log that we would save the file
-      // In production, you should use Vercel Blob Storage or another cloud storage
-      console.log(`💾 [Vercel] Would save image to ${folderType} folder (not persisted - using /tmp)`);
-      console.log(`💾 [Vercel] Image metadata:`, {
-        mode: metadata.mode || metadata.stage,
-        language: metadata.targetLanguage || metadata.language,
-        size: base64Image.length,
-        timestamp: new Date().toISOString()
-      });
-      // Return early - files won't be persisted on Vercel without Blob Storage
-      return null;
-    }
-    
-    // Ensure directory exists (local development only)
-    const targetDir = UPLOAD_DIRS[folderType];
-    if (!fs.existsSync(targetDir)) {
-      try {
-        fs.mkdirSync(targetDir, { recursive: true });
-        console.log(`📁 Created upload directory: ${targetDir}`);
-      } catch (error) {
-        console.error(`❌ Failed to create directory ${targetDir}:`, error);
-        return null;
-      }
     }
     
     // Extract image data and MIME type
@@ -149,14 +127,13 @@ function saveUploadedImage(base64Image, folderType, metadata = {}) {
     const extension = extMap[mimeType] || 'jpg';
     
     // Generate filename with timestamp and metadata
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5); // Remove milliseconds for cleaner filename
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
     const mode = (metadata.mode || metadata.stage || 'unknown').replace(/[^a-zA-Z0-9]/g, '_');
     const language = (metadata.targetLanguage || metadata.language || 'unknown').replace(/[^a-zA-Z0-9]/g, '_');
     const filename = `${timestamp}_${mode}_${language}.${extension}`;
     const metadataFilename = `${timestamp}_${mode}_${language}.json`;
     
-    // Save file
-    const filePath = path.join(targetDir, filename);
+    // Convert base64 to buffer
     let buffer;
     try {
       buffer = Buffer.from(base64Data, 'base64');
@@ -169,6 +146,79 @@ function saveUploadedImage(base64Image, folderType, metadata = {}) {
       return null;
     }
     
+    // On Vercel, use Blob Storage
+    if (IS_VERCEL) {
+      try {
+        const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+        
+        if (!BLOB_TOKEN) {
+          console.warn('⚠️  BLOB_READ_WRITE_TOKEN not set - skipping file save on Vercel');
+          return null;
+        }
+        
+        // Upload image to Vercel Blob
+        const imagePath = `${folderType}/${filename}`;
+        const imageBlob = await put(imagePath, buffer, {
+          access: 'public',
+          contentType: mimeType,
+          addRandomSuffix: false,
+          token: BLOB_TOKEN,
+        });
+        
+        console.log(`💾 Saved to Vercel Blob: ${imageBlob.url} (${(buffer.length / 1024).toFixed(2)} KB)`);
+        
+        // Save metadata as JSON to Blob
+        const metadataContent = {
+          filename,
+          url: imageBlob.url,
+          timestamp: new Date().toISOString(),
+          mimeType,
+          size: buffer.length,
+          ...metadata
+        };
+        
+        const metadataPath = `${folderType}/${metadataFilename}`;
+        const metadataBlob = await put(
+          metadataPath,
+          Buffer.from(JSON.stringify(metadataContent, null, 2)),
+          {
+            access: 'public',
+            contentType: 'application/json',
+            addRandomSuffix: false,
+            token: BLOB_TOKEN,
+          }
+        );
+        
+        console.log(`💾 Saved metadata to Vercel Blob: ${metadataBlob.url}`);
+        
+        return {
+          filename,
+          url: imageBlob.url,
+          metadataUrl: metadataBlob.url,
+          path: imageBlob.pathname,
+          size: buffer.length,
+          mimeType
+        };
+      } catch (blobError) {
+        console.error('Error saving to Vercel Blob:', blobError);
+        return null;
+      }
+    }
+    
+    // Local development - save to filesystem
+    const targetDir = UPLOAD_DIRS[folderType];
+    if (!fs.existsSync(targetDir)) {
+      try {
+        fs.mkdirSync(targetDir, { recursive: true });
+        console.log(`📁 Created upload directory: ${targetDir}`);
+      } catch (error) {
+        console.error(`❌ Failed to create directory ${targetDir}:`, error);
+        return null;
+      }
+    }
+    
+    // Save file to local filesystem (buffer already created above)
+    const filePath = path.join(targetDir, filename);
     fs.writeFileSync(filePath, buffer);
     console.log(`💾 Saved uploaded image: ${filename} (${(buffer.length / 1024).toFixed(2)} KB) in ${folderType} folder`);
     console.log(`   Full path: ${filePath}`);
@@ -256,7 +306,7 @@ app.get('/api/enhancement-modes', (req, res) => {
 });
 
 // Admin API endpoints for viewing uploaded images
-app.get('/api/admin/images/:folderType', (req, res) => {
+app.get('/api/admin/images/:folderType', async (req, res) => {
   try {
     const { folderType } = req.params;
     
@@ -264,15 +314,74 @@ app.get('/api/admin/images/:folderType', (req, res) => {
       return res.status(400).json({ error: 'Invalid folder type' });
     }
     
-    // On Vercel, return empty array with message
+    // On Vercel, fetch from Blob Storage
     if (IS_VERCEL) {
-      return res.json({ 
-        images: [],
-        message: 'File storage not available on Vercel. Files are not persisted. See VERCEL_STORAGE_SETUP.md for setup instructions.',
-        vercel: true
-      });
+      try {
+        const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+        
+        if (!BLOB_TOKEN) {
+          return res.json({ 
+            images: [],
+            message: 'BLOB_READ_WRITE_TOKEN not set. Files cannot be retrieved.',
+            vercel: true
+          });
+        }
+        
+        // List all blobs in the folder
+        const { blobs } = await list({
+          prefix: `${folderType}/`,
+          limit: 1000,
+          token: BLOB_TOKEN,
+        });
+        
+        // Filter for image files and metadata files
+        const imageFiles = blobs.filter(blob => {
+          const ext = path.extname(blob.pathname).toLowerCase();
+          return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext);
+        });
+        
+        // Build images array with metadata
+        const images = await Promise.all(
+          imageFiles.map(async (blob) => {
+            // Try to find corresponding metadata file
+            const metadataFilename = blob.pathname.replace(/\.[^/.]+$/, '') + '.json';
+            const metadataBlob = blobs.find(b => b.pathname === metadataFilename);
+            
+            let metadata = {};
+            if (metadataBlob) {
+              try {
+                const metadataResponse = await fetch(metadataBlob.url);
+                metadata = await metadataResponse.json();
+              } catch (e) {
+                console.error('Error reading metadata from blob:', e);
+              }
+            }
+            
+            return {
+              filename: path.basename(blob.pathname),
+              url: blob.url,
+              size: blob.size,
+              created: new Date(blob.uploadedAt),
+              modified: new Date(blob.uploadedAt),
+              ...metadata
+            };
+          })
+        );
+        
+        // Sort by created date (newest first)
+        images.sort((a, b) => new Date(b.created) - new Date(a.created));
+        
+        return res.json({ images });
+      } catch (blobError) {
+        console.error('Error fetching from Vercel Blob:', blobError);
+        return res.status(500).json({ 
+          error: 'Failed to fetch images from Blob Storage', 
+          details: blobError.message 
+        });
+      }
     }
     
+    // Local development - read from filesystem
     const folderPath = UPLOAD_DIRS[folderType];
     
     if (!fs.existsSync(folderPath)) {
@@ -319,7 +428,7 @@ app.get('/api/admin/images/:folderType', (req, res) => {
 });
 
 // Delete image endpoint
-app.delete('/api/admin/images/:folderType/:filename', (req, res) => {
+app.delete('/api/admin/images/:folderType/:filename', async (req, res) => {
   try {
     const { folderType, filename } = req.params;
     
@@ -332,6 +441,41 @@ app.delete('/api/admin/images/:folderType/:filename', (req, res) => {
       return res.status(400).json({ error: 'Invalid filename' });
     }
     
+    // On Vercel, delete from Blob Storage
+    if (IS_VERCEL) {
+      try {
+        const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+        
+        if (!BLOB_TOKEN) {
+          return res.status(500).json({ error: 'BLOB_READ_WRITE_TOKEN not set' });
+        }
+        
+        // Delete the image file
+        const imagePath = `${folderType}/${filename}`;
+        await del(imagePath, { token: BLOB_TOKEN });
+        
+        // Try to delete associated metadata file
+        const metadataFile = filename.replace(/\.[^/.]+$/, '') + '.json';
+        const metadataPath = `${folderType}/${metadataFile}`;
+        try {
+          await del(metadataPath, { token: BLOB_TOKEN });
+        } catch (e) {
+          // Metadata file might not exist, that's okay
+          console.log('Metadata file not found or already deleted:', metadataPath);
+        }
+        
+        console.log(`🗑️ Deleted image from Vercel Blob: ${imagePath}`);
+        return res.json({ success: true, message: 'Image deleted successfully' });
+      } catch (blobError) {
+        console.error('Error deleting from Vercel Blob:', blobError);
+        return res.status(500).json({ 
+          error: 'Failed to delete image from Blob Storage', 
+          details: blobError.message 
+        });
+      }
+    }
+    
+    // Local development - delete from filesystem
     const folderPath = UPLOAD_DIRS[folderType];
     const filePath = path.join(folderPath, filename);
     
@@ -367,7 +511,7 @@ app.post('/api/enhance-image', async (req, res) => {
     }
 
     // Save uploaded image for analysis
-    saveUploadedImage(image, 'enhancement', {
+    await saveUploadedImage(image, 'enhancement', {
       mode,
       intensity,
       type: 'enhancement',
@@ -490,7 +634,7 @@ app.post('/api/detect-text', async (req, res) => {
     }
 
     // Save uploaded image for analysis (this is part of translation workflow)
-    saveUploadedImage(image, 'translation', {
+    await saveUploadedImage(image, 'translation', {
       model: requestedModel || 'default',
       type: 'translation',
       stage: 'text-detection',
@@ -907,7 +1051,7 @@ app.post('/api/translate-image', async (req, res) => {
     }
 
     // Save uploaded image for analysis (final translation stage)
-    saveUploadedImage(image, 'translation', {
+    await saveUploadedImage(image, 'translation', {
       targetLanguage,
       quality,
       fontMatching,
