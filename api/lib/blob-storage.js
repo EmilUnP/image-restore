@@ -141,12 +141,16 @@ export async function saveUploadedImage(base64Image, folderType, metadata = {}) 
  */
 export async function listImages(folderType) {
   try {
+    console.log(`📥 listImages called for folderType: ${folderType}`);
+    
     const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
     
     if (!BLOB_TOKEN) {
-      console.warn('BLOB_READ_WRITE_TOKEN not set');
+      console.warn('⚠️  BLOB_READ_WRITE_TOKEN not set');
       return { images: [] };
     }
+    
+    console.log(`🔍 Listing blobs with prefix: ${folderType}/`);
     
     // List all blobs in the folder
     const { blobs } = await list({
@@ -155,11 +159,19 @@ export async function listImages(folderType) {
       token: BLOB_TOKEN,
     });
     
+    console.log(`📋 Found ${blobs.length} total blobs in ${folderType}/`);
+    
     // Filter for image files
     const imageFiles = blobs.filter(blob => {
       const ext = path.extname(blob.pathname).toLowerCase();
-      return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext);
+      const isImage = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext);
+      if (isImage) {
+        console.log(`  ✅ Image file: ${blob.pathname}`);
+      }
+      return isImage;
     });
+    
+    console.log(`🖼️  Found ${imageFiles.length} image files`);
     
     // Build images array with metadata
     const images = await Promise.all(
@@ -171,11 +183,14 @@ export async function listImages(folderType) {
         let metadata = {};
         if (metadataBlob) {
           try {
+            console.log(`  📄 Found metadata file: ${metadataFilename}`);
             const metadataResponse = await fetch(metadataBlob.url);
             metadata = await metadataResponse.json();
           } catch (e) {
-            console.error('Error reading metadata from blob:', e);
+            console.error(`  ⚠️  Error reading metadata from blob ${metadataFilename}:`, e);
           }
+        } else {
+          console.log(`  ⚠️  No metadata file found for: ${blob.pathname}`);
         }
         
         return {
@@ -192,9 +207,12 @@ export async function listImages(folderType) {
     // Sort by created date (newest first)
     images.sort((a, b) => new Date(b.created) - new Date(a.created));
     
+    console.log(`✅ Returning ${images.length} images`);
     return { images };
   } catch (error) {
-    console.error('Error listing images from Blob Storage:', error);
+    console.error('❌ Error listing images from Blob Storage:', error);
+    console.error('   Error message:', error.message);
+    console.error('   Error stack:', error.stack);
     throw error;
   }
 }

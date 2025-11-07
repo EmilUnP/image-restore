@@ -1,4 +1,4 @@
-import { deleteImage } from '../../lib/blob-storage.js';
+import { deleteImage } from '../../../lib/blob-storage.js';
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -17,10 +17,36 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { folderType, filename } = req.query;
+    // Extract folderType and filename from URL path or query
+    let folderType = req.query.folderType;
+    let filename = req.query.filename;
     
-    if (folderType !== 'enhancement' && folderType !== 'translation') {
+    // If not in query, extract from URL path
+    // Handle both /api/admin/images/enhancement/filename and /admin/images/enhancement/filename
+    if ((!folderType || !filename) && req.url) {
+      let urlMatch = req.url.match(/\/api\/admin\/images\/([^/]+)\/([^/?]+)/);
+      if (!urlMatch) {
+        urlMatch = req.url.match(/\/admin\/images\/([^/]+)\/([^/?]+)/);
+      }
+      if (urlMatch) {
+        folderType = folderType || urlMatch[1];
+        filename = filename || urlMatch[2];
+      }
+    }
+    
+    // Log for debugging
+    console.log('Admin delete request:');
+    console.log('  URL:', req.url);
+    console.log('  Query:', req.query);
+    console.log('  FolderType:', folderType);
+    console.log('  Filename:', filename);
+    
+    if (!folderType || (folderType !== 'enhancement' && folderType !== 'translation')) {
       return res.status(400).json({ error: 'Invalid folder type' });
+    }
+    
+    if (!filename) {
+      return res.status(400).json({ error: 'Filename is required' });
     }
     
     // Security: prevent directory traversal
@@ -28,11 +54,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid filename' });
     }
 
+    console.log(`Deleting image: ${folderType}/${filename}`);
     try {
       await deleteImage(folderType, filename);
+      console.log(`✅ Successfully deleted: ${folderType}/${filename}`);
       return res.json({ success: true, message: 'Image deleted successfully' });
     } catch (blobError) {
-      console.error('Error deleting from Blob Storage:', blobError);
+      console.error('❌ Error deleting from Blob Storage:', blobError);
+      console.error('   Error message:', blobError.message);
       return res.status(500).json({ 
         error: 'Failed to delete image from Blob Storage', 
         details: blobError.message 
@@ -40,7 +69,7 @@ export default async function handler(req, res) {
     }
 
   } catch (error) {
-    console.error('Error deleting image:', error);
+    console.error('❌ Error deleting image:', error);
     return res.status(500).json({ 
       error: 'Failed to delete image', 
       details: error.message 
