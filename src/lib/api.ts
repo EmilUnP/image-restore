@@ -90,55 +90,123 @@ export const enhanceImage = async (request: EnhanceImageRequest): Promise<Enhanc
 
 export const translateImage = async (request: TranslateImageRequest): Promise<TranslateImageResponse> => {
   const API_URL = getApiUrl();
-  const response = await fetch(`${API_URL}/api/translate-image`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
+  const url = `${API_URL}/api/translate-image`;
+  
+  console.log('translateImage: Making request to:', url);
+  console.log('translateImage: Request method: POST');
+  console.log('translateImage: Request body size:', JSON.stringify(request).length, 'bytes');
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || `Failed to translate image. Error: ${response.status}`);
+    console.log('translateImage: Response status:', response.status);
+    console.log('translateImage: Response ok:', response.ok);
+
+    if (!response.ok) {
+      let errorMessage = `Failed to translate image. Status: ${response.status} ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        console.error('translateImage: Error data:', errorData);
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        try {
+          const errorText = await response.text();
+          console.error('translateImage: Error text:', errorText);
+          errorMessage = errorText || errorMessage;
+        } catch (textError) {
+          console.error('translateImage: Could not read error response');
+        }
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    console.log('translateImage: Success, received data');
+    return data;
+  } catch (error) {
+    console.error('translateImage: Fetch error:', error);
+    if (error instanceof Error) {
+      // Check if it's a network error
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error('Network error: Could not reach the server. Please check your connection and try again.');
+      }
+      throw error;
+    }
+    throw new Error(`Failed to translate image: ${String(error)}`);
   }
-
-  return await response.json();
 };
 
 export const detectText = async (request: DetectTextRequest): Promise<DetectTextResponse> => {
   const API_URL = getApiUrl();
-  const response = await fetch(`${API_URL}/api/detect-text`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
+  const url = `${API_URL}/api/detect-text`;
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || `Failed to detect text. Error: ${response.status}`);
+    if (!response.ok) {
+      let errorMessage = `Failed to detect text. Status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        const errorText = await response.text();
+        errorMessage = errorText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(`Failed to detect text: ${String(error)}`);
   }
-
-  return await response.json();
 };
 
 export const translateText = async (request: TranslateTextRequest): Promise<TranslateTextResponse> => {
   const API_URL = getApiUrl();
-  const response = await fetch(`${API_URL}/api/translate-text`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
+  const url = `${API_URL}/api/translate-text`;
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || `Failed to translate text. Error: ${response.status}`);
+    if (!response.ok) {
+      let errorMessage = `Failed to translate text. Status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        const errorText = await response.text();
+        errorMessage = errorText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(`Failed to translate text: ${String(error)}`);
   }
-
-  return await response.json();
 };
 
