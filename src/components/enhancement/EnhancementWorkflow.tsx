@@ -7,9 +7,11 @@ import { ImageComparison } from "@/components/shared/ImageComparison";
 import { BatchImageUpload } from "./BatchImageUpload";
 import { BatchResults } from "./BatchResults";
 import { BackButton } from "@/components/shared/BackButton";
+import { StepIndicator } from "@/components/shared/StepIndicator";
 import { useImageEnhancement } from "@/hooks/useImageEnhancement";
 import { downloadImage } from "@/lib/utils";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface EnhancementWorkflowProps {
   onBack: () => void;
@@ -128,25 +130,35 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
     toast.success(`Downloading ${completedImages.length} images...`);
   };
 
+  // Determine current step for step indicator
+  const getCurrentStep = () => {
+    if (!settingsConfigured) return 1;
+    if (!originalImage && processingMode === 'single') return 2;
+    if (batchImages.length === 0 && processingMode === 'batch') return 2;
+    return 3;
+  };
+
+  const currentStep = getCurrentStep();
+  const steps = [
+    { number: 1, label: "Settings", status: currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming" as const },
+    { number: 2, label: "Upload", status: currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming" as const },
+    { number: 3, label: "Results", status: currentStep >= 3 ? (enhancedImage || batchImages.length > 0 ? "current" : "upcoming") : "upcoming" as const },
+  ];
+
   return (
     <>
       <BackButton onClick={onBack} variant="floating" />
+      
+      {/* Step Indicator */}
+      <div className="mb-6">
+        <StepIndicator steps={steps} />
+      </div>
+
       {!settingsConfigured ? (
         <>
-          <div className="text-center mb-6 animate-fade-in">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                1
-              </div>
-              <div className="h-1 w-16 bg-muted rounded-full">
-                <div className="h-full w-0 bg-primary rounded-full transition-all duration-300" />
-              </div>
-              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold text-sm">
-                2
-              </div>
-            </div>
-            <h2 className="text-xl md:text-2xl font-semibold mb-2">Choose Enhancement Settings</h2>
-            <p className="text-muted-foreground text-sm md:text-base">Select your enhancement mode and intensity level</p>
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-semibold mb-2">Choose Enhancement Settings</h2>
+            <p className="text-sm text-muted-foreground">Select your enhancement mode and intensity level</p>
           </div>
           <EnhancementModeSelector
             mode={enhancementMode}
@@ -155,35 +167,26 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             onIntensityChange={setEnhancementIntensity}
             disabled={isProcessing}
           />
-          <div className="flex justify-center pt-6">
+          <div className="flex justify-center pt-4">
             <Button
               onClick={handleSettingsReady}
-              size="lg"
-              className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 hover:shadow-lg transition-all duration-300"
+              size="default"
+              className="gap-2"
             >
               Continue to Upload
-              <ImageIcon className="w-5 h-5" />
+              <ImageIcon className="w-4 h-4" />
             </Button>
           </div>
         </>
       ) : processingMode === 'single' && !originalImage ? (
         <>
-          <div className="text-center mb-6 animate-fade-in">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                ✓
-              </div>
-              <div className="h-1 w-16 bg-primary rounded-full" />
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                2
-              </div>
-            </div>
-            <h2 className="text-xl md:text-2xl font-semibold mb-2">Upload Your Image</h2>
-            <p className="text-muted-foreground">
-              Selected mode: <span className="font-semibold capitalize">{enhancementMode}</span> • 
-              Intensity: <span className="font-semibold capitalize">{enhancementIntensity}</span>
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-semibold mb-2">Upload Your Image</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Mode: <span className="font-medium capitalize">{enhancementMode}</span> • 
+              Intensity: <span className="font-medium capitalize">{enhancementIntensity}</span>
             </p>
-            <div className="flex items-center justify-center gap-4 mt-4">
+            <div className="flex items-center justify-center gap-3">
               <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
                 Change Settings
               </Button>
@@ -197,7 +200,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 className="gap-2"
               >
                 <Layers className="w-4 h-4" />
-                Switch to Batch Mode
+                Batch Mode
               </Button>
             </div>
           </div>
@@ -210,22 +213,13 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
         </>
       ) : processingMode === 'batch' && batchImages.length === 0 ? (
         <>
-          <div className="text-center mb-6 animate-fade-in">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                ✓
-              </div>
-              <div className="h-1 w-16 bg-primary rounded-full" />
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                2
-              </div>
-            </div>
-            <h2 className="text-xl md:text-2xl font-semibold mb-2">Upload Multiple Images</h2>
-            <p className="text-muted-foreground">
-              Selected mode: <span className="font-semibold capitalize">{enhancementMode}</span> • 
-              Intensity: <span className="font-semibold capitalize">{enhancementIntensity}</span>
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-semibold mb-2">Upload Multiple Images</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Mode: <span className="font-medium capitalize">{enhancementMode}</span> • 
+              Intensity: <span className="font-medium capitalize">{enhancementIntensity}</span>
             </p>
-            <div className="flex items-center justify-center gap-4 mt-4">
+            <div className="flex items-center justify-center gap-3">
               <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
                 Change Settings
               </Button>
@@ -239,7 +233,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 className="gap-2"
               >
                 <ImageIcon className="w-4 h-4" />
-                Switch to Single Mode
+                Single Mode
               </Button>
             </div>
           </div>
@@ -251,25 +245,12 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
         </>
       ) : processingMode === 'batch' && batchImages.length > 0 ? (
         <>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-2xl font-semibold mb-1">Batch Processing Results</h2>
-              <p className="text-muted-foreground text-sm">
-                Mode: <span className="font-semibold capitalize">{enhancementMode}</span> • 
-                Intensity: <span className="font-semibold capitalize">{enhancementIntensity}</span>
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => {
-                  setBatchImages([]);
-                }}
-                variant="ghost"
-                size="sm"
-              >
-                Process More
-              </Button>
-            </div>
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">Batch Processing Results</h2>
+            <p className="text-sm text-muted-foreground">
+              Mode: <span className="font-medium capitalize">{enhancementMode}</span> • 
+              Intensity: <span className="font-medium capitalize">{enhancementIntensity}</span>
+            </p>
           </div>
           <BatchResults
             images={batchImages}
@@ -280,19 +261,12 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
         </>
       ) : (
         <>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-2xl font-semibold mb-1">Processing Results</h2>
-              <p className="text-muted-foreground text-sm">
-                Mode: <span className="font-semibold capitalize">{enhancementMode}</span> • 
-                Intensity: <span className="font-semibold capitalize">{enhancementIntensity}</span>
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
-                Change Settings
-              </Button>
-            </div>
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">Processing Results</h2>
+            <p className="text-sm text-muted-foreground">
+              Mode: <span className="font-medium capitalize">{enhancementMode}</span> • 
+              Intensity: <span className="font-medium capitalize">{enhancementIntensity}</span>
+            </p>
           </div>
           <ImageComparison
             originalImage={originalImage || ''}
@@ -307,7 +281,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
               <Button 
                 onClick={handleReEnhance} 
                 variant="outline" 
-                size="lg" 
+                size="default" 
                 disabled={isProcessing}
                 className="gap-2"
               >
