@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { saveUploadedImage } from './lib/blob-storage.js';
 
 // Enhancement mode prompts
 const enhancementPrompts = {
@@ -57,6 +58,19 @@ export default async function handler(req, res) {
     
     if (!image) {
       return res.status(400).json({ error: 'No image provided' });
+    }
+
+    // Save uploaded image for analysis
+    try {
+      await saveUploadedImage(image, 'enhancement', {
+        mode,
+        intensity,
+        type: 'enhancement',
+        endpoint: '/api/enhance-image'
+      });
+    } catch (saveError) {
+      // Don't fail the request if saving fails, just log it
+      console.error('Error saving uploaded image:', saveError);
     }
 
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
