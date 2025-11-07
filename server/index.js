@@ -18,7 +18,8 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Detect if running on Vercel
-const IS_VERCEL = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+// Vercel sets VERCEL=1 and VERCEL_ENV (production, preview, development)
+const IS_VERCEL = process.env.VERCEL === '1' || !!process.env.VERCEL_ENV || !!process.env.VERCEL_URL;
 
 // Create upload directories - use /tmp on Vercel (temporary storage)
 // Note: Files in /tmp are deleted after function execution on Vercel
@@ -72,15 +73,27 @@ Object.entries(UPLOAD_DIRS).forEach(([type, dir]) => {
   }
 });
 
+// Log environment detection and Blob Storage status
+const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+console.log('🔍 Environment Detection:');
+console.log(`   VERCEL env var: ${process.env.VERCEL}`);
+console.log(`   VERCEL_ENV: ${process.env.VERCEL_ENV}`);
+console.log(`   VERCEL_URL: ${process.env.VERCEL_URL}`);
+console.log(`   IS_VERCEL: ${IS_VERCEL}`);
+console.log(`   BLOB_READ_WRITE_TOKEN: ${BLOB_TOKEN ? '✅ Set' : '❌ Not set'}`);
+
 if (IS_VERCEL) {
-  const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
   if (BLOB_TOKEN) {
     console.log('✅ Running on Vercel with Blob Storage enabled');
     console.log('💾 Files will be saved to Vercel Blob Storage');
   } else {
     console.log('⚠️  Running on Vercel - BLOB_READ_WRITE_TOKEN not set');
     console.log('⚠️  Files will NOT be saved without Blob Storage token');
+    console.log('💡 Add BLOB_READ_WRITE_TOKEN to Vercel environment variables');
   }
+} else if (BLOB_TOKEN) {
+  console.log('💡 BLOB_READ_WRITE_TOKEN detected - will use Blob Storage for file saving');
+  console.log('   (Even in local development if token is set)');
 }
 
 // Helper function to save uploaded image
@@ -146,15 +159,16 @@ async function saveUploadedImage(base64Image, folderType, metadata = {}) {
       return null;
     }
     
-    // On Vercel, use Blob Storage
-    if (IS_VERCEL) {
+    // Check if Blob Storage token is available (use it if available, regardless of environment)
+    const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+    
+    // Use Blob Storage if token is available (works on Vercel and can work locally too)
+    if (BLOB_TOKEN) {
       try {
-        const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
-        
-        if (!BLOB_TOKEN) {
-          console.warn('⚠️  BLOB_READ_WRITE_TOKEN not set - skipping file save on Vercel');
-          return null;
-        }
+        console.log(`📤 Attempting to save to Vercel Blob Storage: ${folderType}/${filename}`);
+        console.log(`   Buffer size: ${(buffer.length / 1024).toFixed(2)} KB`);
+        console.log(`   MIME type: ${mimeType}`);
+        console.log(`   IS_VERCEL detected: ${IS_VERCEL}`);
         
         // Upload image to Vercel Blob
         const imagePath = `${folderType}/${filename}`;
@@ -165,7 +179,9 @@ async function saveUploadedImage(base64Image, folderType, metadata = {}) {
           token: BLOB_TOKEN,
         });
         
-        console.log(`💾 Saved to Vercel Blob: ${imageBlob.url} (${(buffer.length / 1024).toFixed(2)} KB)`);
+        console.log(`✅ Successfully saved to Vercel Blob: ${imageBlob.url}`);
+        console.log(`   Path: ${imageBlob.pathname}`);
+        console.log(`   Size: ${(buffer.length / 1024).toFixed(2)} KB`);
         
         // Save metadata as JSON to Blob
         const metadataContent = {
@@ -189,7 +205,7 @@ async function saveUploadedImage(base64Image, folderType, metadata = {}) {
           }
         );
         
-        console.log(`💾 Saved metadata to Vercel Blob: ${metadataBlob.url}`);
+        console.log(`✅ Successfully saved metadata to Vercel Blob: ${metadataBlob.url}`);
         
         return {
           filename,
@@ -200,9 +216,23 @@ async function saveUploadedImage(base64Image, folderType, metadata = {}) {
           mimeType
         };
       } catch (blobError) {
-        console.error('Error saving to Vercel Blob:', blobError);
-        return null;
+        console.error('❌ Error saving to Vercel Blob:', blobError);
+        console.error('   Error message:', blobError.message);
+        console.error('   Error stack:', blobError.stack);
+        
+        // If we're on Vercel, don't fall back to filesystem
+        if (IS_VERCEL) {
+          console.error('   On Vercel - cannot fall back to filesystem');
+          return null;
+        }
+        
+        // On local, fall through to filesystem save
+        console.warn('   Falling back to local filesystem save');
       }
+    } else if (IS_VERCEL) {
+      // On Vercel without token, can't save
+      console.warn('⚠️  Running on Vercel but BLOB_READ_WRITE_TOKEN not set - cannot save files');
+      return null;
     }
     
     // Local development - save to filesystem
@@ -295,6 +325,65 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Image Optimizer AI Backend is running!' });
 });
 
+// Debug endpoint for Blob Storage testing
+app.get('/api/debug/blob-storage', async (req, res) => {
+  try {
+    const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+    const envInfo = {
+      IS_VERCEL,
+      VERCEL: process.env.VERCEL,
+      VERCEL_ENV: process.env.VERCEL_ENV,
+      VERCEL_URL: process.env.VERCEL_URL,
+      BLOB_TOKEN_SET: !!BLOB_TOKEN,
+      BLOB_TOKEN_LENGTH: BLOB_TOKEN ? BLOB_TOKEN.length : 0,
+    };
+    
+    if (!BLOB_TOKEN) {
+      return res.json({
+        status: 'error',
+        message: 'BLOB_READ_WRITE_TOKEN not set',
+        env: envInfo
+      });
+    }
+    
+    // Try to list blobs to verify connection
+    try {
+      const { blobs } = await list({
+        limit: 10,
+        token: BLOB_TOKEN,
+      });
+      
+      return res.json({
+        status: 'success',
+        message: 'Blob Storage connection successful',
+        blobCount: blobs.length,
+        blobs: blobs.map(b => ({
+          pathname: b.pathname,
+          url: b.url,
+          size: b.size,
+          uploadedAt: b.uploadedAt,
+        })),
+        env: envInfo
+      });
+    } catch (blobError) {
+      return res.json({
+        status: 'error',
+        message: 'Failed to connect to Blob Storage',
+        error: blobError.message,
+        errorStack: blobError.stack,
+        env: envInfo
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      message: 'Internal server error',
+      error: error.message,
+      errorStack: error.stack
+    });
+  }
+});
+
 // Get available enhancement modes
 app.get('/api/enhancement-modes', (req, res) => {
   const modes = Object.keys(enhancementPrompts).map(key => ({
@@ -371,17 +460,31 @@ app.get('/api/admin/images/:folderType', async (req, res) => {
         // Sort by created date (newest first)
         images.sort((a, b) => new Date(b.created) - new Date(a.created));
         
+        console.log(`✅ Retrieved ${images.length} images from Blob Storage`);
         return res.json({ images });
       } catch (blobError) {
-        console.error('Error fetching from Vercel Blob:', blobError);
-        return res.status(500).json({ 
-          error: 'Failed to fetch images from Blob Storage', 
-          details: blobError.message 
-        });
+        console.error('❌ Error fetching from Vercel Blob:', blobError);
+        console.error('   Error message:', blobError.message);
+        
+        // If on Vercel, return error. Otherwise fall back to filesystem
+        if (IS_VERCEL) {
+          return res.status(500).json({ 
+            error: 'Failed to fetch images from Blob Storage', 
+            details: blobError.message 
+          });
+        }
+        console.warn('   Falling back to filesystem...');
       }
+    } else if (IS_VERCEL) {
+      // On Vercel without token, return empty
+      return res.json({ 
+        images: [],
+        message: 'BLOB_READ_WRITE_TOKEN not set. Files cannot be retrieved.',
+        vercel: true
+      });
     }
     
-    // Local development - read from filesystem
+    // Local development - read from filesystem (or fallback)
     const folderPath = UPLOAD_DIRS[folderType];
     
     if (!fs.existsSync(folderPath)) {
@@ -441,14 +544,12 @@ app.delete('/api/admin/images/:folderType/:filename', async (req, res) => {
       return res.status(400).json({ error: 'Invalid filename' });
     }
     
-    // On Vercel, delete from Blob Storage
-    if (IS_VERCEL) {
+    // Try to delete from Blob Storage if token is available
+    const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+    
+    if (BLOB_TOKEN) {
       try {
-        const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
-        
-        if (!BLOB_TOKEN) {
-          return res.status(500).json({ error: 'BLOB_READ_WRITE_TOKEN not set' });
-        }
+        console.log(`🗑️ Attempting to delete from Blob Storage: ${folderType}/${filename}`);
         
         // Delete the image file
         const imagePath = `${folderType}/${filename}`;
@@ -464,18 +565,27 @@ app.delete('/api/admin/images/:folderType/:filename', async (req, res) => {
           console.log('Metadata file not found or already deleted:', metadataPath);
         }
         
-        console.log(`🗑️ Deleted image from Vercel Blob: ${imagePath}`);
+        console.log(`✅ Successfully deleted from Vercel Blob: ${imagePath}`);
         return res.json({ success: true, message: 'Image deleted successfully' });
       } catch (blobError) {
-        console.error('Error deleting from Vercel Blob:', blobError);
-        return res.status(500).json({ 
-          error: 'Failed to delete image from Blob Storage', 
-          details: blobError.message 
-        });
+        console.error('❌ Error deleting from Vercel Blob:', blobError);
+        console.error('   Error message:', blobError.message);
+        
+        // If on Vercel, return error. Otherwise fall back to filesystem
+        if (IS_VERCEL) {
+          return res.status(500).json({ 
+            error: 'Failed to delete image from Blob Storage', 
+            details: blobError.message 
+          });
+        }
+        console.warn('   Falling back to filesystem delete...');
       }
+    } else if (IS_VERCEL) {
+      // On Vercel without token, can't delete
+      return res.status(500).json({ error: 'BLOB_READ_WRITE_TOKEN not set' });
     }
     
-    // Local development - delete from filesystem
+    // Local development - delete from filesystem (or fallback)
     const folderPath = UPLOAD_DIRS[folderType];
     const filePath = path.join(folderPath, filename);
     
