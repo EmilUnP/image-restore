@@ -43,9 +43,18 @@ export const Admin = () => {
   const loadImages = async (folderType: 'enhancement' | 'translation') => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/admin/images/${folderType}`);
+      // Use query parameter instead of path parameter for better compatibility
+      const response = await fetch(`${API_URL}/api/admin/images?folderType=${folderType}`);
       if (!response.ok) {
-        throw new Error('Failed to load images');
+        const errorText = await response.text();
+        console.error('Admin API error response:', errorText);
+        throw new Error(`Failed to load images: ${response.status} ${response.statusText}`);
+      }
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Admin API returned non-JSON:', text.substring(0, 200));
+        throw new Error('Server returned invalid response (not JSON)');
       }
       const data = await response.json();
       const images = data.images || [];
@@ -76,23 +85,26 @@ export const Admin = () => {
     loadImages(otherFolder);
   }, [selectedFolder]);
 
-  const handleDelete = async (filename: string) => {
+  const handleDelete = async (filename: string, folder: 'enhancement' | 'translation') => {
     if (!confirm(`Are you sure you want to delete ${filename}?`)) {
       return;
     }
 
     setDeleting(filename);
     try {
-      const response = await fetch(`${API_URL}/api/admin/images/${selectedFolder}/${filename}`, {
+      // Use query parameters instead of path parameters
+      const response = await fetch(`${API_URL}/api/admin/images/delete?folderType=${folder}&filename=${encodeURIComponent(filename)}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete image');
+        const errorText = await response.text();
+        console.error('Delete API error response:', errorText);
+        throw new Error(`Failed to delete image: ${response.status}`);
       }
 
       toast.success('Image deleted successfully');
-      loadImages(selectedFolder); // Reload images
+      loadImages(folder); // Reload images
     } catch (error) {
       console.error('Error deleting image:', error);
       toast.error('Failed to delete image');
@@ -172,7 +184,7 @@ export const Admin = () => {
                   <Card key={image.filename} className="overflow-hidden hover:shadow-2xl transition-all duration-500 hover-lift group border-border/50 rounded-2xl bg-gradient-to-br from-card/95 to-card/90 backdrop-blur-sm">
                     <div className="relative aspect-square bg-gradient-to-br from-muted/40 to-muted/20">
                       <img
-                        src={`${API_URL}${image.url}`}
+                        src={image.url.startsWith('http') ? image.url : `${API_URL}${image.url}`}
                         alt={image.filename}
                         className="w-full h-full object-contain cursor-pointer transition-transform duration-500 group-hover:scale-105"
                         onClick={() => setSelectedImage(image)}
@@ -184,7 +196,7 @@ export const Admin = () => {
                         className="absolute top-3 right-3 h-9 w-9 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDelete(image.filename);
+                          handleDelete(image.filename, 'enhancement');
                         }}
                         disabled={deleting === image.filename}
                       >
@@ -231,7 +243,7 @@ export const Admin = () => {
                   <Card key={image.filename} className="overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="relative aspect-square bg-muted/30">
                       <img
-                        src={`${API_URL}${image.url}`}
+                        src={image.url.startsWith('http') ? image.url : `${API_URL}${image.url}`}
                         alt={image.filename}
                         className="w-full h-full object-contain cursor-pointer"
                         onClick={() => setSelectedImage(image)}
@@ -240,7 +252,7 @@ export const Admin = () => {
                         variant="destructive"
                         size="icon"
                         className="absolute top-2 right-2 h-8 w-8"
-                        onClick={() => handleDelete(image.filename)}
+                        onClick={() => handleDelete(image.filename, 'translation')}
                         disabled={deleting === image.filename}
                       >
                         {deleting === image.filename ? (
@@ -278,7 +290,7 @@ export const Admin = () => {
                   size="icon"
                   onClick={() => {
                     const link = document.createElement('a');
-                    link.href = `${API_URL}${selectedImage.url}`;
+                    link.href = selectedImage.url.startsWith('http') ? selectedImage.url : `${API_URL}${selectedImage.url}`;
                     link.download = selectedImage.filename;
                     link.click();
                   }}
@@ -289,7 +301,7 @@ export const Admin = () => {
                   variant="destructive"
                   size="icon"
                   onClick={() => {
-                    handleDelete(selectedImage.filename);
+                    handleDelete(selectedImage.filename, selectedFolder);
                     setSelectedImage(null);
                   }}
                 >
@@ -300,7 +312,7 @@ export const Admin = () => {
                 </Button>
               </div>
               <img
-                src={`${API_URL}${selectedImage.url}`}
+                src={selectedImage.url.startsWith('http') ? selectedImage.url : `${API_URL}${selectedImage.url}`}
                 alt={selectedImage.filename}
                 className="w-full h-full object-contain max-h-[90vh]"
               />
