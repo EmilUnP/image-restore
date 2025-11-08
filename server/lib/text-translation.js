@@ -159,6 +159,9 @@ export const tryParseJsonArray = (raw, expectedLength) => {
   return normalized;
 };
 
+const MODEL_RETRY_STATUSES = new Set([404]);
+const RETRYABLE_MODEL_MESSAGES = ['not found', 'unsupported', 'unknown model'];
+
 export const classifyGeminiError = (error) => {
   const message = error?.message || '';
 
@@ -181,6 +184,18 @@ export const classifyGeminiError = (error) => {
     return new TranslationServiceError('Translation blocked by safety filters for the provided text.', {
       statusCode: 400,
       details: message,
+    });
+  }
+
+  const normalizedMessage = message.toLowerCase();
+  const shouldRetryModel =
+    MODEL_RETRY_STATUSES.has(error?.status) || RETRYABLE_MODEL_MESSAGES.some((needle) => normalizedMessage.includes(needle));
+
+  if (shouldRetryModel) {
+    return new TranslationServiceError('Translation model unavailable. Retrying with fallback model.', {
+      statusCode: 503,
+      details: message,
+      modelRetry: true,
     });
   }
 
@@ -215,54 +230,83 @@ export const performTranslations = async ({ genAI, items, targetLanguageName }) 
     maxOutputTokens: 2048,
   };
 
-  const preferredModels = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-2.5-flash-image-preview'];
-  let model;
+  const preferredModels = [
+    'gemini-2.0-flash-exp',
+    'gemini-2.0-flash',
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-image-preview',
+  ];
+
   let lastError;
 
   for (const modelName of preferredModels) {
+    let model;
+
     try {
       model = genAI.getGenerativeModel({ model: modelName });
-      break;
     } catch (error) {
       lastError = error;
+      console.warn(`[translate-text] Failed to initialise model "${modelName}":`, error?.message || error);
+      continue;
     }
-  }
 
-  if (!model) {
-    throw classifyGeminiError(lastError || new Error('No Gemini model available'));
-  }
+    console.info(`[translate-text] Using Gemini model "${modelName}" for translation.`);
 
-  const batches = chunkTexts(items);
-  const results = {};
+    const batches = chunkTexts(items);
+    const results = {};
 
-  for (const batch of batches) {
     try {
-      const translations = await translateBatch({ model, batch, targetLanguageName, generationConfig });
-      batch.forEach((item, index) => {
-        results[item.originalIndex] = translations[index] ?? '';
-      });
-    } catch (error) {
-      if (batch.length > 1 && isBatchSplittableError(error)) {
-        for (const item of batch) {
-          try {
-            const singleTranslation = await translateBatch({
-              model,
-              batch: [item],
-              targetLanguageName,
-              generationConfig,
-            });
-            results[item.originalIndex] = singleTranslation[0] ?? '';
-          } catch (singleError) {
-            throw classifyGeminiError(singleError);
+      for (const batch of batches) {
+        try {
+          const translations = await translateBatch({ model, batch, targetLanguageName, generationConfig });
+          batch.forEach((item, index) => {
+            results[item.originalIndex] = translations[index] ?? '';
+          });
+        } catch (error) {
+          const classified = classifyGeminiError(error);
+
+          if (batch.length > 1 && isBatchSplittableError(error)) {
+            for (const item of batch) {
+              try {
+                const singleTranslation = await translateBatch({
+                  model,
+                  batch: [item],
+                  targetLanguageName,
+                  generationConfig,
+                });
+                results[item.originalIndex] = singleTranslation[0] ?? '';
+              } catch (singleError) {
+                throw classifyGeminiError(singleError);
+              }
+            }
+          } else if (classified.modelRetry) {
+          throw classified;
+          } else {
+            throw classified;
           }
         }
-      } else {
-        throw classifyGeminiError(error);
       }
+
+      // ensure every index populated
+      items.forEach((item) => {
+        if (typeof results[item.originalIndex] !== 'string') {
+          results[item.originalIndex] = '';
+        }
+      });
+
+      return results;
+    } catch (error) {
+      lastError = error;
+      if (error instanceof TranslationServiceError && error.modelRetry) {
+        console.warn(`[translate-text] Model "${modelName}" unavailable. Trying next fallback.`);
+        continue;
+      }
+      console.error('[translate-text] Translation failed with non-retryable error:', error);
+      throw error;
     }
   }
 
-  return results;
+  throw classifyGeminiError(lastError || new Error('No Gemini translation model available'));
 };
 
 export const createTextTranslationService = (genAI) => {
