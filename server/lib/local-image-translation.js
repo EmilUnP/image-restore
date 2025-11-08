@@ -51,23 +51,51 @@ const wrapText = (text, maxCharsPerLine) => {
   return lines;
 };
 
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
 const normalizeBoundingBox = (box = {}, imageWidth = 0, imageHeight = 0) => {
-  const { x = 0, y = 0, width = 0, height = 0 } = box;
+  let { x = 0, y = 0, width = 0, height = 0 } = box;
 
   if (width <= 0 || height <= 0) {
     return null;
   }
 
-  const left = Math.max(0, Math.floor(x));
-  const top = Math.max(0, Math.floor(y));
-  const boxWidth = Math.min(imageWidth - left, Math.floor(width));
-  const boxHeight = Math.min(imageHeight - top, Math.floor(height));
+  const looksNormalized =
+    width > 0 && width <= 1.5 && height > 0 && height <= 1.5 && x >= 0 && x <= 1.5 && y >= 0 && y <= 1.5;
+
+  if (looksNormalized) {
+    x *= imageWidth;
+    y *= imageHeight;
+    width *= imageWidth;
+    height *= imageHeight;
+  }
+
+  const left = clamp(Math.floor(x), 0, imageWidth);
+  const top = clamp(Math.floor(y), 0, imageHeight);
+  const right = clamp(Math.floor(x + width), left + 1, imageWidth);
+  const bottom = clamp(Math.floor(y + height), top + 1, imageHeight);
+
+  const boxWidth = right - left;
+  const boxHeight = bottom - top;
 
   if (boxWidth <= 0 || boxHeight <= 0) {
     return null;
   }
 
-  return { left, top, width: boxWidth, height: boxHeight };
+  const paddingX = Math.round(boxWidth * 0.05);
+  const paddingY = Math.round(boxHeight * 0.05);
+
+  const paddedLeft = clamp(left - paddingX, 0, imageWidth);
+  const paddedTop = clamp(top - paddingY, 0, imageHeight);
+  const paddedRight = clamp(right + paddingX, paddedLeft + 1, imageWidth);
+  const paddedBottom = clamp(bottom + paddingY, paddedTop + 1, imageHeight);
+
+  return {
+    left: paddedLeft,
+    top: paddedTop,
+    width: paddedRight - paddedLeft,
+    height: paddedBottom - paddedTop,
+  };
 };
 
 const buildOverlaySvg = (translation, box) => {
@@ -94,11 +122,18 @@ const buildOverlaySvg = (translation, box) => {
     })
     .join('');
 
+  const backgroundOpacity = Math.min(0.95, Math.max(0.75, height < 60 ? 0.88 : 0.9));
+
   return Buffer.from(
     `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" fill="#ffffff" opacity="0.92" />
+      <defs>
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.25"/>
+        </filter>
+      </defs>
+      <rect width="100%" height="100%" rx="${Math.max(4, Math.min(12, height * 0.1))}" fill="#ffffff" opacity="${backgroundOpacity}" filter="url(#shadow)"/>
       ${linesMarkup}
-    </svg>`
+    </svg>`,
   );
 };
 

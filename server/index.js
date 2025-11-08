@@ -1063,7 +1063,7 @@ app.post('/api/translate-image', async (req, res) => {
       textStyle,
       preserveFormatting,
       enhanceReadability,
-      translatedTextsCount: translatedTexts ? translatedTexts.length : 0,
+      translatedTextsCount: translatedTextPairs ? translatedTextPairs.length : 0,
       type: 'translation',
       stage: 'image-translation',
       endpoint: '/api/translate-image'
