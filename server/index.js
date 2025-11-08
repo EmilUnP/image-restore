@@ -8,6 +8,11 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { put, list, del } from '@vercel/blob';
+import {
+  createTextTranslationService,
+  TranslationServiceError,
+  classifyGeminiError,
+} from './lib/text-translation.js';
 
 dotenv.config();
 
@@ -980,163 +985,52 @@ IMPORTANT:
 app.post('/api/translate-text', async (req, res) => {
   try {
     const { texts, targetLanguage = 'en' } = req.body;
-    
+
     if (!texts || !Array.isArray(texts) || texts.length === 0) {
       return res.status(400).json({ error: 'No texts provided' });
     }
 
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'AI service not configured. Please set GEMINI_API_KEY in server/.env file',
-        instructions: 'Get your API key from https://aistudio.google.com/app/apikey and add it to server/.env'
+        instructions: 'Get your API key from https://aistudio.google.com/app/apikey and add it to server/.env',
       });
     }
 
-    // Language name mapping
-    const languageNames = {
-      'en': 'English',
-      'ru': 'Russian',
-      'tr': 'Turkish',
-      'uk': 'Ukrainian',
-    };
-
-    const targetLangName = languageNames[targetLanguage] || targetLanguage;
-
-    const prompt = `You are a professional translator. Translate the following texts to ${targetLangName}. 
-
-CRITICAL REQUIREMENTS:
-1. Return ONLY a valid JSON array
-2. Maintain the exact same order as the input texts
-3. Translate each text accurately and completely
-4. Do not add explanations, comments, or markdown
-5. Return the JSON array directly, no code blocks
-
-Texts to translate:
-${texts.map((text, i) => `${i + 1}. "${text}"`).join('\n')}
-
-Return ONLY this format (JSON array):
-["translation1", "translation2", "translation3"]`;
-
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });
+    const translator = createTextTranslationService(genAI);
 
     try {
-      const generationConfig = {
-        temperature: 0.3, // Lower temperature for more consistent translations
-        topP: 0.95,
-        topK: 40,
-        maxOutputTokens: 2048,
-      };
-      
-      console.log('Sending translation request to Gemini API...');
-      const result = await model.generateContent([prompt], { generationConfig });
-      const response = await result.response;
-      const text = response.text();
-      console.log('Received response from Gemini API, length:', text.length);
-      
-      // Try to parse JSON from response
-      let translations = [];
-      console.log('Raw AI response:', text);
-      
-      try {
-        // Strategy 1: Extract JSON from markdown code blocks
-        const jsonMatch = text.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
-        if (jsonMatch) {
-          console.log('Found JSON in code block');
-          translations = JSON.parse(jsonMatch[1]);
-        } else {
-          // Strategy 2: Try to find JSON array in the text
-          const arrayMatch = text.match(/\[[\s\S]*\]/);
-          if (arrayMatch) {
-            console.log('Found JSON array in text');
-            translations = JSON.parse(arrayMatch[0]);
-          } else {
-            // Strategy 3: Try parsing the entire response
-            console.log('Trying to parse entire response as JSON');
-            translations = JSON.parse(text.trim());
-          }
-        }
-        console.log('Parsed translations:', translations);
-      } catch (parseError) {
-        console.error('JSON parsing failed:', parseError);
-        console.log('Attempting fallback extraction...');
-        
-        // Fallback: Try to extract translations from numbered list or quoted strings
-        try {
-          // Try to find quoted strings
-          const quotedMatches = text.matchAll(/"([^"]+)"/g);
-          const quoted = Array.from(quotedMatches).map(m => m[1]);
-          
-          if (quoted.length >= texts.length) {
-            console.log('Using quoted strings as translations');
-            translations = quoted.slice(0, texts.length);
-          } else {
-            // Try numbered list format
-            const lines = text.split('\n')
-              .filter(line => line.trim().length > 0)
-              .filter(line => /^\d+\./.test(line.trim()));
-            
-            if (lines.length >= texts.length) {
-              console.log('Using numbered list as translations');
-              translations = lines.slice(0, texts.length).map(line => 
-                line.replace(/^\d+\.\s*["']?|["']?$/g, '').trim()
-              );
-            } else {
-              // Last resort: split by lines and take first N
-              const allLines = text.split('\n')
-                .filter(line => line.trim().length > 0)
-                .filter(line => !line.match(/^[\[\]{}",\s]*$/))
-                .slice(0, texts.length);
-              
-              translations = allLines.map(line => line.trim().replace(/^["']|["']$/g, ''));
-            }
-          }
-        } catch (fallbackError) {
-          console.error('Fallback extraction also failed:', fallbackError);
-          translations = [];
-        }
-      }
-
-      // Validate translations
-      if (!Array.isArray(translations)) {
-        console.error('Translations is not an array:', translations);
-        translations = [];
-      }
-      
-      // Ensure we have the same number of translations as texts
-      if (translations.length !== texts.length) {
-        console.warn(`Translation count mismatch: expected ${texts.length}, got ${translations.length}`);
-        // Pad with empty strings or truncate
-        while (translations.length < texts.length) {
-          translations.push("");
-        }
-        translations = translations.slice(0, texts.length);
-      }
-      
-      // Log final translations
-      console.log(`Final translations (${translations.length}):`, translations);
-      texts.forEach((text, i) => {
-        console.log(`  "${text}" -> "${translations[i]}"`);
+      const { translations, sanitizedCount, targetLanguageName } = await translator.translateTexts({
+        texts,
+        targetLanguage,
       });
 
-      return res.json({ 
+      if (sanitizedCount === 0) {
+        return res.json({
+          translations,
+          message: 'No valid text content received for translation',
+        });
+      }
+
+      return res.json({
         translations,
-        message: `Translated ${translations.length} text(s) to ${targetLangName}`,
+        message: `Translated ${sanitizedCount} text(s) to ${targetLanguageName}`,
       });
-
     } catch (error) {
+      const handledError = error instanceof TranslationServiceError ? error : classifyGeminiError(error);
       console.error('Gemini API error:', error);
-      return res.status(500).json({ 
-        error: 'Failed to translate text',
-        details: error.message || 'Unknown error'
+      return res.status(handledError.statusCode).json({
+        error: handledError.message,
+        details: handledError.details || error.message || 'Unknown error',
       });
     }
   } catch (error) {
     console.error('Text translation error:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Internal server error',
-      details: error.message || 'Unknown error'
+      details: error.message || 'Unknown error',
     });
   }
 });

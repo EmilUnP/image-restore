@@ -193,7 +193,12 @@ export const translateText = async (request: TranslateTextRequest): Promise<Tran
       let errorMessage = `Failed to translate text. Status: ${response.status}`;
       try {
         const errorData = await response.json();
-        errorMessage = errorData.error || errorMessage;
+        const details = [errorData.error, errorData.details, errorData.instructions]
+          .filter((value) => typeof value === 'string' && value.trim().length > 0)
+          .join(' - ');
+        if (details.length > 0) {
+          errorMessage = details;
+        }
       } catch (e) {
         const errorText = await response.text();
         errorMessage = errorText || errorMessage;
