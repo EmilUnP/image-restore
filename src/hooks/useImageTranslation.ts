@@ -128,10 +128,26 @@ export const useImageTranslation = () => {
   ) => {
     setIsProcessing(true);
     try {
-      const textPairs = translatedTexts?.map(t => ({
-        original: t.text || "",
-        translated: t.translatedText || "",
-      })).filter(pair => pair.original && pair.translated);
+      const textPairs = translatedTexts
+        ?.map(t => {
+          const original = (t.text || "").trim();
+          const translated = (t.translatedText || "").trim();
+          const boundingBox = t.boundingBox
+            ? {
+                x: t.boundingBox.x,
+                y: t.boundingBox.y,
+                width: t.boundingBox.width,
+                height: t.boundingBox.height,
+              }
+            : undefined;
+
+          return {
+            original,
+            translated,
+            boundingBox,
+          };
+        })
+        .filter(pair => pair.original.length > 0 && pair.translated.length > 0);
       
       console.log('Processing translation with text pairs:', textPairs);
       console.log('Settings:', settings);

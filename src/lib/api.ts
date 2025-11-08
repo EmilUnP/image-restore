@@ -30,7 +30,16 @@ export interface TranslateTextResponse {
 export interface TranslateImageRequest {
   image: string;
   targetLanguage: string;
-  translatedTexts?: Array<{ original: string; translated: string }>;
+  translatedTexts?: Array<{
+    original: string;
+    translated: string;
+    boundingBox?: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+  }>;
   correctedTexts?: string[];
   quality?: "standard" | "premium" | "ultra";
   fontMatching?: "auto" | "preserve" | "native";

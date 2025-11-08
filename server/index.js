@@ -13,6 +13,7 @@ import {
   TranslationServiceError,
   classifyGeminiError,
 } from './lib/text-translation.js';
+import { applyTextOverlaysToImage } from './lib/local-image-translation.js';
 
 dotenv.config();
 
@@ -1038,10 +1039,10 @@ app.post('/api/translate-text', async (req, res) => {
 // Image text translation endpoint
 app.post('/api/translate-image', async (req, res) => {
   try {
-    const { 
-      image, 
-      targetLanguage = 'en', 
-      translatedTexts,
+    const {
+      image,
+      targetLanguage = 'en',
+      translatedTexts: translatedTextPairs,
       correctedTexts,
       quality = 'premium',
       fontMatching = 'auto',
@@ -1089,24 +1090,28 @@ app.post('/api/translate-image', async (req, res) => {
     // Log received data for debugging
     console.log('Translation request received:');
     console.log('- Target language:', targetLangName);
-    console.log('- Translated texts pairs:', translatedTexts ? translatedTexts.length : 0);
+    console.log('- Translated texts pairs:', translatedTextPairs ? translatedTextPairs.length : 0);
     console.log('- Corrected texts:', correctedTexts ? correctedTexts.length : 0);
-    if (translatedTexts && translatedTexts.length > 0) {
-      console.log('- Text pairs:', translatedTexts.map(p => `${p.original} → ${p.translated}`));
+    if (translatedTextPairs && translatedTextPairs.length > 0) {
+      console.log('- Text pairs:', translatedTextPairs.map(p => `${p.original} → ${p.translated}`));
     }
     
     // Build comprehensive prompt based on settings
     let prompt = `You are an expert image translation specialist. Replace ALL text in this image with the provided translations, maintaining professional quality and attention to detail.\n\n`;
     
     // Add translated text pairs if provided (preferred method)
-    if (translatedTexts && Array.isArray(translatedTexts) && translatedTexts.length > 0) {
+    if (translatedTextPairs && Array.isArray(translatedTextPairs) && translatedTextPairs.length > 0) {
       prompt += `CRITICAL INSTRUCTIONS - READ CAREFULLY:\n\n`;
       prompt += `You MUST find and replace the following text in the image EXACTLY as specified:\n\n`;
-      translatedTexts.forEach((pair, i) => {
+      translatedTextPairs.forEach((pair, i) => {
         if (pair.original && pair.translated) {
           prompt += `${i + 1}. Find the text: "${pair.original}"\n`;
           prompt += `   Replace it with: "${pair.translated}"\n`;
           prompt += `   Keep the same position, size, font, and style\n\n`;
+          if (pair.boundingBox) {
+            const { x, y, width, height } = pair.boundingBox;
+            prompt += `   Bounding box (approx): x=${Math.round(x)}, y=${Math.round(y)}, width=${Math.round(width)}, height=${Math.round(height)}\n\n`;
+          }
         }
       });
       prompt += `VERY IMPORTANT:\n`;
@@ -1145,9 +1150,9 @@ app.post('/api/translate-image', async (req, res) => {
     };
     
     prompt += `TRANSLATION REQUIREMENTS:\n\n`;
-    if (translatedTexts && translatedTexts.length > 0) {
+    if (translatedTextPairs && translatedTextPairs.length > 0) {
       prompt += `1. TEXT REPLACEMENT (MANDATORY):\n`;
-      prompt += `   - You have been given ${translatedTexts.length} specific text replacement pairs\n`;
+      prompt += `   - You have been given ${translatedTextPairs.length} specific text replacement pairs\n`;
       prompt += `   - For EACH pair, find the original text in the image and replace it with the translation\n`;
       prompt += `   - Use the EXACT translations provided - do NOT modify, improve, or change them\n`;
       prompt += `   - Match text positions, sizes, fonts, colors, and styles EXACTLY\n`;
@@ -1235,8 +1240,24 @@ app.post('/api/translate-image', async (req, res) => {
       }
       
       // If translated image is returned, use it
+      if (!translatedImageBase64 && translatedTextPairs && translatedTextPairs.length > 0) {
+        console.warn('Gemini did not return an inline image. Falling back to local renderer.');
+        try {
+          const overlayImage = await applyTextOverlaysToImage(image, translatedTextPairs);
+          if (overlayImage) {
+            return res.json({
+              translatedImage: overlayImage,
+              message: `Applied ${translatedTextPairs.length} translations using fallback renderer.`,
+              targetLanguage: targetLangName,
+            });
+          }
+        } catch (fallbackError) {
+          console.error('Fallback translation renderer failed:', fallbackError);
+        }
+      }
+
       if (translatedImageBase64) {
-        return res.json({ 
+        return res.json({
           translatedImage: `data:${mimeType};base64,${translatedImageBase64}`,
           message: `Image text translated successfully to ${targetLangName}.`,
           targetLanguage: targetLangName
@@ -1244,7 +1265,7 @@ app.post('/api/translate-image', async (req, res) => {
       } else {
         // Return original image with analysis
         const text = response.text();
-        return res.json({ 
+        return res.json({
           translatedImage: image,
           analysis: text,
           message: `Translation processed. Note: Gemini may provide analysis instead of translated images.`,
