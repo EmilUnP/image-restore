@@ -3,14 +3,15 @@ setlocal enabledelayedexpansion
 
 REM This script should be called from the project directory
 REM Verify we're in the correct directory
+set "PROJECT_DIR=%CD%"
 echo [Backend] Starting server...
-echo [Backend] Working directory: %CD%
+echo [Backend] Working directory: "!PROJECT_DIR!"
 echo.
 
 REM Verify we're in the correct directory
 if not exist "package.json" (
     echo [ERROR] package.json not found in current directory!
-    echo [ERROR] Expected location: %CD%
+    echo [ERROR] Expected location: "!PROJECT_DIR!"
     echo.
     pause
     exit /b 1
@@ -19,7 +20,7 @@ if not exist "package.json" (
 REM Verify server directory exists
 if not exist "server\index.js" (
     echo [ERROR] server\index.js not found!
-    echo [ERROR] Expected location: %CD%\server\index.js
+    echo [ERROR] Expected location: "!PROJECT_DIR!\server\index.js"
     echo.
     pause
     exit /b 1
