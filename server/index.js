@@ -660,7 +660,7 @@ app.post('/api/enhance-image', async (req, res) => {
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image" });
 
     try {
       // Determine MIME type from base64 string
@@ -768,7 +768,7 @@ app.post('/api/detect-text', async (req, res) => {
     // Model selection: Use requested model or default to best text detection model
      const availableModels = [
       'gemini-2.0-flash-exp',      // Best for text detection (experimental)
-      'gemini-2.5-flash-image-preview', // Current default
+      'gemini-3-pro-image', // Current default
     ];
     
     // Default to flash which is more stable and available
@@ -1206,7 +1206,7 @@ app.post('/api/translate-image', async (req, res) => {
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image" });
 
     try {
       // Determine MIME type from base64 string

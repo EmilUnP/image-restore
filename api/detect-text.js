@@ -3,7 +3,7 @@ import { saveUploadedImage } from './lib/blob-storage.js';
 
 const AVAILABLE_MODELS = [
   'gemini-2.0-flash-exp',
-  'gemini-2.5-flash-image-preview',
+  'gemini-3-pro-image',
   'gemini-2.0-flash',
 ];
 
