@@ -10,15 +10,28 @@ interface HeaderProps {
   onMenuClick?: () => void;
   showMenuButton?: boolean;
   onProfileClick?: () => void;
+  loginDialogOpen?: boolean;
+  onLoginDialogOpenChange?: (open: boolean) => void;
 }
 
-export const Header = ({ onMenuClick, showMenuButton = false, onProfileClick }: HeaderProps) => {
+export const Header = ({ 
+  onMenuClick, 
+  showMenuButton = false, 
+  onProfileClick,
+  loginDialogOpen: externalLoginOpen,
+  onLoginDialogOpenChange: setExternalLoginOpen
+}: HeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
+  const [internalLoginOpen, setInternalLoginOpen] = useState(false);
   const { user, login, logout, isLoading } = useAuthContext();
+  
+  // Use external state if provided, otherwise use internal state
+  const loginOpen = externalLoginOpen !== undefined ? externalLoginOpen : internalLoginOpen;
+  const setLoginOpen = setExternalLoginOpen || setInternalLoginOpen;
 
   const handleLogin = async (email: string, password: string) => {
     await login(email, password);
+    setLoginOpen(false);
   };
 
   const handleLogout = () => {

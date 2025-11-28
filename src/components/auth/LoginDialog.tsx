@@ -32,8 +32,8 @@ export const LoginDialog = ({
     e.preventDefault();
     try {
       await onLogin(email, password);
-      toast.success("Welcome back!");
-      onOpenChange(false);
+      toast.success("Welcome to VisionAI!");
+      // Dialog will be closed by parent component
     } catch (error) {
       toast.error("Login failed. Please try again.");
     }

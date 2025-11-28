@@ -4,7 +4,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, User, Mail, Calendar, Sparkles, Settings } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 
 interface ProfilePageProps {
   onBack?: () => void;

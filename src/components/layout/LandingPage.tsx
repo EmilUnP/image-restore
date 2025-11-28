@@ -247,7 +247,7 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
               Ready to Transform Your Images?
             </h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Start using our AI-powered tools today. No sign-up required.
+              Start using our AI-powered tools today. Sign in to get started.
             </p>
             <div className="pt-4">
               <Button

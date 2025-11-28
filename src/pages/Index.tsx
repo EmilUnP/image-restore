@@ -19,9 +19,12 @@ const Index = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('landing');
   const { isAuthenticated } = useAuthContext();
 
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+
   const handleFunctionSelect = (func: AppFunction) => {
     if (!isAuthenticated) {
-      // If not logged in, show login dialog (handled by Header)
+      // If not logged in, show login dialog
+      setLoginDialogOpen(true);
       return;
     }
     setSelectedFunction(func);
@@ -69,10 +72,17 @@ const Index = () => {
 
   // Auto-open sidebar on desktop when logged in
   useEffect(() => {
-    if (isAuthenticated && !selectedFunction) {
+    if (isAuthenticated && !selectedFunction && viewMode === 'landing') {
       setSidebarOpen(true);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, selectedFunction, viewMode]);
+
+  // After successful login, close dialog
+  useEffect(() => {
+    if (isAuthenticated && loginDialogOpen) {
+      setLoginDialogOpen(false);
+    }
+  }, [isAuthenticated, loginDialogOpen]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-accent/5">
@@ -87,6 +97,8 @@ const Index = () => {
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
         showMenuButton={isAuthenticated}
         onProfileClick={handleProfileClick}
+        loginDialogOpen={loginDialogOpen}
+        onLoginDialogOpenChange={setLoginDialogOpen}
       />
       
       <div className="flex flex-1 relative">
