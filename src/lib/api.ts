@@ -229,6 +229,7 @@ export interface GenerateIconRequest {
   style?: string;
   size?: string;
   referencePrompt?: string;
+  referenceImage?: string;
   isVariant?: boolean;
 }
 

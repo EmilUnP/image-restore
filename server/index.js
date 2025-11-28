@@ -795,7 +795,7 @@ const iconUpgradeLevelPrompts = {
 // Generate icon endpoint
 app.post('/api/generate-icon', async (req, res) => {
   try {
-    const { prompt, style = 'modern', size = '512', referencePrompt, isVariant = false } = req.body;
+    const { prompt, style = 'modern', size = '512', referencePrompt, referenceImage, isVariant = false } = req.body;
     
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({ error: 'No prompt provided' });
@@ -815,8 +815,25 @@ app.post('/api/generate-icon', async (req, res) => {
 
     // Build the icon generation prompt
     let iconPrompt;
-    if (isVariant && referencePrompt) {
-      // For variants, include instructions to maintain consistency with the main prompt
+    if (isVariant && referenceImage) {
+      // For variants with image reference, instruct to match the visual style exactly
+      iconPrompt = `Generate a high-quality icon variant for web use. ${styleConfig.prompt}
+
+Look at the reference icon image provided. Create a new related icon that represents: "${prompt}".
+
+CRITICAL VISUAL CONSISTENCY REQUIREMENTS (match the reference icon exactly):
+- Use the EXACT SAME colors, gradients, and color palette from the reference icon
+- Match the exact line weight, stroke width, and thickness
+- Use identical corner radius, rounding, and edge treatment
+- Replicate the same shadow, highlight, and lighting effects
+- Maintain the same visual density and detail level
+- Match the same overall proportions, scale, and visual weight
+- Use the same design language, style, and aesthetic approach
+- Ensure this variant looks like it was created by the same designer and belongs to the same icon set/family
+
+The new icon should represent "${prompt}" but visually match the reference icon in every way possible. The icon should be suitable for use in modern web applications, with clear visual communication, scalable design, and appropriate size of ${size}x${size} pixels.`;
+    } else if (isVariant && referencePrompt) {
+      // Fallback: variant with only text reference
       iconPrompt = `Generate a high-quality icon variant for web use. ${styleConfig.prompt} 
 
 This icon is part of a set. The main icon represents: "${referencePrompt}". 
@@ -842,7 +859,29 @@ The icon should be suitable for use in modern web applications, with clear visua
     const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
 
     try {
-      const result = await model.generateContent([iconPrompt]);
+      // If we have a reference image, send both prompt and image
+      let result;
+      if (isVariant && referenceImage) {
+        // Extract MIME type and base64 data from reference image
+        let mimeType = "image/png";
+        let base64Data = referenceImage;
+        
+        if (referenceImage.includes('data:image/')) {
+          const mimeMatch = referenceImage.match(/data:image\/([^;]+)/);
+          if (mimeMatch) {
+            mimeType = `image/${mimeMatch[1]}`;
+          }
+          base64Data = referenceImage.split(',')[1] || referenceImage;
+        }
+        
+        result = await model.generateContent([
+          iconPrompt,
+          { inlineData: { data: base64Data, mimeType } }
+        ]);
+      } else {
+        // Standard generation without image reference
+        result = await model.generateContent([iconPrompt]);
+      }
       const response = await result.response;
       
       // Try to get image from response

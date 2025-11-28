@@ -159,7 +159,10 @@ export const useIconGeneration = () => {
         toast.error(`Failed to generate main icon: ${mainPrompt}`, { duration: 3000 });
       }
       
-      // Then generate variants with reference to the main prompt
+      // Get the generated main icon image for visual reference
+      const mainIconImage = generated.length > 0 ? generated[0].image : null;
+      
+      // Then generate variants with visual reference to the main icon
       for (let i = 0; i < variants.length; i++) {
         const variantPrompt = variants[i];
         
@@ -170,7 +173,8 @@ export const useIconGeneration = () => {
             prompt: variantPrompt,
             style,
             size,
-            referencePrompt: mainPrompt, // Pass main prompt as reference
+            referencePrompt: mainPrompt, // Pass main prompt as text reference
+            referenceImage: mainIconImage || undefined, // Pass generated main icon as visual reference
             isVariant: true, // Mark this as a variant
           };
 
