@@ -306,64 +306,6 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                 </Button>
               </div>
             </Card>
-          ) : !generatedIcon ? (
-            <Card className="space-y-6 p-6">
-              <div className="text-center mb-4">
-                <h2 className="text-xl font-semibold mb-2">Ready to Generate</h2>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Style: <span className="font-medium capitalize">{style}</span> • 
-                  Size: <span className="font-medium">{size}x{size}</span>
-                </p>
-                <div className="flex items-center justify-center gap-3">
-                  <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
-                    Change Settings
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                  <p className="text-sm font-medium">Main Icon:</p>
-                  <p className="text-sm text-muted-foreground">{prompt}</p>
-                  {useVariants && variants.some(v => v.trim()) && (
-                    <>
-                      <p className="text-sm font-medium mt-3">Variants:</p>
-                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                        {variants.filter(v => v.trim()).map((variant, i) => (
-                          <li key={i}>{variant}</li>
-                        ))}
-                      </ul>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Will generate {1 + variants.filter(v => v.trim()).length} icon{1 + variants.filter(v => v.trim()).length > 1 ? 's' : ''} total
-                      </p>
-                    </>
-                  )}
-                </div>
-
-                <Button
-                  onClick={handleGenerate}
-                  className="w-full"
-                  disabled={isGenerating || !prompt.trim() || (useVariants && variants.every(v => !v.trim()))}
-                  size="lg"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                      {useVariants && variants.some(v => v.trim()) 
-                        ? `Generating ${1 + variants.filter(v => v.trim()).length} Icons...`
-                        : 'Generating Icon...'}
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      {useVariants && variants.some(v => v.trim())
-                        ? `Generate ${1 + variants.filter(v => v.trim()).length} Icons`
-                        : 'Generate Icon'}
-                    </>
-                  )}
-                </Button>
-              </div>
-            </Card>
           ) : generatedIcons.length > 0 || isGenerating ? (
             <>
               <div className="mb-6">
@@ -418,16 +360,24 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                 )}
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-                {generatedIcons.map((icon) => (
-                  <Card key={icon.id} className="overflow-hidden">
-                    <div className="aspect-square p-4 bg-muted/30 flex items-center justify-center">
-                      <img
-                        src={icon.image}
-                        alt={icon.prompt}
-                        className="max-w-full max-h-full object-contain rounded"
-                      />
-                    </div>
+              {generatedIcons.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+                  {generatedIcons.map((icon) => (
+                    <Card key={icon.id} className="overflow-hidden">
+                      <div className="aspect-square p-4 bg-muted/30 flex items-center justify-center">
+                        {icon.image ? (
+                          <img
+                            src={icon.image}
+                            alt={icon.prompt}
+                            className="max-w-full max-h-full object-contain rounded"
+                          />
+                        ) : (
+                          <div className="text-center space-y-2">
+                            <Sparkles className="w-8 h-8 mx-auto animate-spin text-primary" />
+                            <p className="text-xs text-muted-foreground">Generating...</p>
+                          </div>
+                        )}
+                      </div>
                     <CardContent className="p-4">
                       <p className="text-xs font-medium mb-2 truncate" title={icon.prompt}>
                         {icon.prompt}
@@ -452,15 +402,17 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                           <p className="text-[10px] font-mono break-words line-clamp-2">{icon.actualPrompt}</p>
                         </div>
                       )}
-                      <Button
-                        onClick={() => handleDownloadIcon(icon)}
-                        size="sm"
-                        variant="outline"
-                        className="w-full gap-2"
-                      >
-                        <Download className="w-3 h-3" />
-                        Download
-                      </Button>
+                      {icon.image && (
+                        <Button
+                          onClick={() => handleDownloadIcon(icon)}
+                          size="sm"
+                          variant="outline"
+                          className="w-full gap-2"
+                        >
+                          <Download className="w-3 h-3" />
+                          Download
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -480,21 +432,37 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   </Card>
                 )}
               </div>
+              ) : isGenerating ? (
+                <div className="text-center py-8">
+                  <Sparkles className="w-12 h-12 mx-auto animate-spin text-primary mb-4" />
+                  <p className="text-muted-foreground">Starting generation...</p>
+                </div>
+              ) : null}
 
-              <div className="flex gap-3 justify-center">
-                <Button
-                  onClick={() => {
-                    reset();
-                    setSettingsConfigured(false);
-                    setPrompt('');
-                    setVariants(['']);
-                    setUseVariants(false);
-                  }}
-                  variant="outline"
-                >
-                  Generate Another
-                </Button>
-              </div>
+              {generatedIcons.length > 0 && (
+                <div className="flex gap-3 justify-center">
+                  <Button
+                    onClick={handleDownloadAll}
+                    className="gap-2"
+                    disabled={isGenerating || generatedIcons.filter(i => i.image).length === 0}
+                  >
+                    <Download className="w-4 h-4" />
+                    Download All
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      reset();
+                      setSettingsConfigured(false);
+                      setPrompt('');
+                      setVariants(['']);
+                      setUseVariants(false);
+                    }}
+                    variant="outline"
+                  >
+                    Generate Another Set
+                  </Button>
+                </div>
+              )}
             </>
           ) : generatedIcon ? (
             <>
