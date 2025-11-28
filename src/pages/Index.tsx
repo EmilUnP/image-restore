@@ -48,7 +48,14 @@ const Index = () => {
   }, [selectedFunction]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-accent/5">
+      {/* Background Effects */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-primary/5 to-accent/5 rounded-full blur-3xl" />
+      </div>
+
       <Header 
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
         showMenuButton={true}
@@ -64,8 +71,8 @@ const Index = () => {
         />
 
         {/* Main Content */}
-        <main className="flex-1 lg:ml-64 transition-all duration-300">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex-1 lg:ml-72 transition-all duration-300 relative z-10">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
             {!selectedFunction ? (
               <LandingPage onFunctionSelect={handleFunctionSelect} />
             ) : selectedFunction === 'enhance' ? (
