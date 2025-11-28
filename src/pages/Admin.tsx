@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Image as ImageIcon, Folder, X, Download } from "lucide-react";
+import { Trash2, Image as ImageIcon, Folder, X, Download, Sparkles, RefreshCw, CheckCircle2, XCircle, AlertCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 interface ImageItem {
   filename: string;
@@ -32,11 +33,32 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl();
 
+interface IconLog {
+  id: string;
+  timestamp: string;
+  type: string;
+  mode: 'variant' | 'standard';
+  request: {
+    prompt: string;
+    style: string;
+    size: string;
+    isVariant: boolean;
+    hasReferenceImage: boolean;
+    referencePrompt?: string;
+  };
+  status: 'processing' | 'success' | 'error' | 'warning';
+  duration: number | null;
+  response: any;
+  error: string | null;
+}
+
 export const Admin = () => {
-  const [selectedFolder, setSelectedFolder] = useState<'enhancement' | 'translation'>('enhancement');
+  const [selectedFolder, setSelectedFolder] = useState<'enhancement' | 'translation' | 'icons'>('enhancement');
   const [enhancementImages, setEnhancementImages] = useState<ImageItem[]>([]);
   const [translationImages, setTranslationImages] = useState<ImageItem[]>([]);
+  const [iconLogs, setIconLogs] = useState<IconLog[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingLogs, setLoadingLogs] = useState(false);
   const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -77,12 +99,37 @@ export const Admin = () => {
     }
   };
 
+  const loadIconLogs = async () => {
+    setLoadingLogs(true);
+    try {
+      const response = await fetch(`${API_URL}/api/admin/icon-logs?limit=200`);
+      if (!response.ok) {
+        throw new Error(`Failed to load logs: ${response.status}`);
+      }
+      const data = await response.json();
+      setIconLogs(data.logs || []);
+    } catch (error) {
+      console.error('Error loading icon logs:', error);
+      toast.error('Failed to load icon processing logs');
+      setIconLogs([]);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
   // Load images when folder changes or on mount
   useEffect(() => {
-    loadImages(selectedFolder);
-    // Also load the other folder in background
-    const otherFolder = selectedFolder === 'enhancement' ? 'translation' : 'enhancement';
-    loadImages(otherFolder);
+    if (selectedFolder === 'icons') {
+      loadIconLogs();
+      // Set up auto-refresh every 5 seconds when viewing logs
+      const interval = setInterval(loadIconLogs, 5000);
+      return () => clearInterval(interval);
+    } else {
+      loadImages(selectedFolder);
+      // Also load the other folder in background
+      const otherFolder = selectedFolder === 'enhancement' ? 'translation' : 'enhancement';
+      loadImages(otherFolder);
+    }
   }, [selectedFolder]);
 
   const handleDelete = async (filename: string, folder: 'enhancement' | 'translation') => {
@@ -147,8 +194,8 @@ export const Admin = () => {
         </div>
 
         {/* Enhanced Folder Tabs */}
-        <Tabs value={selectedFolder} onValueChange={(v) => setSelectedFolder(v as 'enhancement' | 'translation')} className="mb-8">
-          <TabsList className="grid w-full max-w-lg grid-cols-2 bg-card/80 backdrop-blur-md border border-border/50 shadow-lg rounded-2xl p-1.5">
+        <Tabs value={selectedFolder} onValueChange={(v) => setSelectedFolder(v as 'enhancement' | 'translation' | 'icons')} className="mb-8">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3 bg-card/80 backdrop-blur-md border border-border/50 shadow-lg rounded-2xl p-1.5">
             <TabsTrigger 
               value="enhancement" 
               className="gap-2 rounded-xl font-semibold text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/90 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
@@ -162,6 +209,13 @@ export const Admin = () => {
             >
               <Folder className="w-5 h-5" />
               Translation ({translationImages.length})
+            </TabsTrigger>
+            <TabsTrigger 
+              value="icons" 
+              className="gap-2 rounded-xl font-semibold text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+            >
+              <Sparkles className="w-5 h-5" />
+              Icon Processing ({iconLogs.length})
             </TabsTrigger>
           </TabsList>
 
@@ -272,6 +326,117 @@ export const Admin = () => {
                         {image.targetLanguage && <p>Language: {image.targetLanguage}</p>}
                         <p className="text-[10px]">{formatDate(image.created)}</p>
                       </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="icons" className="mt-6">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-2xl font-semibold">Icon Processing Logs</h2>
+              <Button onClick={loadIconLogs} variant="outline" size="sm" disabled={loadingLogs}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${loadingLogs ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
+            
+            {loadingLogs && iconLogs.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <p className="mt-4 text-muted-foreground">Loading icon processing logs...</p>
+              </div>
+            ) : iconLogs.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Sparkles className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="text-muted-foreground">No icon processing logs found</p>
+                  <p className="text-sm text-muted-foreground mt-2">Generate some icons to see processing logs here</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {iconLogs.map((log) => (
+                  <Card key={log.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {log.status === 'success' && (
+                            <Badge variant="default" className="bg-green-500">
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              Success
+                            </Badge>
+                          )}
+                          {log.status === 'error' && (
+                            <Badge variant="destructive">
+                              <XCircle className="w-3 h-3 mr-1" />
+                              Error
+                            </Badge>
+                          )}
+                          {log.status === 'warning' && (
+                            <Badge variant="secondary" className="bg-yellow-500">
+                              <AlertCircle className="w-3 h-3 mr-1" />
+                              Warning
+                            </Badge>
+                          )}
+                          {log.status === 'processing' && (
+                            <Badge variant="secondary">
+                              <Clock className="w-3 h-3 mr-1 animate-spin" />
+                              Processing
+                            </Badge>
+                          )}
+                          {log.mode === 'variant' && (
+                            <Badge variant="outline" className="border-purple-500 text-purple-600">
+                              Variant
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground">{formatDate(log.timestamp)}</span>
+                        </div>
+                        {log.duration && (
+                          <span className="text-xs text-muted-foreground">
+                            {log.duration}ms
+                          </span>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <p className="text-sm font-semibold mb-1">Prompt:</p>
+                        <p className="text-sm text-muted-foreground">{log.request.prompt}</p>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="font-medium">Style</p>
+                          <p className="text-muted-foreground capitalize">{log.request.style}</p>
+                        </div>
+                        <div>
+                          <p className="font-medium">Size</p>
+                          <p className="text-muted-foreground">{log.request.size}x{log.request.size}</p>
+                        </div>
+                        <div>
+                          <p className="font-medium">Mode</p>
+                          <p className="text-muted-foreground capitalize">{log.mode}</p>
+                        </div>
+                        {log.request.hasReferenceImage && (
+                          <div>
+                            <p className="font-medium">Has Reference</p>
+                            <p className="text-muted-foreground">Yes</p>
+                          </div>
+                        )}
+                      </div>
+                      {log.error && (
+                        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                          <p className="text-sm font-semibold text-destructive mb-1">Error:</p>
+                          <p className="text-sm text-destructive">{log.error}</p>
+                        </div>
+                      )}
+                      {log.response?.message && (
+                        <div className="p-3 bg-muted/50 rounded-lg">
+                          <p className="text-sm font-semibold mb-1">Response:</p>
+                          <p className="text-sm text-muted-foreground">{log.response.message}</p>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}

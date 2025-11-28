@@ -76,21 +76,114 @@ export default async function handler(req, res) {
     let iconPrompt;
     if (isVariant && referenceImage) {
       // For variants with image reference, instruct to match the visual style exactly
-      iconPrompt = `Generate a high-quality icon variant for web use. ${styleConfig.prompt}
+      iconPrompt = `You are an expert icon designer creating consistent icon sets. You will receive a reference icon image - analyze it FIRST before generating anything.
 
-Look at the reference icon image provided. Create a new related icon that represents: "${prompt}".
+TASK: Create a new icon that represents "${prompt}" while maintaining PERFECT visual consistency with the reference icon image you see.
 
-CRITICAL VISUAL CONSISTENCY REQUIREMENTS (match the reference icon exactly):
-- Use the EXACT SAME colors, gradients, and color palette from the reference icon
-- Match the exact line weight, stroke width, and thickness
-- Use identical corner radius, rounding, and edge treatment
-- Replicate the same shadow, highlight, and lighting effects
-- Maintain the same visual density and detail level
-- Match the same overall proportions, scale, and visual weight
-- Use the same design language, style, and aesthetic approach
-- Ensure this variant looks like it was created by the same designer and belongs to the same icon set/family
+IMPORTANT: The reference icon image is shown to you. Study it carefully before proceeding.
 
-The new icon should represent "${prompt}" but visually match the reference icon in every way possible. The icon should be suitable for use in modern web applications, with clear visual communication, scalable design, and appropriate size of ${size}x${size} pixels.`;
+STEP 1 - DEEP VISUAL ANALYSIS (REQUIRED - DO THIS FIRST):
+Before generating anything, carefully examine the reference icon image and document these visual elements:
+
+COLORS & PALETTE:
+- Identify all primary colors used (RGB/hex values if possible)
+- Note any gradients: direction, colors involved, gradient type (linear, radial, etc.)
+- Document the exact color palette (e.g., "blue #0066FF, white #FFFFFF, shadow #000000 at 30% opacity")
+- Note any color overlays, tints, or filters applied
+
+STROKES & LINES:
+- Measure/identify the exact stroke width/thickness in pixels or relative units
+- Note stroke style: solid, dashed, dotted, or other patterns
+- Document stroke color and opacity
+- Note if strokes have rounded or square end caps
+
+SHAPES & GEOMETRY:
+- Measure corner radius: sharp (0px), slightly rounded, or heavily rounded
+- Note edge treatment: beveled, embossed, flat, or 3D
+- Identify shape complexity: simple geometric or detailed
+- Document proportions: aspect ratio, width to height relationships
+
+EFFECTS & LAYERING:
+- Shadow: depth (distance), blur amount, direction (e.g., "bottom-right"), color, opacity
+- Highlight: position (e.g., "top-left corner"), intensity, color, size
+- Lighting: direction source, style (diffuse, specular, ambient), intensity
+- Gloss/reflection: amount of gloss, reflection style
+- Depth/3D: amount of dimensional effect, perspective type
+
+FILL & TEXTURE:
+- Fill type: solid color, gradient, pattern, or transparent
+- Gradient specifics: if gradient, note exact colors and positions
+- Texture: smooth, textured, or pattern overlay
+- Transparency: areas of transparency or opacity variations
+
+DESIGN LANGUAGE:
+- Overall style: flat design, skeuomorphic, material design, neumorphic, etc.
+- Visual weight: light/thin, medium, or heavy/bold
+- Detail level: minimal, moderate, or highly detailed
+- Complexity: simple (single shape) or complex (multiple elements)
+
+STEP 2 - VISUAL REPLICATION (CRITICAL - COPY EXACTLY FROM REFERENCE):
+Now create the new icon representing "${prompt}" by applying ALL the visual elements you analyzed from the reference:
+
+🔴 MANDATORY EXACT SPECIFICATIONS (NO DEVIATIONS):
+
+1. COLORS → Copy IDENTICAL color values, hex codes, RGB values from reference. Use EXACT same colors, gradients, gradient directions, color stops, and opacity levels.
+
+2. STROKES → Replicate EXACT stroke width (measure precisely), stroke style (solid/dashed/dotted), stroke cap style (round/square/butt), stroke alignment, and stroke color/opacity.
+
+3. CORNERS → Match EXACT corner radius value (in pixels or percentage). If reference has sharp corners (0px radius), use 0px. If rounded, measure and copy exact radius.
+
+4. SHADOWS → Copy EXACT shadow offset (X and Y distance), blur radius, spread amount, shadow direction, shadow color (including opacity), and shadow type (drop shadow, inner shadow, etc.).
+
+5. HIGHLIGHTS/GLOWS → Apply EXACT highlight position (top-left, bottom-right, etc.), highlight size, intensity, color, opacity, and glow effect if present.
+
+6. LIGHTING → Match EXACT light source direction, lighting angle, shadow intensity, highlight intensity, and overall lighting style (diffuse/specular/ambient).
+
+7. FILL → Use EXACT fill type (solid/gradient/pattern/none), gradient angles/positions if gradient, transparency values, and any fill overlays.
+
+8. PROPORTIONS → Maintain EXACT visual weight (thickness), size ratios, spacing between elements, and overall dimensions relative to canvas.
+
+9. DETAIL LEVEL → Keep EXACT same amount of detail - do NOT simplify or add complexity. Match the precise level of intricacy.
+
+10. DESIGN SYSTEM → Preserve EXACT design language, aesthetic approach, visual style category, and overall "feel".
+
+🚫 STRICT PROHIBITIONS:
+   • DO NOT use different colors even if they seem similar
+   • DO NOT change stroke thickness by even 1px
+   • DO NOT modify corner radius values
+   • DO NOT alter shadow properties in any way
+   • DO NOT add visual effects not in reference
+   • DO NOT change the visual weight or thickness
+   • DO NOT simplify or complicate the design
+   • DO NOT introduce new design elements or styles
+
+✅ ONLY ALLOWED CHANGE:
+   • The iconography/content (what the icon represents: "${prompt}")
+
+CRITICAL RULE: Imagine the reference icon as a template. You are ONLY changing what it represents, NOT how it looks. Every visual property must be pixel-perfect identical.
+
+STEP 3 - CONSISTENCY VERIFICATION (MANDATORY CHECK):
+Before finalizing your generation, verify:
+✓ Colors are EXACTLY the same (compare side-by-side)
+✓ Stroke thickness matches EXACTLY
+✓ Corner radius matches EXACTLY
+✓ Shadows are EXACTLY the same (direction, blur, color, opacity)
+✓ Visual weight matches EXACTLY
+✓ Detail level matches EXACTLY
+✓ Overall style matches EXACTLY
+✓ If someone saw both icons, they'd say "same designer, same style"
+✓ Only the iconography/content differs - everything else is identical
+
+${styleConfig.prompt}
+
+TECHNICAL SPECIFICATIONS:
+- Size: ${size}x${size} pixels
+- Format: High-quality, scalable vector-style icon
+- Use: Modern web applications
+- Background compatibility: Both light and dark backgrounds
+- Quality: Professional, production-ready
+
+OUTPUT: Generate ONLY the new icon matching the reference icon's visual style exactly while representing "${prompt}".`;
     } else if (isVariant && referencePrompt) {
       // Fallback: variant with only text reference
       iconPrompt = `Generate a high-quality icon variant for web use. ${styleConfig.prompt} 
@@ -115,7 +208,14 @@ The icon should be suitable for use in modern web applications, with clear visua
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-3-pro-image-preview",
+      generationConfig: isVariant && referenceImage ? {
+        temperature: 0.3, // Lower temperature for more consistent/less random results
+        topP: 0.95,
+        topK: 40,
+      } : undefined
+    });
 
     try {
       // If we have a reference image, send both prompt and image
@@ -133,9 +233,11 @@ The icon should be suitable for use in modern web applications, with clear visua
           base64Data = referenceImage.split(',')[1] || referenceImage;
         }
         
+        // For variants: Put the reference image FIRST, then the prompt
+        // This helps Gemini analyze the image before generating
         result = await model.generateContent([
-          iconPrompt,
-          { inlineData: { data: base64Data, mimeType } }
+          { inlineData: { data: base64Data, mimeType } },
+          iconPrompt
         ]);
       } else {
         // Standard generation without image reference
