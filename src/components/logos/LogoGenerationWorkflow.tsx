@@ -13,7 +13,7 @@ import { StepIndicator } from "@/components/shared/StepIndicator";
 import { useLogoGeneration } from "@/hooks/useLogoGeneration";
 import { downloadImage } from "@/lib/utils";
 import { toast } from "sonner";
-import { Palette, Sparkles } from "lucide-react";
+import { Palette, Sparkles, Copy, Check } from "lucide-react";
 
 interface LogoGenerationWorkflowProps {
   onBack: () => void;
@@ -28,6 +28,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
   const [size, setSize] = useState('1024');
   const [upgradeLevel, setUpgradeLevel] = useState('medium');
   const [settingsConfigured, setSettingsConfigured] = useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
 
   const {
     generatedLogo,
@@ -59,6 +60,17 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
     if (!generatedLogo) return;
     downloadImage(generatedLogo, `logo-${Date.now()}.png`);
     toast.success("Logo downloaded!");
+  };
+
+  const handleCopyPrompt = async (promptText: string) => {
+    try {
+      await navigator.clipboard.writeText(promptText);
+      setCopiedPrompt(true);
+      toast.success('Prompt copied to clipboard! You can now reuse it with small changes.');
+      setTimeout(() => setCopiedPrompt(false), 2000);
+    } catch (error) {
+      toast.error('Failed to copy prompt');
+    }
   };
 
   const handleModeChange = (newMode: 'generate' | 'upgrade') => {
@@ -279,8 +291,31 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                 </p>
                 {actualPrompt && (
                   <div className="p-3 bg-muted/50 rounded-lg border border-border/50 mb-4">
-                    <p className="text-xs font-medium mb-1 text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => handleCopyPrompt(actualPrompt)}
+                      >
+                        {copiedPrompt ? (
+                          <>
+                            <Check className="w-3 h-3 mr-1" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 mr-1" />
+                            Copy Prompt
+                          </>
+                        )}
+                      </Button>
+                    </div>
                     <p className="text-xs text-foreground font-mono break-words">{actualPrompt}</p>
+                    <p className="text-[10px] text-muted-foreground mt-2 italic">
+                      💡 Copy this prompt and reuse it with small changes for better results
+                    </p>
                   </div>
                 )}
               </div>
@@ -464,8 +499,31 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                 </p>
                 {actualPrompt && (
                   <div className="p-3 bg-muted/50 rounded-lg border border-border/50 mb-4">
-                    <p className="text-xs font-medium mb-1 text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => handleCopyPrompt(actualPrompt)}
+                      >
+                        {copiedPrompt ? (
+                          <>
+                            <Check className="w-3 h-3 mr-1" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 mr-1" />
+                            Copy Prompt
+                          </>
+                        )}
+                      </Button>
+                    </div>
                     <p className="text-xs text-foreground font-mono break-words">{actualPrompt}</p>
+                    <p className="text-[10px] text-muted-foreground mt-2 italic">
+                      💡 Copy this prompt and reuse it with small changes for better results
+                    </p>
                   </div>
                 )}
               </div>

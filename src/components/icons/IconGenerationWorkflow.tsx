@@ -14,7 +14,7 @@ import { StepIndicator } from "@/components/shared/StepIndicator";
 import { useIconGeneration } from "@/hooks/useIconGeneration";
 import { downloadImage } from "@/lib/utils";
 import { toast } from "sonner";
-import { Zap, Sparkles, Plus, X, Download } from "lucide-react";
+import { Zap, Sparkles, Plus, X, Download, Copy, Check } from "lucide-react";
 
 interface IconGenerationWorkflowProps {
   onBack: () => void;
@@ -29,6 +29,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
   const [size, setSize] = useState('512');
   const [upgradeLevel, setUpgradeLevel] = useState('medium');
   const [settingsConfigured, setSettingsConfigured] = useState(false);
+  const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
 
   const {
     generatedIcon,
@@ -85,6 +86,17 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
   const handleDownloadIcon = (icon: typeof generatedIcons[0]) => {
     downloadImage(icon.image, icon.fileName);
     toast.success(`${icon.prompt} downloaded!`);
+  };
+
+  const handleCopyPrompt = async (promptText: string, promptId: string) => {
+    try {
+      await navigator.clipboard.writeText(promptText);
+      setCopiedPromptId(promptId);
+      toast.success('Prompt copied to clipboard!');
+      setTimeout(() => setCopiedPromptId(null), 2000);
+    } catch (error) {
+      toast.error('Failed to copy prompt');
+    }
   };
 
   const handleUpgrade = async () => {
@@ -380,7 +392,27 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                 </p>
                 {generatedIcons[0]?.actualPrompt && (
                   <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
-                    <p className="text-xs font-medium mb-1 text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => handleCopyPrompt(generatedIcons[0].actualPrompt || '', 'main-prompt')}
+                      >
+                        {copiedPromptId === 'main-prompt' ? (
+                          <>
+                            <Check className="w-3 h-3 mr-1" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 mr-1" />
+                            Copy
+                          </>
+                        )}
+                      </Button>
+                    </div>
                     <p className="text-xs text-foreground font-mono break-words">{generatedIcons[0].actualPrompt}</p>
                   </div>
                 )}
@@ -402,7 +434,21 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                       </p>
                       {icon.actualPrompt && (
                         <div className="mb-2 p-2 bg-muted/30 rounded text-xs">
-                          <p className="text-[10px] font-medium mb-1 text-muted-foreground">AI Prompt:</p>
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-[10px] font-medium text-muted-foreground">AI Prompt:</p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 px-1.5 text-[10px]"
+                              onClick={() => handleCopyPrompt(icon.actualPrompt || '', icon.id)}
+                            >
+                              {copiedPromptId === icon.id ? (
+                                <Check className="w-2.5 h-2.5" />
+                              ) : (
+                                <Copy className="w-2.5 h-2.5" />
+                              )}
+                            </Button>
+                          </div>
                           <p className="text-[10px] font-mono break-words line-clamp-2">{icon.actualPrompt}</p>
                         </div>
                       )}
@@ -644,7 +690,27 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                 </p>
                 {actualPrompt && (
                   <div className="p-3 bg-muted/50 rounded-lg border border-border/50 mb-4">
-                    <p className="text-xs font-medium mb-1 text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => handleCopyPrompt(actualPrompt, 'upgrade-prompt')}
+                      >
+                        {copiedPromptId === 'upgrade-prompt' ? (
+                          <>
+                            <Check className="w-3 h-3 mr-1" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 mr-1" />
+                            Copy
+                          </>
+                        )}
+                      </Button>
+                    </div>
                     <p className="text-xs text-foreground font-mono break-words">{actualPrompt}</p>
                   </div>
                 )}
