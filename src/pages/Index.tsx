@@ -3,7 +3,6 @@ import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Footer } from "@/components/layout/Footer";
 import { LandingPage } from "@/components/layout/LandingPage";
-import { Dashboard } from "@/components/layout/Dashboard";
 import { ProfilePage } from "@/components/profile/ProfilePage";
 import { EnhancementWorkflow } from "@/components/enhancement/EnhancementWorkflow";
 import { TranslationWorkflow } from "@/components/translation/TranslationWorkflow";
@@ -115,15 +114,13 @@ const Index = () => {
 
         {/* Main Content */}
         <main className={`flex-1 transition-all duration-300 relative z-10 ${isAuthenticated ? 'lg:ml-72' : ''}`}>
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+          <div className={`container mx-auto px-4 sm:px-6 lg:px-8 ${!selectedFunction && !isAuthenticated ? 'py-4 lg:py-6' : 'py-8 lg:py-12'}`}>
             {viewMode === 'profile' ? (
               <ProfilePage onBack={() => setViewMode('landing')} />
             ) : !selectedFunction ? (
-              isAuthenticated ? (
-                <Dashboard onFunctionSelect={handleFunctionSelect} />
-              ) : (
+              !isAuthenticated ? (
                 <LandingPage onFunctionSelect={handleFunctionSelect} />
-              )
+              ) : null
             ) : selectedFunction === 'enhance' ? (
               <EnhancementWorkflow onBack={handleBack} />
             ) : selectedFunction === 'translate' ? (

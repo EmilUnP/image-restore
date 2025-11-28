@@ -72,7 +72,7 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
   const { isAuthenticated } = useAuthContext();
 
   return (
-    <div className="space-y-32 py-16 relative">
+    <div className="space-y-24 py-8 lg:py-12 relative">
       {/* Advanced Background Effects */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         {/* Animated gradient orbs */}
@@ -109,7 +109,7 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
       </div>
 
       {/* Hero Section */}
-      <section className="text-center space-y-8 max-w-6xl mx-auto relative min-h-[80vh] flex flex-col justify-center items-center">
+      <section className="text-center space-y-6 max-w-6xl mx-auto relative pt-8 lg:pt-12 pb-12 lg:pb-16">
         {/* Floating geometric shapes */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {/* Large floating hexagon */}
@@ -142,10 +142,10 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
         </div>
 
         {/* Main Heading with advanced effects */}
-        <div className="relative z-10 space-y-4">
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-extrabold tracking-tight leading-[0.9]">
+        <div className="relative z-10 space-y-3">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-extrabold tracking-tight leading-[0.95]">
             <span className="block animate-slide-up">Transform Your</span>
-            <span className="block relative mt-2">
+            <span className="block relative mt-1">
               <span className="bg-gradient-to-r from-primary via-primary via-accent to-primary bg-clip-text text-transparent animate-gradient bg-[length:200%_auto] relative">
                 Images with AI
               </span>
@@ -157,18 +157,18 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
           </h1>
           
           {/* Animated underline */}
-          <div className="flex justify-center mt-4">
+          <div className="flex justify-center mt-3">
             <div className="h-1 w-32 bg-gradient-to-r from-transparent via-primary to-transparent animate-scale-pulse" />
           </div>
         </div>
 
         {/* Description */}
-        <p className="text-xl sm:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed font-light animate-fade-in relative z-10" style={{ animationDelay: '0.2s' }}>
+        <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed font-light animate-fade-in relative z-10" style={{ animationDelay: '0.2s' }}>
           Professional AI-powered image optimization, translation, and generation tools. Transform your creative workflow with cutting-edge technology.
         </p>
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8 relative z-10 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6 relative z-10 animate-fade-in" style={{ animationDelay: '0.3s' }}>
           <Button
             size="lg"
             className="relative rounded-2xl bg-gradient-to-r from-primary via-primary to-accent hover:opacity-90 font-bold text-lg px-10 py-7 shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all duration-500 overflow-hidden group hover:scale-105"
@@ -204,7 +204,7 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
         </div>
 
         {/* Visual showcase - Image processing preview */}
-        <div className="relative z-10 mt-16 w-full max-w-4xl mx-auto animate-fade-in" style={{ animationDelay: '0.5s' }}>
+        <div className="relative z-10 mt-12 w-full max-w-4xl mx-auto animate-fade-in" style={{ animationDelay: '0.5s' }}>
           <div className="relative rounded-3xl overflow-hidden border border-border/50 bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-xl p-8 shadow-2xl">
             {/* Grid of feature previews */}
             <div className="grid grid-cols-3 gap-4">
