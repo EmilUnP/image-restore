@@ -84,14 +84,18 @@ const Index = () => {
     }
   }, [isAuthenticated, loginDialogOpen]);
 
+  const showLandingPage = !isAuthenticated && !selectedFunction && viewMode !== 'profile';
+  
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-accent/5">
-      {/* Background Effects */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-primary/5 to-accent/5 rounded-full blur-3xl" />
-      </div>
+    <div className={`min-h-screen flex flex-col ${showLandingPage ? 'bg-slate-950' : 'bg-gradient-to-br from-background via-background to-accent/5'}`}>
+      {/* Background Effects - Only show when NOT on landing page */}
+      {!showLandingPage && (
+        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl animate-pulse-slow" />
+          <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-primary/5 to-accent/5 rounded-full blur-3xl" />
+        </div>
+      )}
 
       <Header 
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
@@ -113,24 +117,24 @@ const Index = () => {
         )}
 
         {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 relative z-10 ${isAuthenticated ? 'lg:ml-72' : ''}`}>
-          <div className={`container mx-auto px-4 sm:px-6 lg:px-8 ${!selectedFunction && !isAuthenticated ? 'py-4 lg:py-6' : 'py-8 lg:py-12'}`}>
-            {viewMode === 'profile' ? (
-              <ProfilePage onBack={() => setViewMode('landing')} />
-            ) : !selectedFunction ? (
-              !isAuthenticated ? (
-                <LandingPage onFunctionSelect={handleFunctionSelect} />
-              ) : null
-            ) : selectedFunction === 'enhance' ? (
-              <EnhancementWorkflow onBack={handleBack} />
-            ) : selectedFunction === 'translate' ? (
-              <TranslationWorkflow onBack={handleBack} />
-            ) : selectedFunction === 'icons' ? (
-              <IconGenerationWorkflow onBack={handleBack} />
-            ) : (
-              <LogoGenerationWorkflow onBack={handleBack} />
-            )}
-          </div>
+        <main className={`flex-1 transition-all duration-300 relative ${isAuthenticated ? 'lg:ml-72' : ''} ${showLandingPage ? '' : 'z-10'}`}>
+          {showLandingPage ? (
+            <LandingPage onFunctionSelect={handleFunctionSelect} />
+          ) : (
+            <div className={`container mx-auto px-4 sm:px-6 lg:px-8 ${!selectedFunction && !isAuthenticated ? 'py-4 lg:py-6' : 'py-8 lg:py-12'}`}>
+              {viewMode === 'profile' ? (
+                <ProfilePage onBack={() => setViewMode('landing')} />
+              ) : !selectedFunction ? null : selectedFunction === 'enhance' ? (
+                <EnhancementWorkflow onBack={handleBack} />
+              ) : selectedFunction === 'translate' ? (
+                <TranslationWorkflow onBack={handleBack} />
+              ) : selectedFunction === 'icons' ? (
+                <IconGenerationWorkflow onBack={handleBack} />
+              ) : (
+                <LogoGenerationWorkflow onBack={handleBack} />
+              )}
+            </div>
+          )}
         </main>
       </div>
 
