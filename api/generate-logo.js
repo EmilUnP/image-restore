@@ -87,7 +87,23 @@ export default async function handler(req, res) {
       logoPrompt += ` Include the tagline "${tagline}" below the company name or logo symbol.`;
     }
     
-    logoPrompt += ` Make it suitable for use in modern branding, business cards, websites, and marketing materials. The logo should be professional, recognizable, scalable, and work well in both light and dark backgrounds. Size: ${size}x${size} pixels.`;
+    logoPrompt += ` 
+
+CRITICAL BACKGROUND REQUIREMENT:
+- The logo MUST have a completely TRANSPARENT background (no solid color, no white, no background at all)
+- NO solid backgrounds (no white, no gray, no colors)
+- NO background shapes, patterns, or fills
+- Only the logo itself should be visible - everything around it must be transparent
+- The logo should be isolated on a transparent canvas
+
+TECHNICAL SPECIFICATIONS:
+- Size: ${size}x${size} pixels
+- Background: 100% TRANSPARENT - no solid backgrounds, no white, no colored backgrounds
+- Format: High-quality professional logo
+- Use: Modern branding, business cards, websites, and marketing materials
+- Quality: Professional, recognizable, scalable, production-ready
+
+The transparent background allows the logo to work on any colored background. The logo should be professional and recognizable when placed on any background color.`;
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -180,7 +196,23 @@ export default async function handler(req, res) {
         if (tagline && tagline.trim()) {
           logoPrompt += ` Include the tagline "${tagline}" below the company name or logo symbol.`;
         }
-        logoPrompt += ` Make it suitable for use in modern branding, business cards, websites, and marketing materials. The logo should be professional, recognizable, scalable, and work well in both light and dark backgrounds. Size: ${size}x${size} pixels.`;
+        logoPrompt += ` 
+
+CRITICAL BACKGROUND REQUIREMENT:
+- The logo MUST have a completely TRANSPARENT background (no solid color, no white, no background at all)
+- NO solid backgrounds (no white, no gray, no colors)
+- NO background shapes, patterns, or fills
+- Only the logo itself should be visible - everything around it must be transparent
+- The logo should be isolated on a transparent canvas
+
+TECHNICAL SPECIFICATIONS:
+- Size: ${size}x${size} pixels
+- Background: 100% TRANSPARENT - no solid backgrounds, no white, no colored backgrounds
+- Format: High-quality professional logo
+- Use: Modern branding, business cards, websites, and marketing materials
+- Quality: Professional, recognizable, scalable, production-ready
+
+The transparent background allows the logo to work on any colored background. The logo should be professional and recognizable when placed on any background color.`;
         promptToReturn = logoPrompt;
       }
     } catch (e) {

@@ -1146,10 +1146,17 @@ TECHNICAL SPECIFICATIONS:
 - Size: ${size}x${size} pixels
 - Format: High-quality, scalable vector-style icon
 - Use: Modern web applications
-- Background compatibility: Both light and dark backgrounds
+- Background: MUST have 100% TRANSPARENT background (no solid color, no white, no colored background)
 - Quality: Professional, production-ready
 
-OUTPUT: Generate ONLY the new icon matching the reference icon's visual style exactly while representing "${prompt}".`;
+CRITICAL BACKGROUND REQUIREMENT:
+- The background MUST be completely transparent/clear
+- NO solid backgrounds (no white, no gray, no colors)
+- NO background shapes, patterns, or fills
+- Only the icon itself should be visible - everything around it must be transparent
+- The icon should be isolated on a transparent canvas
+
+OUTPUT: Generate ONLY the new icon matching the reference icon's visual style exactly while representing "${prompt}" with a completely transparent background.`;
     } else if (isVariant && referencePrompt) {
       // Fallback: variant with only text reference
       iconPrompt = `Generate a high-quality icon variant for web use. ${styleConfig.prompt} 
@@ -1166,10 +1173,30 @@ CRITICAL CONSISTENCY REQUIREMENTS:
 - Keep the same level of detail and complexity
 - Match the overall proportions and visual weight
 
-The icon should be suitable for use in modern web applications, with clear visual communication, scalable design, and appropriate size of ${size}x${size} pixels. The icon should be professional, recognizable, and suitable for both light and dark backgrounds.`;
+CRITICAL: The icon MUST have a completely TRANSPARENT background (no solid color, no white, no background at all). 
+
+TECHNICAL REQUIREMENTS:
+- Size: ${size}x${size} pixels
+- Background: 100% TRANSPARENT - no solid backgrounds, no white, no colored backgrounds
+- Format: High-quality icon with clear visual communication
+- Use: Modern web applications, scalable design
+- Quality: Professional, production-ready
+
+The icon should be professional, recognizable, and isolated on a transparent canvas. Only the icon elements should be visible - everything around the icon must be completely transparent.`;
     } else {
       // Standard generation without variant context
-      iconPrompt = `Generate a high-quality icon for web use. ${styleConfig.prompt} The icon should represent: "${prompt}". Make it suitable for use in modern web applications, with clear visual communication, scalable design, and appropriate size of ${size}x${size} pixels. The icon should be professional, recognizable, and suitable for both light and dark backgrounds.`;
+      iconPrompt = `Generate a high-quality icon for web use. ${styleConfig.prompt} The icon should represent: "${prompt}".
+
+CRITICAL: The icon MUST have a completely TRANSPARENT background (no solid color, no white, no background at all).
+
+TECHNICAL REQUIREMENTS:
+- Size: ${size}x${size} pixels
+- Background: 100% TRANSPARENT - no solid backgrounds, no white, no colored backgrounds, no background shapes or patterns
+- Format: High-quality icon with clear visual communication
+- Use: Modern web applications, scalable design
+- Quality: Professional, production-ready
+
+The icon should be professional, recognizable, and isolated on a transparent canvas. Only the icon elements should be visible - everything around the icon must be completely transparent. The transparent background allows the icon to work on any colored background.`;
     }
 
     // Initialize Google Generative AI
@@ -1363,7 +1390,17 @@ app.post('/api/upgrade-icon', async (req, res) => {
     const styleConfig = iconStylePrompts[validStyle];
 
     // Build the upgrade prompt
-    const upgradePrompt = `Upgrade and enhance this icon for professional web use. ${upgradeConfig.prompt} ${styleConfig.prompt} Maintain the core design and meaning while improving quality, clarity, and visual appeal. Make it suitable for modern web applications with scalable design.`;
+    const upgradePrompt = `Upgrade and enhance this icon for professional web use. ${upgradeConfig.prompt} ${styleConfig.prompt} Maintain the core design and meaning while improving quality, clarity, and visual appeal. 
+
+CRITICAL BACKGROUND REQUIREMENT:
+- The upgraded icon MUST have a completely TRANSPARENT background (no solid color, no white, no background at all)
+- Preserve or create a transparent background - remove any existing solid backgrounds
+- NO solid backgrounds (no white, no gray, no colors)
+- NO background shapes, patterns, or fills
+- Only the icon itself should be visible - everything around it must be transparent
+- The icon should be isolated on a transparent canvas
+
+Make it suitable for modern web applications with scalable design. The transparent background allows the icon to work on any colored background.`;
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -1563,7 +1600,23 @@ app.post('/api/generate-logo', async (req, res) => {
       logoPrompt += ` Include the tagline "${tagline}" below the company name or logo symbol.`;
     }
     
-    logoPrompt += ` Make it suitable for use in modern branding, business cards, websites, and marketing materials. The logo should be professional, recognizable, scalable, and work well in both light and dark backgrounds. Size: ${size}x${size} pixels.`;
+    logoPrompt += ` 
+
+CRITICAL BACKGROUND REQUIREMENT:
+- The logo MUST have a completely TRANSPARENT background (no solid color, no white, no background at all)
+- NO solid backgrounds (no white, no gray, no colors)
+- NO background shapes, patterns, or fills
+- Only the logo itself should be visible - everything around it must be transparent
+- The logo should be isolated on a transparent canvas
+
+TECHNICAL SPECIFICATIONS:
+- Size: ${size}x${size} pixels
+- Background: 100% TRANSPARENT - no solid backgrounds, no white, no colored backgrounds
+- Format: High-quality professional logo
+- Use: Modern branding, business cards, websites, and marketing materials
+- Quality: Professional, recognizable, scalable, production-ready
+
+The transparent background allows the logo to work on any colored background. The logo should be professional and recognizable when placed on any background color.`;
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -1652,7 +1705,23 @@ app.post('/api/generate-logo', async (req, res) => {
         if (tagline && tagline.trim()) {
           logoPrompt += ` Include the tagline "${tagline}" below the company name or logo symbol.`;
         }
-        logoPrompt += ` Make it suitable for use in modern branding, business cards, websites, and marketing materials. The logo should be professional, recognizable, scalable, and work well in both light and dark backgrounds. Size: ${size}x${size} pixels.`;
+        logoPrompt += ` 
+
+CRITICAL BACKGROUND REQUIREMENT:
+- The logo MUST have a completely TRANSPARENT background (no solid color, no white, no background at all)
+- NO solid backgrounds (no white, no gray, no colors)
+- NO background shapes, patterns, or fills
+- Only the logo itself should be visible - everything around it must be transparent
+- The logo should be isolated on a transparent canvas
+
+TECHNICAL SPECIFICATIONS:
+- Size: ${size}x${size} pixels
+- Background: 100% TRANSPARENT - no solid backgrounds, no white, no colored backgrounds
+- Format: High-quality professional logo
+- Use: Modern branding, business cards, websites, and marketing materials
+- Quality: Professional, recognizable, scalable, production-ready
+
+The transparent background allows the logo to work on any colored background. The logo should be professional and recognizable when placed on any background color.`;
         promptToReturn = logoPrompt;
       }
     } catch (e) {
@@ -1699,7 +1768,17 @@ app.post('/api/upgrade-logo', async (req, res) => {
     const styleConfig = logoStylePrompts[validStyle];
 
     // Build the upgrade prompt
-    const upgradePrompt = `Upgrade and enhance this logo for professional branding use. ${upgradeConfig.prompt} ${styleConfig.prompt} Maintain the core design, brand identity, and meaning while improving quality, clarity, typography, and visual appeal. Make it suitable for modern branding, business cards, websites, and marketing materials with scalable design.`;
+    const upgradePrompt = `Upgrade and enhance this logo for professional branding use. ${upgradeConfig.prompt} ${styleConfig.prompt} Maintain the core design, brand identity, and meaning while improving quality, clarity, typography, and visual appeal. 
+
+CRITICAL BACKGROUND REQUIREMENT:
+- The upgraded logo MUST have a completely TRANSPARENT background (no solid color, no white, no background at all)
+- Preserve or create a transparent background - remove any existing solid backgrounds
+- NO solid backgrounds (no white, no gray, no colors)
+- NO background shapes, patterns, or fills
+- Only the logo itself should be visible - everything around it must be transparent
+- The logo should be isolated on a transparent canvas
+
+Make it suitable for modern branding, business cards, websites, and marketing materials with scalable design. The transparent background allows the logo to work on any colored background.`;
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);

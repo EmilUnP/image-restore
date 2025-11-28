@@ -81,7 +81,17 @@ export default async function handler(req, res) {
     const stylePrompt = logoStylePrompts[validStyle];
 
     // Build the upgrade prompt
-    const upgradePrompt = `Upgrade and enhance this logo for professional branding use. ${upgradeConfig.prompt} ${stylePrompt} Maintain the core design, brand identity, and meaning while improving quality, clarity, typography, and visual appeal. Make it suitable for modern branding, business cards, websites, and marketing materials with scalable design.`;
+    const upgradePrompt = `Upgrade and enhance this logo for professional branding use. ${upgradeConfig.prompt} ${stylePrompt} Maintain the core design, brand identity, and meaning while improving quality, clarity, typography, and visual appeal. 
+
+CRITICAL BACKGROUND REQUIREMENT:
+- The upgraded logo MUST have a completely TRANSPARENT background (no solid color, no white, no background at all)
+- Preserve or create a transparent background - remove any existing solid backgrounds
+- NO solid backgrounds (no white, no gray, no colors)
+- NO background shapes, patterns, or fills
+- Only the logo itself should be visible - everything around it must be transparent
+- The logo should be isolated on a transparent canvas
+
+Make it suitable for modern branding, business cards, websites, and marketing materials with scalable design. The transparent background allows the logo to work on any colored background.`;
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);

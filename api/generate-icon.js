@@ -180,10 +180,18 @@ TECHNICAL SPECIFICATIONS:
 - Size: ${size}x${size} pixels
 - Format: High-quality, scalable vector-style icon
 - Use: Modern web applications
-- Background compatibility: Both light and dark backgrounds
+- Background: MUST have 100% TRANSPARENT background (no solid color, no white, no colored background)
+- Background compatibility: Transparent background works on any colored background
 - Quality: Professional, production-ready
 
-OUTPUT: Generate ONLY the new icon matching the reference icon's visual style exactly while representing "${prompt}".`;
+CRITICAL BACKGROUND REQUIREMENT:
+- The background MUST be completely transparent/clear
+- NO solid backgrounds (no white, no gray, no colors)
+- NO background shapes, patterns, or fills
+- Only the icon itself should be visible - everything around it must be transparent
+- The icon should be isolated on a transparent canvas
+
+OUTPUT: Generate ONLY the new icon matching the reference icon's visual style exactly while representing "${prompt}" with a completely transparent background.`;
     } else if (isVariant && referencePrompt) {
       // Fallback: variant with only text reference
       iconPrompt = `Generate a high-quality icon variant for web use. ${styleConfig.prompt} 
@@ -200,10 +208,30 @@ CRITICAL CONSISTENCY REQUIREMENTS:
 - Keep the same level of detail and complexity
 - Match the overall proportions and visual weight
 
-The icon should be suitable for use in modern web applications, with clear visual communication, scalable design, and appropriate size of ${size}x${size} pixels. The icon should be professional, recognizable, and suitable for both light and dark backgrounds.`;
+CRITICAL: The icon MUST have a completely TRANSPARENT background (no solid color, no white, no background at all). 
+
+TECHNICAL REQUIREMENTS:
+- Size: ${size}x${size} pixels
+- Background: 100% TRANSPARENT - no solid backgrounds, no white, no colored backgrounds
+- Format: High-quality icon with clear visual communication
+- Use: Modern web applications, scalable design
+- Quality: Professional, production-ready
+
+The icon should be professional, recognizable, and isolated on a transparent canvas. Only the icon elements should be visible - everything around the icon must be completely transparent.`;
     } else {
       // Standard generation without variant context
-      iconPrompt = `Generate a high-quality icon for web use. ${styleConfig.prompt} The icon should represent: "${prompt}". Make it suitable for use in modern web applications, with clear visual communication, scalable design, and appropriate size of ${size}x${size} pixels. The icon should be professional, recognizable, and suitable for both light and dark backgrounds.`;
+      iconPrompt = `Generate a high-quality icon for web use. ${styleConfig.prompt} The icon should represent: "${prompt}".
+
+CRITICAL: The icon MUST have a completely TRANSPARENT background (no solid color, no white, no background at all).
+
+TECHNICAL REQUIREMENTS:
+- Size: ${size}x${size} pixels
+- Background: 100% TRANSPARENT - no solid backgrounds, no white, no colored backgrounds, no background shapes or patterns
+- Format: High-quality icon with clear visual communication
+- Use: Modern web applications, scalable design
+- Quality: Professional, production-ready
+
+The icon should be professional, recognizable, and isolated on a transparent canvas. Only the icon elements should be visible - everything around the icon must be completely transparent. The transparent background allows the icon to work on any colored background.`;
     }
 
     // Initialize Google Generative AI

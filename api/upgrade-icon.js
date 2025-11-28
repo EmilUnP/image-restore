@@ -80,7 +80,17 @@ export default async function handler(req, res) {
     const stylePrompt = iconStylePrompts[validStyle];
 
     // Build the upgrade prompt
-    const upgradePrompt = `Upgrade and enhance this icon for professional web use. ${upgradeConfig.prompt} ${stylePrompt} Maintain the core design and meaning while improving quality, clarity, and visual appeal. Make it suitable for modern web applications with scalable design.`;
+    const upgradePrompt = `Upgrade and enhance this icon for professional web use. ${upgradeConfig.prompt} ${stylePrompt} Maintain the core design and meaning while improving quality, clarity, and visual appeal. 
+
+CRITICAL BACKGROUND REQUIREMENT:
+- The upgraded icon MUST have a completely TRANSPARENT background (no solid color, no white, no background at all)
+- Preserve or create a transparent background - remove any existing solid backgrounds
+- NO solid backgrounds (no white, no gray, no colors)
+- NO background shapes, patterns, or fills
+- Only the icon itself should be visible - everything around it must be transparent
+- The icon should be isolated on a transparent canvas
+
+Make it suitable for modern web applications with scalable design. The transparent background allows the icon to work on any colored background.`;
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
