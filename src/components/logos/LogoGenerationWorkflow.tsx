@@ -102,9 +102,9 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
 
   const currentStep = getCurrentStep();
   const steps = [
-    { number: 1, label: mode === 'generate' ? "Describe" : "Upload", status: currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming" as const },
-    { number: 2, label: mode === 'generate' ? "Generate" : "Upgrade", status: currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming" as const },
-    { number: 3, label: "Result", status: currentStep >= 3 ? (generatedLogo ? "current" : "upcoming") : "upcoming" as const },
+    { number: 1, label: mode === 'generate' ? "Describe" : "Upload", status: (currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming") as "current" | "completed" | "upcoming" },
+    { number: 2, label: mode === 'generate' ? "Generate" : "Upgrade", status: (currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming") as "current" | "completed" | "upcoming" },
+    { number: 3, label: "Result", status: (currentStep >= 3 ? (generatedLogo ? "current" : "upcoming") : "upcoming") as "current" | "completed" | "upcoming" },
   ];
 
   return (
@@ -289,10 +289,10 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                   Style: <span className="font-medium capitalize">{style}</span> • 
                   Size: <span className="font-medium">{size}x{size}</span>
                 </p>
-                {actualPrompt && (
-                  <div className="p-3 bg-muted/50 rounded-lg border border-border/50 mb-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-medium text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
+                <div className="p-3 bg-muted/50 rounded-lg border border-border/50 mb-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-medium text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
+                    {actualPrompt && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -311,13 +311,21 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                           </>
                         )}
                       </Button>
-                    </div>
-                    <p className="text-xs text-foreground font-mono break-words">{actualPrompt}</p>
-                    <p className="text-[10px] text-muted-foreground mt-2 italic">
-                      💡 Copy this prompt and reuse it with small changes for better results
-                    </p>
+                    )}
                   </div>
-                )}
+                  {actualPrompt ? (
+                    <>
+                      <p className="text-xs text-foreground font-mono break-words whitespace-pre-wrap">{actualPrompt}</p>
+                      <p className="text-[10px] text-muted-foreground mt-2 italic">
+                        💡 Copy this prompt and reuse it with small changes for better results
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">
+                      Prompt information not available. Please regenerate the logo to see the prompt.
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="mb-4">
@@ -368,7 +376,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                       reader.onloadend = () => resolve(reader.result as string);
                       reader.readAsDataURL(file);
                     });
-                    setOriginalLogo(base64);
+                    // Original logo is set by handleLogoSelect
                   }}
                   disabled={isGenerating}
                   label="Upload Logo"
@@ -424,7 +432,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                   <div className="flex gap-3">
                     <Button
                       onClick={() => {
-                        setOriginalLogo(null);
+                        // Original logo is reset by reset() function
                         reset();
                       }}
                       variant="outline"
@@ -497,10 +505,10 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                   Level: <span className="font-medium capitalize">{upgradeLevel}</span> • 
                   Style: <span className="font-medium capitalize">{style}</span>
                 </p>
-                {actualPrompt && (
-                  <div className="p-3 bg-muted/50 rounded-lg border border-border/50 mb-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-medium text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
+                <div className="p-3 bg-muted/50 rounded-lg border border-border/50 mb-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-medium text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
+                    {actualPrompt && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -519,13 +527,21 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                           </>
                         )}
                       </Button>
-                    </div>
-                    <p className="text-xs text-foreground font-mono break-words">{actualPrompt}</p>
-                    <p className="text-[10px] text-muted-foreground mt-2 italic">
-                      💡 Copy this prompt and reuse it with small changes for better results
-                    </p>
+                    )}
                   </div>
-                )}
+                  {actualPrompt ? (
+                    <>
+                      <p className="text-xs text-foreground font-mono break-words whitespace-pre-wrap">{actualPrompt}</p>
+                      <p className="text-[10px] text-muted-foreground mt-2 italic">
+                        💡 Copy this prompt and reuse it with small changes for better results
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">
+                      Prompt information not available. Please regenerate the logo to see the prompt.
+                    </p>
+                  )}
+                </div>
               </div>
 
               <ImageComparison
@@ -542,7 +558,6 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                   onClick={() => {
                     reset();
                     setSettingsConfigured(false);
-                    setOriginalLogo(null);
                   }}
                   variant="outline"
                 >

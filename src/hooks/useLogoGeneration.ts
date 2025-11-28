@@ -38,9 +38,13 @@ export const useLogoGeneration = () => {
 
       const data = await generateLogo(request);
 
+      // Always set the actual prompt if available, even if logo generation failed
+      if (data?.actualPrompt) {
+        setActualPrompt(data.actualPrompt);
+      }
+
       if (data?.generatedLogo) {
         setGeneratedLogo(data.generatedLogo);
-        setActualPrompt(data.actualPrompt || null);
         toast.success('Logo generated successfully!');
         return data.generatedLogo;
       } else {

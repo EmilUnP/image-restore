@@ -1152,27 +1152,54 @@ app.post('/api/generate-logo', async (req, res) => {
       console.error('Gemini API error:', error);
       
       if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('401')) {
-        return res.status(401).json({ error: 'Invalid API key. Please check your GEMINI_API_KEY.' });
+        return res.status(401).json({ 
+          error: 'Invalid API key. Please check your GEMINI_API_KEY.',
+          actualPrompt: logoPrompt
+        });
       }
       
       if (error.message?.includes('QUOTA_EXCEEDED') || error.message?.includes('429') || error.message?.includes('quota')) {
         return res.status(429).json({ 
           error: 'API quota exceeded. You have used up your free tier limit.',
           message: 'Please wait a few minutes and try again, or upgrade your API plan.',
-          retryAfter: '42 seconds'
+          retryAfter: '42 seconds',
+          actualPrompt: logoPrompt
         });
       }
 
       return res.status(500).json({ 
         error: 'Failed to generate logo', 
-        details: error.message || 'Unknown error'
+        details: error.message || 'Unknown error',
+        actualPrompt: logoPrompt
       });
     }
 
   } catch (error) {
+    // Try to get the prompt if it was created before the error
+    let promptToReturn = null;
+    try {
+      const { prompt, style = 'modern', size = '1024', companyName, tagline } = req.body;
+      if (prompt) {
+        const validStyle = logoStylePrompts[style] ? style : 'modern';
+        const styleConfig = logoStylePrompts[validStyle];
+        let logoPrompt = `Generate a high-quality professional logo for web and print use. ${styleConfig.prompt} The logo should represent: "${prompt}".`;
+        if (companyName && companyName.trim()) {
+          logoPrompt += ` Include the company name "${companyName}" as part of the logo design.`;
+        }
+        if (tagline && tagline.trim()) {
+          logoPrompt += ` Include the tagline "${tagline}" below the company name or logo symbol.`;
+        }
+        logoPrompt += ` Make it suitable for use in modern branding, business cards, websites, and marketing materials. The logo should be professional, recognizable, scalable, and work well in both light and dark backgrounds. Size: ${size}x${size} pixels.`;
+        promptToReturn = logoPrompt;
+      }
+    } catch (e) {
+      // Ignore errors in prompt reconstruction
+    }
+    
     return res.status(500).json({ 
       error: 'An unexpected error occurred', 
-      details: error.message || 'Unknown error'
+      details: error.message || 'Unknown error',
+      actualPrompt: promptToReturn
     });
   }
 });
