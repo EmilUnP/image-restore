@@ -352,24 +352,31 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                 </Button>
               </div>
             </Card>
-          ) : generatedIcons.length > 0 ? (
+          ) : generatedIcons.length > 0 || isGenerating ? (
             <>
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-xl font-semibold">Generated Icons ({generatedIcons.length})</h2>
-                  <Button
-                    onClick={handleDownloadAll}
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download All
-                  </Button>
+                  <h2 className="text-xl font-semibold">
+                    {isGenerating ? 'Generating Icons...' : `Generated Icons (${generatedIcons.length})`}
+                  </h2>
+                  {!isGenerating && generatedIcons.length > 0 && (
+                    <Button
+                      onClick={handleDownloadAll}
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download All
+                    </Button>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
                   Style: <span className="font-medium capitalize">{style}</span> • 
                   Size: <span className="font-medium">{size}x{size}</span>
+                  {isGenerating && (
+                    <span className="ml-2">• Generating {generatedIcons.length + 1} of {1 + variants.filter(v => v.trim()).length}...</span>
+                  )}
                 </p>
                 {generatedIcons[0]?.actualPrompt && (
                   <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
@@ -411,6 +418,21 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                     </CardContent>
                   </Card>
                 ))}
+                {isGenerating && (
+                  <Card className="overflow-hidden border-dashed">
+                    <div className="aspect-square p-4 bg-muted/30 flex items-center justify-center">
+                      <div className="text-center space-y-2">
+                        <Sparkles className="w-8 h-8 mx-auto animate-spin text-primary" />
+                        <p className="text-xs text-muted-foreground">Generating...</p>
+                      </div>
+                    </div>
+                    <CardContent className="p-4">
+                      <p className="text-xs font-medium mb-2 text-muted-foreground">
+                        Generating icon {generatedIcons.length + 1}...
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
 
               <div className="flex gap-3 justify-center">

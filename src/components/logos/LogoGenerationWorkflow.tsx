@@ -31,6 +31,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
 
   const {
     generatedLogo,
+    actualPrompt,
     originalLogo,
     isGenerating,
     setGenerationMode,

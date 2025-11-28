@@ -123,38 +123,56 @@ export const useIconGeneration = () => {
     setIsGenerating(true);
     setGeneratedIcons([]);
     setGeneratedIcon(null);
+    setActualPrompt(null);
     
     try {
       const allPrompts = [mainPrompt, ...variants];
       const generated: GeneratedIconVariant[] = [];
       
+      // Generate icons one by one and update UI progressively
       for (let i = 0; i < allPrompts.length; i++) {
         const prompt = allPrompts[i];
-        const request: GenerateIconRequest = {
-          prompt,
-          style,
-          size,
-        };
+        
+        try {
+          const request: GenerateIconRequest = {
+            prompt,
+            style,
+            size,
+          };
 
-        const data = await generateIcon(request);
+          const data = await generateIcon(request);
 
-        if (data?.generatedIcon) {
-          generated.push({
-            id: `icon-${Date.now()}-${i}`,
-            image: data.generatedIcon,
-            prompt: prompt,
-            actualPrompt: data.actualPrompt,
-            fileName: `icon-${prompt.replace(/\s+/g, '-').toLowerCase()}-${i}.png`,
-          });
+          if (data?.generatedIcon) {
+            const newIcon: GeneratedIconVariant = {
+              id: `icon-${Date.now()}-${i}`,
+              image: data.generatedIcon,
+              prompt: prompt,
+              actualPrompt: data.actualPrompt,
+              fileName: `icon-${prompt.replace(/\s+/g, '-').toLowerCase()}-${i}.png`,
+            };
+            
+            generated.push(newIcon);
+            // Update state progressively so user sees icons appearing one by one
+            setGeneratedIcons([...generated]);
+            
+            // Show progress toast
+            toast.success(`Icon ${i + 1}/${allPrompts.length} generated!`, { duration: 2000 });
+          } else {
+            toast.error(`Failed to generate icon: ${prompt}`, { duration: 3000 });
+          }
+        } catch (iconError) {
+          // Continue with next icon even if one fails
+          console.error(`Error generating icon ${i + 1}:`, iconError);
+          toast.error(`Failed to generate icon ${i + 1}: ${prompt}`, { duration: 3000 });
         }
       }
 
       if (generated.length > 0) {
         setGeneratedIcons(generated);
-        toast.success(`Successfully generated ${generated.length} icon${generated.length > 1 ? 's' : ''}!`);
+        toast.success(`Successfully generated ${generated.length} of ${allPrompts.length} icon${generated.length > 1 ? 's' : ''}!`);
         return generated;
       } else {
-        toast.error("No icons generated");
+        toast.error("No icons were generated. Please check your connection and try again.");
         return [];
       }
     } catch (error) {
