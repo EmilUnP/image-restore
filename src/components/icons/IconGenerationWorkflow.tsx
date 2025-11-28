@@ -495,7 +495,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
               ) : null}
 
               {generatedIcons.length > 0 && (
-                <div className="flex flex-col items-center gap-3">
+                <div className="flex flex-col items-center gap-3 mt-6">
                   <div className="flex items-center gap-2">
                     <Label htmlFor="export-format-icons" className="text-sm">Export Format:</Label>
                     <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
