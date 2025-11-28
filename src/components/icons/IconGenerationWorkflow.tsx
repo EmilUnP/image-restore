@@ -117,7 +117,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
     setSettingsConfigured(false);
   };
 
-  const handleSettingsReady = () => {
+  const handleSettingsReady = async () => {
     if (mode === 'generate' && !prompt.trim()) {
       toast.error('Please enter a description for the icon');
       return;
@@ -131,6 +131,11 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
       return;
     }
     setSettingsConfigured(true);
+    
+    // Trigger generation for generate mode
+    if (mode === 'generate') {
+      await handleGenerate();
+    }
   };
 
   // Determine current step for step indicator
@@ -143,10 +148,10 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
 
   const currentStep = getCurrentStep();
   const hasResults = generatedIcon || generatedIcons.length > 0;
-  const steps = [
-    { number: 1, label: mode === 'generate' ? "Describe" : "Upload", status: currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming" as const },
-    { number: 2, label: mode === 'generate' ? "Generate" : "Upgrade", status: currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming" as const },
-    { number: 3, label: "Result", status: currentStep >= 3 ? (hasResults ? "current" : "upcoming") : "upcoming" as const },
+  const steps: Array<{ number: number; label: string; status: "completed" | "current" | "upcoming" }> = [
+    { number: 1, label: mode === 'generate' ? "Describe" : "Upload", status: (currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming") as "completed" | "current" | "upcoming" },
+    { number: 2, label: mode === 'generate' ? "Generate" : "Upgrade", status: (currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming") as "completed" | "current" | "upcoming" },
+    { number: 3, label: "Result", status: (currentStep >= 3 ? (hasResults ? "current" : "upcoming") : "upcoming") as "completed" | "current" | "upcoming" },
   ];
 
   return (

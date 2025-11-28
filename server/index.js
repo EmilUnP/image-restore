@@ -795,7 +795,7 @@ const iconUpgradeLevelPrompts = {
 // Generate icon endpoint
 app.post('/api/generate-icon', async (req, res) => {
   try {
-    const { prompt, style = 'modern', size = '512' } = req.body;
+    const { prompt, style = 'modern', size = '512', referencePrompt, isVariant = false } = req.body;
     
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({ error: 'No prompt provided' });
@@ -814,7 +814,28 @@ app.post('/api/generate-icon', async (req, res) => {
     const styleConfig = iconStylePrompts[validStyle];
 
     // Build the icon generation prompt
-    const iconPrompt = `Generate a high-quality icon for web use. ${styleConfig.prompt} The icon should represent: "${prompt}". Make it suitable for use in modern web applications, with clear visual communication, scalable design, and appropriate size of ${size}x${size} pixels. The icon should be professional, recognizable, and suitable for both light and dark backgrounds.`;
+    let iconPrompt;
+    if (isVariant && referencePrompt) {
+      // For variants, include instructions to maintain consistency with the main prompt
+      iconPrompt = `Generate a high-quality icon variant for web use. ${styleConfig.prompt} 
+
+This icon is part of a set. The main icon represents: "${referencePrompt}". 
+
+Create a related icon that represents: "${prompt}". 
+
+CRITICAL CONSISTENCY REQUIREMENTS:
+- Use the EXACT SAME design style, color palette, and visual language as the main icon
+- Maintain the same line weight, corner radius, and overall aesthetic
+- Use identical or very similar colors, shadows, and effects
+- Ensure this variant looks like it belongs to the same icon family/set
+- Keep the same level of detail and complexity
+- Match the overall proportions and visual weight
+
+The icon should be suitable for use in modern web applications, with clear visual communication, scalable design, and appropriate size of ${size}x${size} pixels. The icon should be professional, recognizable, and suitable for both light and dark backgrounds.`;
+    } else {
+      // Standard generation without variant context
+      iconPrompt = `Generate a high-quality icon for web use. ${styleConfig.prompt} The icon should represent: "${prompt}". Make it suitable for use in modern web applications, with clear visual communication, scalable design, and appropriate size of ${size}x${size} pixels. The icon should be professional, recognizable, and suitable for both light and dark backgrounds.`;
+    }
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);

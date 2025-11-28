@@ -126,29 +126,63 @@ export const useIconGeneration = () => {
     setActualPrompt(null);
     
     try {
-      const allPrompts = [mainPrompt, ...variants];
       const generated: GeneratedIconVariant[] = [];
       
-      // Generate icons one by one and update UI progressively
-      for (let i = 0; i < allPrompts.length; i++) {
-        const prompt = allPrompts[i];
+      // First, generate the main icon
+      try {
+        const mainRequest: GenerateIconRequest = {
+          prompt: mainPrompt,
+          style,
+          size,
+          isVariant: false,
+        };
+
+        const mainData = await generateIcon(mainRequest);
+
+        if (mainData?.generatedIcon) {
+          const mainIcon: GeneratedIconVariant = {
+            id: `icon-${Date.now()}-0`,
+            image: mainData.generatedIcon,
+            prompt: mainPrompt,
+            actualPrompt: mainData.actualPrompt,
+            fileName: `icon-${mainPrompt.replace(/\s+/g, '-').toLowerCase()}-main.png`,
+          };
+          
+          generated.push(mainIcon);
+          setGeneratedIcons([...generated]);
+          toast.success(`Main icon generated!`, { duration: 2000 });
+        } else {
+          toast.error(`Failed to generate main icon: ${mainPrompt}`, { duration: 3000 });
+        }
+      } catch (mainError) {
+        console.error(`Error generating main icon:`, mainError);
+        toast.error(`Failed to generate main icon: ${mainPrompt}`, { duration: 3000 });
+      }
+      
+      // Then generate variants with reference to the main prompt
+      for (let i = 0; i < variants.length; i++) {
+        const variantPrompt = variants[i];
+        
+        if (!variantPrompt.trim()) continue;
         
         try {
-          const request: GenerateIconRequest = {
-            prompt,
+          const variantRequest: GenerateIconRequest = {
+            prompt: variantPrompt,
             style,
             size,
+            referencePrompt: mainPrompt, // Pass main prompt as reference
+            isVariant: true, // Mark this as a variant
           };
 
-          const data = await generateIcon(request);
+          const variantData = await generateIcon(variantRequest);
 
-          if (data?.generatedIcon) {
+          if (variantData?.generatedIcon) {
             const newIcon: GeneratedIconVariant = {
-              id: `icon-${Date.now()}-${i}`,
-              image: data.generatedIcon,
-              prompt: prompt,
-              actualPrompt: data.actualPrompt,
-              fileName: `icon-${prompt.replace(/\s+/g, '-').toLowerCase()}-${i}.png`,
+              id: `icon-${Date.now()}-${i + 1}`,
+              image: variantData.generatedIcon,
+              prompt: variantPrompt,
+              actualPrompt: variantData.actualPrompt,
+              fileName: `icon-${variantPrompt.replace(/\s+/g, '-').toLowerCase()}-${i + 1}.png`,
             };
             
             generated.push(newIcon);
@@ -156,20 +190,22 @@ export const useIconGeneration = () => {
             setGeneratedIcons([...generated]);
             
             // Show progress toast
-            toast.success(`Icon ${i + 1}/${allPrompts.length} generated!`, { duration: 2000 });
+            toast.success(`Variant ${i + 1}/${variants.length} generated!`, { duration: 2000 });
           } else {
-            toast.error(`Failed to generate icon: ${prompt}`, { duration: 3000 });
+            toast.error(`Failed to generate variant: ${variantPrompt}`, { duration: 3000 });
           }
-        } catch (iconError) {
-          // Continue with next icon even if one fails
-          console.error(`Error generating icon ${i + 1}:`, iconError);
-          toast.error(`Failed to generate icon ${i + 1}: ${prompt}`, { duration: 3000 });
+        } catch (variantError) {
+          // Continue with next variant even if one fails
+          console.error(`Error generating variant ${i + 1}:`, variantError);
+          toast.error(`Failed to generate variant ${i + 1}: ${variantPrompt}`, { duration: 3000 });
         }
       }
+      
+      const totalExpected = 1 + variants.filter(v => v.trim()).length;
 
       if (generated.length > 0) {
         setGeneratedIcons(generated);
-        toast.success(`Successfully generated ${generated.length} of ${allPrompts.length} icon${generated.length > 1 ? 's' : ''}!`);
+        toast.success(`Successfully generated ${generated.length} of ${totalExpected} icon${generated.length > 1 ? 's' : ''}!`);
         return generated;
       } else {
         toast.error("No icons were generated. Please check your connection and try again.");

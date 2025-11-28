@@ -228,6 +228,8 @@ export interface GenerateIconRequest {
   prompt: string;
   style?: string;
   size?: string;
+  referencePrompt?: string;
+  isVariant?: boolean;
 }
 
 export interface GenerateIconResponse {
