@@ -116,12 +116,16 @@ export default async function handler(req, res) {
       
       // If logo is generated, return it
       if (generatedImageBase64) {
-        return res.status(200).json({ 
+        console.log('[Vercel Function] Logo generated, returning with actualPrompt:', logoPrompt.substring(0, 100) + '...');
+        const responseData = { 
           generatedLogo: `data:${mimeType};base64,${generatedImageBase64}`,
           message: `Logo generated successfully using ${validStyle} style.`,
           style: validStyle,
           actualPrompt: logoPrompt
-        });
+        };
+        console.log('[Vercel Function] Response data keys:', Object.keys(responseData));
+        console.log('[Vercel Function] actualPrompt in response:', !!responseData.actualPrompt);
+        return res.status(200).json(responseData);
       } else {
         // Return error if no image generated
         const text = response.text();

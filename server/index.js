@@ -1130,6 +1130,7 @@ app.post('/api/generate-logo', async (req, res) => {
       
       // If logo is generated, return it
       if (generatedImageBase64) {
+        console.log('[Server] Returning logo with actualPrompt:', logoPrompt.substring(0, 100) + '...');
         return res.json({ 
           generatedLogo: `data:${mimeType};base64,${generatedImageBase64}`,
           message: `Logo generated successfully using ${validStyle} style.`,

@@ -356,7 +356,12 @@ export interface UpgradeLogoResponse {
 
 export const generateLogo = async (request: GenerateLogoRequest): Promise<GenerateLogoResponse> => {
   const API_URL = getApiUrl();
-  const response = await fetch(`${API_URL}/api/generate-logo`, {
+  const url = `${API_URL}/api/generate-logo`;
+  
+  console.log('[API] generateLogo - Calling URL:', url);
+  console.log('[API] generateLogo - Request:', { prompt: request.prompt, style: request.style, size: request.size });
+  
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -364,12 +369,19 @@ export const generateLogo = async (request: GenerateLogoRequest): Promise<Genera
     body: JSON.stringify(request),
   });
 
+  console.log('[API] generateLogo - Response status:', response.status);
+  console.log('[API] generateLogo - Response headers:', Object.fromEntries(response.headers.entries()));
+
   let responseData: GenerateLogoResponse;
   try {
-    responseData = await response.json();
+    const responseText = await response.text();
+    console.log('[API] generateLogo - Raw response text (first 500 chars):', responseText.substring(0, 500));
+    responseData = JSON.parse(responseText);
+    console.log('[API] generateLogo - Parsed response keys:', Object.keys(responseData));
+    console.log('[API] generateLogo - actualPrompt in response:', !!responseData.actualPrompt, responseData.actualPrompt?.substring(0, 100));
   } catch (e) {
-    const errorText = await response.text();
-    throw new Error(`Server responded with non-JSON: ${errorText.substring(0, 100)}... (Status: ${response.status})`);
+    console.error('[API] generateLogo - Failed to parse response:', e);
+    throw new Error(`Server responded with non-JSON: ${response.status}`);
   }
 
   if (!response.ok) {

@@ -560,7 +560,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                       reader.onloadend = () => resolve(reader.result as string);
                       reader.readAsDataURL(file);
                     });
-                    setOriginalIcon(base64);
+                    handleIconSelect(file, upgradeLevel, style);
                   }}
                   disabled={isGenerating}
                   label="Upload Icon"
@@ -615,7 +615,6 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   <div className="flex gap-3">
                     <Button
                       onClick={() => {
-                        setOriginalIcon(null);
                         reset();
                       }}
                       variant="outline"
@@ -730,7 +729,8 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   onClick={() => {
                     reset();
                     setSettingsConfigured(false);
-                    setOriginalIcon(null);
+                    reset();
+                    setSettingsConfigured(false);
                   }}
                   variant="outline"
                 >
