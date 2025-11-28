@@ -17,6 +17,7 @@ import {
   Rocket
 } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
+import MagicBento, { BentoCardProps } from "./MagicBento";
 
 type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | null;
 
@@ -29,32 +30,32 @@ const getFeatures = (onFunctionSelect: (func: AppFunction) => void) => [
     icon: Sparkles,
     title: "Image Enhancement",
     description: "Enhance image quality using AI. Improve sharpness, reduce noise, enhance colors, and restore old photos.",
-    color: "text-blue-600",
-    bgColor: "bg-blue-50 dark:bg-blue-950",
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/10",
     function: 'enhance' as AppFunction,
   },
   {
     icon: Languages,
     title: "Text Translation",
     description: "Translate text in images to any language while preserving the original design and formatting.",
-    color: "text-green-600",
-    bgColor: "bg-green-50 dark:bg-green-950",
+    color: "text-green-400",
+    bgColor: "bg-green-500/10",
     function: 'translate' as AppFunction,
   },
   {
     icon: Zap,
     title: "Icon Generator",
     description: "Generate custom icons for your projects. Create multiple variants in the same style instantly.",
-    color: "text-purple-600",
-    bgColor: "bg-purple-50 dark:bg-purple-950",
+    color: "text-purple-400",
+    bgColor: "bg-purple-500/10",
     function: 'icons' as AppFunction,
   },
   {
     icon: Palette,
     title: "Logo Generator",
     description: "Create professional logos for your brand. Generate unique designs with AI-powered creativity.",
-    color: "text-orange-600",
-    bgColor: "bg-orange-50 dark:bg-orange-950",
+    color: "text-orange-400",
+    bgColor: "bg-orange-500/10",
     function: 'logos' as AppFunction,
   },
 ];
@@ -72,20 +73,20 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
   const { isAuthenticated } = useAuthContext();
 
   return (
-    <div className="space-y-24 py-8 lg:py-12 relative">
+    <div className="space-y-24 py-8 lg:py-12 relative bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
       {/* Advanced Background Effects */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        {/* Animated gradient orbs */}
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/25 rounded-full blur-[100px] animate-pulse-slow" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-accent/25 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-r from-primary/15 via-accent/15 to-primary/15 rounded-full blur-[120px] animate-rotate-slow" />
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none bg-slate-950">
+        {/* Animated gradient orbs - darker tones */}
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/15 rounded-full blur-[100px] animate-pulse-slow" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-accent/15 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 rounded-full blur-[120px] animate-rotate-slow" />
         
-        {/* Animated particles */}
+        {/* Animated particles - darker */}
         <div className="absolute inset-0">
           {[...Array(20)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-1 h-1 bg-primary/40 rounded-full animate-float"
+              className="absolute w-1 h-1 bg-primary/30 rounded-full animate-float"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
@@ -96,13 +97,13 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
           ))}
         </div>
 
-        {/* Gradient mesh */}
-        <div className="absolute inset-0 opacity-30">
+        {/* Gradient mesh - darker tones */}
+        <div className="absolute inset-0 opacity-20">
           <div className="absolute top-0 left-0 w-full h-full" style={{
             background: `
-              radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.15) 0%, transparent 50%),
-              radial-gradient(circle at 80% 70%, hsl(var(--accent) / 0.15) 0%, transparent 50%),
-              radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.1) 0%, transparent 70%)
+              radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 80% 70%, hsl(var(--accent) / 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.08) 0%, transparent 70%)
             `,
           }} />
         </div>
@@ -131,11 +132,11 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
             </svg>
           </div>
 
-          {/* Grid pattern overlay */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{
+          {/* Grid pattern overlay - darker */}
+          <div className="absolute inset-0 opacity-[0.08]" style={{
             backgroundImage: `
-              linear-gradient(hsl(var(--primary)) 1px, transparent 1px),
-              linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)
+              linear-gradient(hsl(var(--primary) / 0.3) 1px, transparent 1px),
+              linear-gradient(90deg, hsl(var(--primary) / 0.3) 1px, transparent 1px)
             `,
             backgroundSize: '50px 50px',
           }} />
@@ -144,7 +145,7 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
         {/* Main Heading with advanced effects */}
         <div className="relative z-10 space-y-3">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-extrabold tracking-tight leading-[0.95]">
-            <span className="block animate-slide-up">Transform Your</span>
+            <span className="block animate-slide-up text-slate-100">Transform Your</span>
             <span className="block relative mt-1">
               <span className="bg-gradient-to-r from-primary via-primary via-accent to-primary bg-clip-text text-transparent animate-gradient bg-[length:200%_auto] relative">
                 Images with AI
@@ -163,7 +164,7 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
         </div>
 
         {/* Description */}
-        <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed font-light animate-fade-in relative z-10" style={{ animationDelay: '0.2s' }}>
+        <p className="text-lg sm:text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto leading-relaxed font-light animate-fade-in relative z-10" style={{ animationDelay: '0.2s' }}>
           Professional AI-powered image optimization, translation, and generation tools. Transform your creative workflow with cutting-edge technology.
         </p>
 
@@ -205,7 +206,7 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
 
         {/* Visual showcase - Image processing preview */}
         <div className="relative z-10 mt-12 w-full max-w-4xl mx-auto animate-fade-in" style={{ animationDelay: '0.5s' }}>
-          <div className="relative rounded-3xl overflow-hidden border border-border/50 bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-xl p-8 shadow-2xl">
+              <div className="relative rounded-3xl overflow-hidden border border-slate-700/70 bg-gradient-to-br from-slate-800/90 to-slate-800/80 backdrop-blur-xl p-8 shadow-2xl shadow-black/50">
             {/* Grid of feature previews */}
             <div className="grid grid-cols-3 gap-4">
               {[
@@ -217,14 +218,14 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
                 return (
                   <div
                     key={idx}
-                    className="relative group/item p-6 rounded-2xl bg-gradient-to-br from-card/50 to-card/30 border border-border/30 hover:border-primary/30 transition-all duration-500 hover:scale-105 hover:shadow-lg"
+                    className="relative group/item p-6 rounded-2xl bg-gradient-to-br from-slate-800/70 to-slate-800/60 border border-slate-700/60 hover:border-primary/60 transition-all duration-500 hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
                   >
                     <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover/item:opacity-100 transition-opacity duration-500 rounded-2xl`} />
                     <div className="relative z-10 text-center">
                       <div className="inline-flex p-4 rounded-xl bg-primary/10 group-hover/item:bg-primary/20 mb-3 transition-colors">
                         <ItemIcon className="h-6 w-6 text-primary" />
                       </div>
-                      <div className="text-sm font-semibold">{item.label}</div>
+                      <div className="text-sm font-semibold text-slate-200">{item.label}</div>
                     </div>
                   </div>
                 );
@@ -238,7 +239,7 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
                   backgroundSize: '200% 100%',
                 }} />
               </div>
-              <span className="text-xs text-muted-foreground font-mono">AI Processing...</span>
+              <span className="text-xs text-slate-400 font-mono">AI Processing...</span>
             </div>
           </div>
         </div>
@@ -246,242 +247,94 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
 
       {/* Bento Grid Section */}
       <section className="relative space-y-8">
-        {/* Section background effects */}
+        {/* Section background effects - darker */}
         <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 rounded-full blur-3xl animate-mesh-move" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-primary/8 via-accent/8 to-primary/8 rounded-full blur-3xl animate-mesh-move opacity-60" />
         </div>
 
         <div className="text-center space-y-4 mb-16 relative z-10">
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent animate-slide-up relative">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent animate-slide-up relative">
             Your AI Workspace
             <span className="absolute inset-0 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent opacity-30 blur-xl animate-gradient bg-[length:200%_auto]">
               Your AI Workspace
             </span>
           </h2>
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.1s' }}>
             Everything you need in one powerful platform
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
-          {/* Hero Tile - Balanced Size */}
-          <Card 
-            className="group relative overflow-hidden col-span-12 md:col-span-6 lg:col-span-5 cursor-pointer border border-border/50 hover:border-primary/30 bg-gradient-to-br from-card via-card/95 to-card/90 backdrop-blur-sm transition-all duration-700 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 animate-scale-in"
-            onClick={() => onFunctionSelect('enhance')}
-            style={{ animationDelay: '0.1s' }}
-          >
-            {/* Animated gradient background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/0 via-primary/0 to-accent/0 group-hover:from-primary/8 group-hover:via-primary/5 group-hover:to-accent/8 transition-all duration-700" />
-            {/* Shimmer effect */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-            </div>
-            <CardHeader className="relative z-10 p-6 lg:p-8">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="relative p-3 rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 group-hover:from-primary/25 group-hover:to-accent/25 transition-all duration-500 shadow-lg group-hover:shadow-primary/20 group-hover:scale-110 group-hover:rotate-3">
-                  <Rocket className="h-5 w-5 text-primary animate-float" style={{ animationDelay: '0.5s' }} />
-                </div>
-              </div>
-              <CardTitle className="text-2xl lg:text-3xl font-extrabold mb-3 bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-transparent group-hover:animate-gradient bg-[length:200%_auto] transition-all duration-500">
-                Start Creating with AI
-              </CardTitle>
-              <CardDescription className="text-sm lg:text-base text-muted-foreground leading-relaxed mb-6">
-                Transform your images with powerful AI tools. Enhance quality, translate text, generate icons and logos.
-              </CardDescription>
-              <Button
-                size="lg"
-                className="relative rounded-lg bg-gradient-to-r from-primary via-primary to-accent hover:opacity-90 font-semibold shadow-lg shadow-primary/20 group-hover:shadow-primary/30 transition-all duration-500 overflow-hidden group/btn"
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  Explore Tools
-                  <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-accent to-primary opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500" />
-              </Button>
-            </CardHeader>
-          </Card>
-
-          {/* Icon Generator Tile */}
-          <Card className="group relative overflow-hidden col-span-12 md:col-span-6 lg:col-span-4 cursor-pointer border border-border/50 hover:border-primary/30 bg-gradient-to-br from-card via-card/95 to-card/90 backdrop-blur-sm transition-all duration-700 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 animate-scale-in"
-            onClick={() => onFunctionSelect('icons')}
-            style={{ animationDelay: '0.2s' }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-accent/0 group-hover:from-primary/8 group-hover:to-accent/8 transition-all duration-700" />
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-            </div>
-            <CardHeader className="relative z-10 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="relative p-3 rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 group-hover:from-primary/25 group-hover:to-accent/25 transition-all duration-500 shadow-lg group-hover:shadow-primary/20 group-hover:scale-110 group-hover:rotate-3">
-                  <Zap className="h-5 w-5 text-primary animate-pulse" />
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-extrabold bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
-                    10K+
-                  </div>
-                  <div className="text-xs text-muted-foreground">Icons Generated</div>
-                </div>
-              </div>
-              <CardTitle className="text-xl font-bold mb-2 bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent group-hover:from-primary group-hover:to-accent transition-all duration-500">
-                Icon Generator
-              </CardTitle>
-              <CardDescription className="text-sm">
-                Create multiple variants instantly
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          {/* Logo Generator Tile */}
-          <Card className="group relative overflow-hidden col-span-12 md:col-span-6 lg:col-span-3 cursor-pointer border border-border/50 hover:border-primary/30 bg-gradient-to-br from-card via-card/95 to-card/90 backdrop-blur-sm transition-all duration-700 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 animate-scale-in"
-            onClick={() => onFunctionSelect('logos')}
-            style={{ animationDelay: '0.3s' }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-accent/0 group-hover:from-primary/8 group-hover:to-accent/8 transition-all duration-700" />
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-            </div>
-            <CardHeader className="relative z-10 p-6">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 group-hover:from-primary/25 group-hover:to-accent/25 transition-all duration-500 shadow-lg group-hover:shadow-primary/20 group-hover:scale-110 group-hover:rotate-3 mb-4 w-fit">
-                <Palette className="h-5 w-5 text-primary animate-float" style={{ animationDelay: '0.7s' }} />
-              </div>
-              <CardTitle className="text-lg font-bold mb-2 bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent group-hover:from-primary group-hover:to-accent transition-all duration-500">
-                Logo Generator
-              </CardTitle>
-              <CardDescription className="text-sm mb-4">
-                Create professional logos
-              </CardDescription>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full group-hover:text-primary transition-colors"
-              >
-                Try Now
-                <ArrowRight className="ml-2 h-3 w-3 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </CardHeader>
-          </Card>
-
-          {/* Multi-language Tile */}
-          <Card className="group relative overflow-hidden col-span-12 md:col-span-6 lg:col-span-4 cursor-pointer border border-border/50 hover:border-primary/30 bg-gradient-to-br from-card via-card/95 to-card/90 backdrop-blur-sm transition-all duration-700 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 animate-scale-in"
-            onClick={() => onFunctionSelect('translate')}
-            style={{ animationDelay: '0.4s' }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-accent/0 group-hover:from-primary/8 group-hover:to-accent/8 transition-all duration-700" />
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-            </div>
-            <CardHeader className="relative z-10 p-6">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 group-hover:from-primary/25 group-hover:to-accent/25 transition-all duration-500 shadow-lg group-hover:shadow-primary/20 group-hover:scale-110 group-hover:rotate-3 mb-4 w-fit">
-                <Languages className="h-5 w-5 text-primary animate-float" style={{ animationDelay: '0.8s' }} />
-              </div>
-              <CardTitle className="text-xl font-bold mb-2 bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent group-hover:from-primary group-hover:to-accent transition-all duration-500">
-                Multi-Language
-              </CardTitle>
-              <CardDescription className="text-sm">
-                Translate text in images to 100+ languages
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          {/* Batch Processing Tile */}
-          <Card className="group relative overflow-hidden col-span-12 md:col-span-6 lg:col-span-4 cursor-pointer border border-border/50 hover:border-primary/30 bg-gradient-to-br from-card via-card/95 to-card/90 backdrop-blur-sm transition-all duration-700 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 animate-scale-in"
-            style={{ animationDelay: '0.5s' }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-accent/0 group-hover:from-primary/8 group-hover:to-accent/8 transition-all duration-700" />
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-            </div>
-            <CardHeader className="relative z-10 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 group-hover:from-primary/25 group-hover:to-accent/25 transition-all duration-500 shadow-lg group-hover:shadow-primary/20 group-hover:scale-110 group-hover:rotate-3">
-                  <Layers className="h-5 w-5 text-primary" />
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-extrabold bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
-                    Batch
-                  </div>
-                </div>
-              </div>
-              <CardTitle className="text-xl font-bold mb-2 bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent group-hover:from-primary group-hover:to-accent transition-all duration-500">
-                Process Multiple
-              </CardTitle>
-              <CardDescription className="text-sm">
-                Handle multiple images at once
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          {/* Speed Tile */}
-          <Card className="group relative overflow-hidden col-span-12 md:col-span-6 lg:col-span-4 cursor-pointer border border-border/50 hover:border-primary/30 bg-gradient-to-br from-card via-card/95 to-card/90 backdrop-blur-sm transition-all duration-700 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 animate-scale-in"
-            style={{ animationDelay: '0.6s' }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-accent/0 group-hover:from-primary/8 group-hover:to-accent/8 transition-all duration-700" />
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-            </div>
-            <CardHeader className="relative z-10 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 group-hover:from-primary/25 group-hover:to-accent/25 transition-all duration-500 shadow-lg group-hover:shadow-primary/20 group-hover:scale-110 group-hover:rotate-3">
-                  <Clock className="h-5 w-5 text-primary animate-pulse" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl font-bold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent group-hover:from-primary group-hover:to-accent transition-all duration-500">
-                    Lightning Fast
-                  </CardTitle>
-                  <CardDescription className="text-sm">
-                    Results in seconds
-                  </CardDescription>
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-primary via-primary to-accent rounded-full w-3/4 group-hover:w-full transition-all duration-1000 ease-out relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer-slow" />
-                  </div>
-                </div>
-                <div className="text-xs text-muted-foreground mt-2">Processing speed</div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          {/* Prompt Memory Tile */}
-          <Card className="group relative overflow-hidden col-span-12 md:col-span-6 lg:col-span-4 cursor-pointer border border-border/50 hover:border-primary/30 bg-gradient-to-br from-card via-card/95 to-card/90 backdrop-blur-sm transition-all duration-700 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 animate-scale-in"
-            style={{ animationDelay: '0.7s' }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-accent/0 group-hover:from-primary/8 group-hover:to-accent/8 transition-all duration-700" />
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-            </div>
-            <CardHeader className="relative z-10 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 group-hover:from-primary/25 group-hover:to-accent/25 transition-all duration-500 shadow-lg group-hover:shadow-primary/20 group-hover:scale-110 group-hover:rotate-3">
-                  <Copy className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <CardTitle className="text-lg font-bold mb-1 bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent group-hover:from-primary group-hover:to-accent transition-all duration-500">
-                    Prompt Memory
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Copy & reuse AI prompts
-                  </CardDescription>
-                </div>
-              </div>
-              <div className="mt-4 p-3 rounded-lg bg-muted/30 border border-border/50 text-xs font-mono text-muted-foreground group-hover:text-foreground group-hover:bg-muted/50 transition-all duration-500">
-                View actual prompts sent to AI
-              </div>
-            </CardHeader>
-          </Card>
-
+        <div className="max-w-7xl mx-auto px-4">
+          <MagicBento
+            textAutoHide={true}
+            enableStars={true}
+            enableSpotlight={true}
+            enableBorderGlow={true}
+            enableTilt={true}
+            enableMagnetism={true}
+            clickEffect={true}
+            spotlightRadius={300}
+            particleCount={12}
+            glowColor="132, 0, 255"
+            cards={[
+              {
+                color: 'transparent',
+                title: 'Start Creating with AI',
+                description: 'Transform your images with powerful AI tools. Enhance quality, translate text, generate icons and logos.',
+                label: 'Get Started',
+                icon: Rocket,
+                onClick: () => onFunctionSelect('enhance'),
+              },
+              {
+                color: 'transparent',
+                title: 'Icon Generator',
+                description: 'Create multiple variants instantly',
+                label: 'Icons',
+                icon: Zap,
+                onClick: () => onFunctionSelect('icons'),
+              },
+              {
+                color: 'transparent',
+                title: 'Logo Generator',
+                description: 'Create professional logos',
+                label: 'Logos',
+                icon: Palette,
+                onClick: () => onFunctionSelect('logos'),
+              },
+              {
+                color: 'transparent',
+                title: 'Multi-Language',
+                description: 'Translate text in images to 100+ languages',
+                label: 'Translate',
+                icon: Languages,
+                onClick: () => onFunctionSelect('translate'),
+              },
+              {
+                color: 'transparent',
+                title: 'Batch Processing',
+                description: 'Process multiple images at once',
+                label: 'Batch',
+                icon: Layers,
+              },
+              {
+                color: 'transparent',
+                title: 'Lightning Fast',
+                description: 'Results in seconds',
+                label: 'Speed',
+                icon: Clock,
+              },
+            ]}
+          />
         </div>
       </section>
 
       {/* Features Grid */}
       <section id="features" className="space-y-16 relative">
         <div className="text-center space-y-4">
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">
             Everything You Need
           </h2>
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto">
             Powerful AI tools to enhance, translate, and create images
           </p>
         </div>
@@ -492,11 +345,11 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
             return (
               <Card
                 key={index}
-                className="group relative overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border border-border/50 hover:border-primary/30 bg-gradient-to-br from-card/95 to-card/90 backdrop-blur-sm"
+                className="group relative overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border border-slate-700/70 hover:border-primary/60 bg-gradient-to-br from-slate-800/95 to-slate-800/90 backdrop-blur-sm shadow-xl shadow-black/30"
                 onClick={() => onFunctionSelect(feature.function)}
               >
-                {/* Gradient overlay on hover */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-accent/0 group-hover:from-primary/5 group-hover:to-accent/5 transition-all duration-300" />
+                {/* Gradient overlay on hover - darker */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-accent/0 group-hover:from-primary/8 group-hover:to-accent/8 transition-all duration-300" />
                 
                 <CardHeader className="relative z-10 p-5">
                   <div className="flex flex-col items-center text-center space-y-3">
@@ -504,10 +357,10 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
                       <Icon className={`h-6 w-6 ${feature.color} relative z-10`} />
                     </div>
                     <div className="flex-1">
-                      <CardTitle className="text-lg font-bold mb-2 group-hover:text-primary transition-colors">
+                      <CardTitle className="text-lg font-bold mb-2 text-slate-100 group-hover:text-primary transition-colors">
                         {feature.title}
                       </CardTitle>
-                      <CardDescription className="text-sm leading-relaxed text-muted-foreground">
+                      <CardDescription className="text-sm leading-relaxed text-slate-300">
                         {feature.description}
                       </CardDescription>
                     </div>
@@ -531,8 +384,8 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
 
       {/* Benefits Section */}
       <section className="relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/10 to-primary/10 rounded-3xl blur-3xl" />
-        <div className="relative bg-gradient-to-br from-card via-card to-card/80 backdrop-blur-xl rounded-3xl p-8 md:p-12 lg:p-16 border-2 border-border/50 shadow-2xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-accent/15 to-primary/15 rounded-3xl blur-3xl opacity-60" />
+        <div className="relative bg-gradient-to-br from-slate-800/95 via-slate-800/90 to-slate-800/90 backdrop-blur-xl rounded-3xl p-8 md:p-12 lg:p-16 border-2 border-slate-700/70 shadow-2xl shadow-black/50">
           <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="space-y-8">
               <div>
@@ -540,10 +393,10 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
                   <Sparkles className="h-3 w-3" />
                   <span>Benefits</span>
                 </div>
-                <h2 className="text-4xl sm:text-5xl font-extrabold mb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                <h2 className="text-4xl sm:text-5xl font-extrabold mb-4 bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">
                   Why Choose VisionAI?
                 </h2>
-                <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
+                <p className="text-lg sm:text-xl text-slate-300 leading-relaxed">
                   Experience the future of image processing with our advanced AI technology.
                 </p>
               </div>
@@ -553,7 +406,7 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
                     <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
                       <Check className="h-5 w-5 text-primary font-bold" />
                     </div>
-                    <span className="text-base font-medium text-foreground group-hover:text-primary transition-colors">
+                    <span className="text-base font-medium text-slate-200 group-hover:text-primary transition-colors">
                       {benefit}
                     </span>
                   </li>
@@ -561,8 +414,8 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
               </ul>
             </div>
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/20 to-primary/20 rounded-3xl blur-3xl animate-pulse-slow" />
-              <div className="relative bg-gradient-to-br from-background via-background to-background/80 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border-2 border-border/50 shadow-2xl">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/25 via-accent/25 to-primary/25 rounded-3xl blur-3xl animate-pulse-slow opacity-50" />
+              <div className="relative bg-gradient-to-br from-slate-800/95 via-slate-800/90 to-slate-800/95 backdrop-blur-xl rounded-3xl p-8 lg:p-10 border-2 border-slate-700/70 shadow-2xl shadow-black/50">
                 <div className="space-y-6">
                   {[
                     { icon: ImageIcon, title: "Fast Processing", desc: "Get results in seconds", color: "text-blue-600", bg: "bg-blue-500/10" },
@@ -577,7 +430,7 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
                         </div>
                         <div>
                           <h3 className="font-bold text-lg group-hover:text-primary transition-colors">{item.title}</h3>
-                          <p className="text-sm text-muted-foreground">{item.desc}</p>
+                          <p className="text-sm text-slate-400">{item.desc}</p>
                         </div>
                       </div>
                     );
@@ -591,13 +444,13 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
 
       {/* CTA Section */}
       <section className="relative text-center space-y-8">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/20 to-primary/20 rounded-3xl blur-3xl" />
-        <div className="relative bg-gradient-to-br from-primary/10 via-accent/10 to-primary/10 backdrop-blur-xl rounded-3xl p-12 lg:p-16 border-2 border-primary/20 shadow-2xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/25 via-accent/25 to-primary/25 rounded-3xl blur-3xl opacity-60" />
+        <div className="relative bg-gradient-to-br from-slate-800/95 via-slate-800/90 to-slate-800/95 backdrop-blur-xl rounded-3xl p-12 lg:p-16 border-2 border-primary/40 shadow-2xl shadow-black/50">
           <div className="max-w-3xl mx-auto space-y-6">
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 bg-clip-text text-transparent">
               Ready to Transform Your Images?
             </h2>
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
               Start using our AI-powered tools today. Sign in to get started.
             </p>
             <div className="pt-4">

@@ -54,10 +54,10 @@ export const Header = ({
             {/* Logo */}
             <div className="flex items-center gap-4">
               {showMenuButton && (
-                <Button
+                  <Button
                   variant="ghost"
                   size="icon"
-                  className="lg:hidden h-10 w-10 rounded-xl"
+                  className="lg:hidden h-10 w-10 rounded-xl text-slate-300 hover:text-slate-100 hover:bg-slate-800/50"
                   onClick={() => {
                     setMobileMenuOpen(!mobileMenuOpen);
                     onMenuClick?.();
@@ -141,7 +141,7 @@ export const Header = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="rounded-xl"
+                      className="rounded-xl text-slate-300 hover:text-slate-100 hover:bg-slate-800/50"
                       onClick={handleLogout}
                     >
                       <LogOut className="h-4 w-4" />

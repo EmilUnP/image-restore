@@ -4,45 +4,45 @@ import { Link } from "react-router-dom";
 
 export const Footer = () => {
   return (
-    <footer className="relative border-t border-border/40 bg-gradient-to-b from-background via-background to-background/95 backdrop-blur-xl">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">
+    <footer className="relative border-t border-slate-700/60 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 backdrop-blur-xl">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 pointer-events-none" />
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-20">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Brand */}
-          <div className="space-y-6">
+          <div className="space-y-6 relative z-30">
             <div className="flex items-center gap-3">
-              <div className="relative">
+              <div className="relative z-30">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-xl blur-md opacity-50" />
                 <div className="relative p-2 rounded-xl bg-gradient-to-br from-primary via-primary/90 to-accent shadow-lg shadow-primary/20">
-                  <Sparkles className="h-5 w-5 text-primary-foreground" />
+                  <Sparkles className="h-5 w-5 text-white" />
                 </div>
               </div>
-              <div>
-                <span className="font-extrabold text-xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <div className="relative z-30">
+                <span className="font-extrabold text-xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent block">
                   VisionAI
                 </span>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">AI Image Studio</p>
+                <p className="text-[10px] text-slate-300 uppercase tracking-wider">AI Image Studio</p>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <p className="text-sm text-slate-200 leading-relaxed relative z-30">
               Professional AI-powered image optimization, translation, and generation tools. Transform your creative workflow with cutting-edge technology.
             </p>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
+              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/20 hover:text-primary transition-all text-slate-400 hover:text-primary">
                 <Github className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-accent/10 hover:text-accent transition-all">
+              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-accent/20 hover:text-accent transition-all text-slate-400 hover:text-accent">
                 <Twitter className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
+              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/20 hover:text-primary transition-all text-slate-400 hover:text-primary">
                 <Mail className="h-5 w-5" />
               </Button>
             </div>
           </div>
 
           {/* Product */}
-          <div>
-            <h3 className="font-bold text-lg mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+          <div className="relative z-30">
+            <h3 className="font-bold text-lg mb-6 text-slate-100">
               Product
             </h3>
             <ul className="space-y-3 text-sm">
@@ -51,14 +51,14 @@ export const Footer = () => {
                   {item === 'Pricing' ? (
                     <Link 
                       to="/pricing"
-                      className="text-muted-foreground hover:text-primary transition-colors duration-200 font-medium hover:translate-x-1 inline-block transition-transform"
+                      className="text-slate-300 hover:text-primary transition-colors duration-200 font-medium hover:translate-x-1 inline-block transition-transform"
                     >
                       {item}
                     </Link>
                   ) : (
                     <a 
                       href={`#${item.toLowerCase()}`} 
-                      className="text-muted-foreground hover:text-primary transition-colors duration-200 font-medium hover:translate-x-1 inline-block transition-transform"
+                      className="text-slate-300 hover:text-primary transition-colors duration-200 font-medium hover:translate-x-1 inline-block transition-transform"
                     >
                       {item}
                     </a>
@@ -69,8 +69,8 @@ export const Footer = () => {
           </div>
 
           {/* Resources */}
-          <div>
-            <h3 className="font-bold text-lg mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+          <div className="relative z-30">
+            <h3 className="font-bold text-lg mb-6 text-slate-100">
               Resources
             </h3>
             <ul className="space-y-3 text-sm">
@@ -78,7 +78,7 @@ export const Footer = () => {
                 <li key={item}>
                   <a 
                     href={`#${item.toLowerCase()}`} 
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 font-medium hover:translate-x-1 inline-block transition-transform"
+                    className="text-slate-300 hover:text-primary transition-colors duration-200 font-medium hover:translate-x-1 inline-block transition-transform"
                   >
                     {item}
                   </a>
@@ -88,8 +88,8 @@ export const Footer = () => {
           </div>
 
           {/* Company */}
-          <div>
-            <h3 className="font-bold text-lg mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+          <div className="relative z-30">
+            <h3 className="font-bold text-lg mb-6 text-slate-100">
               Company
             </h3>
             <ul className="space-y-3 text-sm">
@@ -97,7 +97,7 @@ export const Footer = () => {
                 <li key={item}>
                   <a 
                     href={`#${item.toLowerCase()}`} 
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 font-medium hover:translate-x-1 inline-block transition-transform"
+                    className="text-slate-300 hover:text-primary transition-colors duration-200 font-medium hover:translate-x-1 inline-block transition-transform"
                   >
                     {item}
                   </a>
@@ -107,8 +107,8 @@ export const Footer = () => {
           </div>
         </div>
 
-        <div className="mt-16 pt-8 border-t border-border/40 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-muted-foreground font-medium">
+        <div className="mt-16 pt-8 border-t border-slate-700/60 flex flex-col sm:flex-row justify-between items-center gap-4 relative z-30">
+          <p className="text-sm text-slate-300 font-medium">
             © {new Date().getFullYear()} VisionAI. All rights reserved.
           </p>
         </div>
