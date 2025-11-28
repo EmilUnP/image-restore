@@ -554,14 +554,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
 
               {!originalIcon ? (
                 <ImageUpload
-                  onImageSelect={async (file) => {
-                    const base64 = await new Promise<string>((resolve) => {
-                      const reader = new FileReader();
-                      reader.onloadend = () => resolve(reader.result as string);
-                      reader.readAsDataURL(file);
-                    });
-                    handleIconSelect(file, upgradeLevel, style);
-                  }}
+                  onImageSelect={(file) => handleIconSelect(file, upgradeLevel, style)}
                   disabled={isGenerating}
                   label="Upload Icon"
                   description="Drag and drop or click to select an icon to upgrade"

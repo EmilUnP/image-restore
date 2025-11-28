@@ -370,14 +370,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
 
               {!originalLogo ? (
                 <ImageUpload
-                  onImageSelect={async (file) => {
-                    const base64 = await new Promise<string>((resolve) => {
-                      const reader = new FileReader();
-                      reader.onloadend = () => resolve(reader.result as string);
-                      reader.readAsDataURL(file);
-                    });
-                    // Original logo is set by handleLogoSelect
-                  }}
+                  onImageSelect={(file) => handleLogoSelect(file, upgradeLevel, style)}
                   disabled={isGenerating}
                   label="Upload Logo"
                   description="Drag and drop or click to select a logo to upgrade"
