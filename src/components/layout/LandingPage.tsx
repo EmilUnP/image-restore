@@ -9,6 +9,7 @@ import {
   Check,
   Image as ImageIcon
 } from "lucide-react";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | null;
 
@@ -61,6 +62,8 @@ const benefits = [
 ];
 
 export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
+  const { isAuthenticated } = useAuthContext();
+
   return (
     <div className="space-y-32 py-16 relative">
       {/* Background Effects */}
@@ -83,16 +86,19 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
           </span>
         </h1>
         <p className="text-xl sm:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed font-light">
-          Enhance quality, translate text, generate icons, and create logos—all with the power of artificial intelligence.
+          Professional AI-powered image optimization, translation, and generation tools. Transform your creative workflow with cutting-edge technology.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
           <Button
             size="lg"
             className="relative rounded-2xl bg-gradient-to-r from-primary via-primary to-accent hover:opacity-90 font-bold text-lg px-8 py-6 shadow-2xl shadow-primary/30 hover:shadow-primary/40 transition-all duration-300 overflow-hidden group"
-            onClick={() => onFunctionSelect('enhance')}
+            onClick={() => {
+              // This will trigger login if not authenticated
+              onFunctionSelect('enhance');
+            }}
           >
             <span className="relative z-10 flex items-center gap-2">
-              Get Started
+              Get Started Free
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-accent to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -180,7 +186,7 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
                   <span>Benefits</span>
                 </div>
                 <h2 className="text-4xl sm:text-5xl font-extrabold mb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  Why Choose SINAM AI?
+                  Why Choose VisionAI?
                 </h2>
                 <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
                   Experience the future of image processing with our advanced AI technology.

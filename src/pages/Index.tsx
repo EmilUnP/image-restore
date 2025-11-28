@@ -3,22 +3,38 @@ import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Footer } from "@/components/layout/Footer";
 import { LandingPage } from "@/components/layout/LandingPage";
+import { ProfilePage } from "@/components/profile/ProfilePage";
 import { EnhancementWorkflow } from "@/components/enhancement/EnhancementWorkflow";
 import { TranslationWorkflow } from "@/components/translation/TranslationWorkflow";
 import { IconGenerationWorkflow } from "@/components/icons/IconGenerationWorkflow";
 import { LogoGenerationWorkflow } from "@/components/logos/LogoGenerationWorkflow";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | null;
+type ViewMode = 'landing' | 'profile' | 'function';
 
 const Index = () => {
   const [selectedFunction, setSelectedFunction] = useState<AppFunction>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('landing');
+  const { isAuthenticated } = useAuthContext();
 
   const handleFunctionSelect = (func: AppFunction) => {
+    if (!isAuthenticated) {
+      // If not logged in, show login dialog (handled by Header)
+      return;
+    }
     setSelectedFunction(func);
+    setViewMode('function');
   };
 
   const handleBack = () => {
+    setSelectedFunction(null);
+    setViewMode('landing');
+  };
+
+  const handleProfileClick = () => {
+    setViewMode('profile');
     setSelectedFunction(null);
   };
 
@@ -26,11 +42,15 @@ const Index = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Escape to go back
-      if (e.key === "Escape" && selectedFunction) {
-        handleBack();
+      if (e.key === "Escape") {
+        if (selectedFunction) {
+          handleBack();
+        } else if (viewMode === 'profile') {
+          setViewMode('landing');
+        }
       }
-      // Ctrl/Cmd + K to toggle sidebar
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+      // Ctrl/Cmd + K to toggle sidebar (only when logged in)
+      if ((e.ctrlKey || e.metaKey) && e.key === "k" && isAuthenticated) {
         e.preventDefault();
         setSidebarOpen(!sidebarOpen);
       }
@@ -38,7 +58,7 @@ const Index = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedFunction, sidebarOpen]);
+  }, [selectedFunction, sidebarOpen, viewMode, isAuthenticated]);
 
   // Close sidebar on mobile when function is selected
   useEffect(() => {
@@ -46,6 +66,13 @@ const Index = () => {
       setSidebarOpen(false);
     }
   }, [selectedFunction]);
+
+  // Auto-open sidebar on desktop when logged in
+  useEffect(() => {
+    if (isAuthenticated && !selectedFunction) {
+      setSidebarOpen(true);
+    }
+  }, [isAuthenticated]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-accent/5">
@@ -58,22 +85,27 @@ const Index = () => {
 
       <Header 
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-        showMenuButton={true}
+        showMenuButton={isAuthenticated}
+        onProfileClick={handleProfileClick}
       />
       
       <div className="flex flex-1 relative">
-        {/* Sidebar */}
-        <Sidebar
-          selectedFunction={selectedFunction}
-          onFunctionSelect={handleFunctionSelect}
-          onClose={() => setSidebarOpen(false)}
-          isOpen={sidebarOpen}
-        />
+        {/* Sidebar - Only show when logged in */}
+        {isAuthenticated && (
+          <Sidebar
+            selectedFunction={selectedFunction}
+            onFunctionSelect={handleFunctionSelect}
+            onClose={() => setSidebarOpen(false)}
+            isOpen={sidebarOpen}
+          />
+        )}
 
         {/* Main Content */}
-        <main className="flex-1 lg:ml-72 transition-all duration-300 relative z-10">
+        <main className={`flex-1 transition-all duration-300 relative z-10 ${isAuthenticated ? 'lg:ml-72' : ''}`}>
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-            {!selectedFunction ? (
+            {viewMode === 'profile' ? (
+              <ProfilePage onBack={() => setViewMode('landing')} />
+            ) : !selectedFunction ? (
               <LandingPage onFunctionSelect={handleFunctionSelect} />
             ) : selectedFunction === 'enhance' ? (
               <EnhancementWorkflow onBack={handleBack} />
@@ -88,7 +120,7 @@ const Index = () => {
         </main>
       </div>
 
-      {!selectedFunction && <Footer />}
+      {!isAuthenticated && <Footer />}
     </div>
   );
 };

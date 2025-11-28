@@ -18,13 +18,13 @@ export const Footer = () => {
               </div>
               <div>
                 <span className="font-extrabold text-xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  SINAM AI
+                  VisionAI
                 </span>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Image Optimizer</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">AI Image Studio</p>
               </div>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              AI-powered image optimization and translation tools. Transform your images with cutting-edge technology.
+              Professional AI-powered image optimization, translation, and generation tools. Transform your creative workflow with cutting-edge technology.
             </p>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
@@ -99,7 +99,7 @@ export const Footer = () => {
 
         <div className="mt-16 pt-8 border-t border-border/40 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground font-medium">
-            © {new Date().getFullYear()} SINAM AI. All rights reserved.
+            © {new Date().getFullYear()} VisionAI. All rights reserved.
           </p>
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold">
             <Sparkles className="h-4 w-4 animate-pulse" />

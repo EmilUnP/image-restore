@@ -88,9 +88,9 @@ export const Sidebar = ({
               </div>
               <div>
                 <span className="font-bold text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  Tools
+                  VisionAI
                 </span>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">AI Functions</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">AI Tools</p>
               </div>
             </div>
             <Button
