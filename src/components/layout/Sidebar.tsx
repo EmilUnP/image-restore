@@ -105,11 +105,11 @@ export const Sidebar = ({
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-            <div className="mb-4">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            <div className="mb-6">
+              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 px-2">
                 AI Tools
               </h3>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {functions.map((func) => {
                   const Icon = func.icon;
                   const isSelected = selectedFunction === func.id;
@@ -122,28 +122,33 @@ export const Sidebar = ({
                         onClose?.();
                       }}
                       className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
-                        "hover:bg-muted/50",
+                        "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 relative group",
+                        "hover:scale-[1.02]",
                         isSelected
-                          ? "bg-primary/10 text-primary border border-primary/20"
-                          : "text-muted-foreground hover:text-foreground"
+                          ? "bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 text-primary border-2 border-primary/30 shadow-lg shadow-primary/10"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60 border-2 border-transparent"
                       )}
                     >
                       <div className={cn(
-                        "p-2 rounded-lg",
-                        isSelected ? func.bgColor : "bg-muted"
+                        "p-2.5 rounded-xl transition-all duration-200",
+                        isSelected 
+                          ? `${func.bgColor} shadow-md scale-110` 
+                          : "bg-muted group-hover:bg-muted/80"
                       )}>
                         <Icon className={cn(
-                          "h-4 w-4",
-                          isSelected ? func.color : "text-muted-foreground"
+                          "h-5 w-5 transition-all duration-200",
+                          isSelected ? func.color : "text-muted-foreground group-hover:text-foreground"
                         )} />
                       </div>
                       <div className="flex-1 text-left">
-                        <div className="font-medium">{func.name}</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="font-semibold">{func.name}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
                           {func.description}
                         </div>
                       </div>
+                      {isSelected && (
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                      )}
                     </button>
                   );
                 })}
@@ -151,25 +156,25 @@ export const Sidebar = ({
             </div>
 
             {/* Quick Actions */}
-            <div className="mt-8 pt-6 border-t">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            <div className="mt-8 pt-6 border-t border-border/40">
+              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 px-2">
                 Quick Actions
               </h3>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <Button
                   variant="ghost"
-                  className="w-full justify-start"
+                  className="w-full justify-start rounded-xl hover:bg-muted/60 transition-all duration-200"
                   size="sm"
                 >
-                  <Sparkles className="h-4 w-4 mr-2" />
+                  <Sparkles className="h-4 w-4 mr-2 text-primary" />
                   Recent Projects
                 </Button>
                 <Button
                   variant="ghost"
-                  className="w-full justify-start"
+                  className="w-full justify-start rounded-xl hover:bg-muted/60 transition-all duration-200"
                   size="sm"
                 >
-                  <Zap className="h-4 w-4 mr-2" />
+                  <Zap className="h-4 w-4 mr-2 text-accent" />
                   Templates
                 </Button>
               </div>
@@ -177,14 +182,18 @@ export const Sidebar = ({
           </nav>
 
           {/* Footer */}
-          <div className="border-t p-4">
-            <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <p className="text-xs text-muted-foreground mb-2">
-                Powered by Gemini AI
-              </p>
+          <div className="border-t border-border/40 p-4 bg-gradient-to-r from-primary/5 via-transparent to-accent/5">
+            <div className="rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-accent/10 p-4 text-center border border-primary/20 shadow-lg">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+                <p className="text-xs font-bold text-primary">
+                  Powered by Gemini AI
+                </p>
+              </div>
               <div className="flex items-center justify-center gap-1">
-                <Sparkles className="h-3 w-3 text-primary" />
-                <span className="text-xs font-medium">AI-Powered</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                  AI-Powered Technology
+                </span>
               </div>
             </div>
           </div>
