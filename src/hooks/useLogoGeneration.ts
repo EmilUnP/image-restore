@@ -38,22 +38,37 @@ export const useLogoGeneration = () => {
 
       const data = await generateLogo(request);
 
+      // Debug logging
+      console.log('[Logo Generation] Full API response:', data);
+      console.log('[Logo Generation] actualPrompt in response:', data?.actualPrompt);
+      console.log('[Logo Generation] Has generatedLogo:', !!data?.generatedLogo);
+
       // Always set the actual prompt if available, even if logo generation failed
       if (data?.actualPrompt) {
+        console.log('[Logo Generation] Setting actualPrompt:', data.actualPrompt.substring(0, 100) + '...');
         setActualPrompt(data.actualPrompt);
+      } else {
+        console.warn('[Logo Generation] No actualPrompt in response!');
+        setActualPrompt(null);
       }
 
       if (data?.generatedLogo) {
         setGeneratedLogo(data.generatedLogo);
-        toast.success('Logo generated successfully!');
+        if (data.error) {
+          toast.warning(data.error);
+        } else {
+          toast.success('Logo generated successfully!');
+        }
         return data.generatedLogo;
       } else {
-        toast.error("No logo generated");
+        const errorMsg = data?.error || "No logo generated";
+        toast.error(errorMsg);
         return null;
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred. Make sure the backend server is running.";
       toast.error(errorMessage);
+      setActualPrompt(null);
       return null;
     } finally {
       setIsGenerating(false);

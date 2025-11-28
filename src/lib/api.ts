@@ -364,12 +364,25 @@ export const generateLogo = async (request: GenerateLogoRequest): Promise<Genera
     body: JSON.stringify(request),
   });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || `Failed to generate logo. Error: ${response.status}`);
+  let responseData: GenerateLogoResponse;
+  try {
+    responseData = await response.json();
+  } catch (e) {
+    const errorText = await response.text();
+    throw new Error(`Server responded with non-JSON: ${errorText.substring(0, 100)}... (Status: ${response.status})`);
   }
 
-  return await response.json();
+  if (!response.ok) {
+    // Even if there's an error, return the response data so we can extract actualPrompt
+    const errorMessage = responseData.error || `Failed to generate logo. Error: ${response.status}`;
+    // Return the data anyway so actualPrompt can be extracted
+    return {
+      ...responseData,
+      error: errorMessage,
+    };
+  }
+
+  return responseData;
 };
 
 export const upgradeLogo = async (request: UpgradeLogoRequest): Promise<UpgradeLogoResponse> => {
