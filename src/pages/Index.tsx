@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { FunctionSelector } from "@/components/shared/FunctionSelector";
 import { EnhancementWorkflow } from "@/components/enhancement/EnhancementWorkflow";
 import { TranslationWorkflow } from "@/components/translation/TranslationWorkflow";
+import { IconGenerationWorkflow } from "@/components/icons/IconGenerationWorkflow";
+import { LogoGenerationWorkflow } from "@/components/logos/LogoGenerationWorkflow";
 import { KeyboardShortcuts } from "@/components/shared/KeyboardShortcuts";
 import { Sparkles, Image as ImageIcon } from "lucide-react";
 
-type AppFunction = 'enhance' | 'translate' | null;
+type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | null;
 
 const Index = () => {
   const [selectedFunction, setSelectedFunction] = useState<AppFunction>(null);
@@ -97,9 +99,17 @@ const Index = () => {
                 <div className="animate-slide-in">
                   <EnhancementWorkflow onBack={handleBack} />
                 </div>
-              ) : (
+              ) : selectedFunction === 'translate' ? (
                 <div className="animate-slide-in">
                   <TranslationWorkflow onBack={handleBack} />
+                </div>
+              ) : selectedFunction === 'icons' ? (
+                <div className="animate-slide-in">
+                  <IconGenerationWorkflow onBack={handleBack} />
+                </div>
+              ) : (
+                <div className="animate-slide-in">
+                  <LogoGenerationWorkflow onBack={handleBack} />
                 </div>
               )}
             </div>

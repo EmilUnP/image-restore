@@ -234,7 +234,7 @@ export const performTranslations = async ({ genAI, items, targetLanguageName }) 
     'gemini-2.0-flash-exp',
     'gemini-2.0-flash',
     'gemini-2.5-flash',
-    'gemini-2.5-flash-image-preview',
+    'gemini-3-pro-image-preview',
   ];
 
   let lastError;

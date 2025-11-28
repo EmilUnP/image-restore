@@ -1255,7 +1255,8 @@ app.post('/api/upgrade-logo', async (req, res) => {
           upgradedLogo: `data:${mimeType};base64,${upgradedImageBase64}`,
           message: `Logo upgraded successfully using ${validUpgradeLevel} level and ${validStyle} style.`,
           upgradeLevel: validUpgradeLevel,
-          style: validStyle
+          style: validStyle,
+          actualPrompt: upgradePrompt
         });
       } else {
         // Return original image with analysis
@@ -1265,7 +1266,8 @@ app.post('/api/upgrade-logo', async (req, res) => {
           analysis: text,
           message: `Logo processing attempted. Note: Gemini provides analysis. Original logo returned.`,
           upgradeLevel: validUpgradeLevel,
-          style: validStyle
+          style: validStyle,
+          actualPrompt: upgradePrompt
         });
       }
 

@@ -224,3 +224,169 @@ export const translateText = async (request: TranslateTextRequest): Promise<Tran
   }
 };
 
+export interface GenerateIconRequest {
+  prompt: string;
+  style?: string;
+  size?: string;
+}
+
+export interface GenerateIconResponse {
+  generatedIcon?: string;
+  message?: string;
+  error?: string;
+  actualPrompt?: string;
+}
+
+export interface UpgradeIconRequest {
+  image: string;
+  upgradeLevel?: string;
+  style?: string;
+}
+
+export interface UpgradeIconResponse {
+  upgradedIcon?: string;
+  message?: string;
+  error?: string;
+  actualPrompt?: string;
+}
+
+export const generateIcon = async (request: GenerateIconRequest): Promise<GenerateIconResponse> => {
+  const API_URL = getApiUrl();
+  const url = `${API_URL}/api/generate-icon`;
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `Failed to generate icon. Status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        const errorText = await response.text();
+        errorMessage = errorText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      // Check if it's a network error
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error('Network error: Could not reach the server. Please check your connection and make sure the backend server is running.');
+      }
+      throw error;
+    }
+    throw new Error(`Failed to generate icon: ${String(error)}`);
+  }
+};
+
+export const upgradeIcon = async (request: UpgradeIconRequest): Promise<UpgradeIconResponse> => {
+  const API_URL = getApiUrl();
+  const url = `${API_URL}/api/upgrade-icon`;
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `Failed to upgrade icon. Status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        const errorText = await response.text();
+        errorMessage = errorText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      // Check if it's a network error
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error('Network error: Could not reach the server. Please check your connection and make sure the backend server is running.');
+      }
+      throw error;
+    }
+    throw new Error(`Failed to upgrade icon: ${String(error)}`);
+  }
+};
+
+export interface GenerateLogoRequest {
+  prompt: string;
+  style?: string;
+  size?: string;
+  companyName?: string;
+  tagline?: string;
+}
+
+export interface GenerateLogoResponse {
+  generatedLogo?: string;
+  message?: string;
+  error?: string;
+  actualPrompt?: string;
+}
+
+export interface UpgradeLogoRequest {
+  image: string;
+  upgradeLevel?: string;
+  style?: string;
+}
+
+export interface UpgradeLogoResponse {
+  upgradedLogo?: string;
+  message?: string;
+  error?: string;
+  actualPrompt?: string;
+}
+
+export const generateLogo = async (request: GenerateLogoRequest): Promise<GenerateLogoResponse> => {
+  const API_URL = getApiUrl();
+  const response = await fetch(`${API_URL}/api/generate-logo`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || `Failed to generate logo. Error: ${response.status}`);
+  }
+
+  return await response.json();
+};
+
+export const upgradeLogo = async (request: UpgradeLogoRequest): Promise<UpgradeLogoResponse> => {
+  const API_URL = getApiUrl();
+  const response = await fetch(`${API_URL}/api/upgrade-logo`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || `Failed to upgrade logo. Error: ${response.status}`);
+  }
+
+  return await response.json();
+};
+

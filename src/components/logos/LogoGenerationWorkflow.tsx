@@ -6,96 +6,58 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ImageUpload } from "@/components/shared/ImageUpload";
 import { ImageComparison } from "@/components/shared/ImageComparison";
 import { BackButton } from "@/components/shared/BackButton";
 import { StepIndicator } from "@/components/shared/StepIndicator";
-import { useIconGeneration } from "@/hooks/useIconGeneration";
+import { useLogoGeneration } from "@/hooks/useLogoGeneration";
 import { downloadImage } from "@/lib/utils";
 import { toast } from "sonner";
-import { Zap, Sparkles, Plus, X, Download } from "lucide-react";
+import { Palette, Sparkles } from "lucide-react";
 
-interface IconGenerationWorkflowProps {
+interface LogoGenerationWorkflowProps {
   onBack: () => void;
 }
 
-export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) => {
+export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) => {
   const [mode, setMode] = useState<'generate' | 'upgrade'>('generate');
   const [prompt, setPrompt] = useState('');
-  const [useVariants, setUseVariants] = useState(false);
-  const [variants, setVariants] = useState<string[]>(['']);
+  const [companyName, setCompanyName] = useState('');
+  const [tagline, setTagline] = useState('');
   const [style, setStyle] = useState('modern');
-  const [size, setSize] = useState('512');
+  const [size, setSize] = useState('1024');
   const [upgradeLevel, setUpgradeLevel] = useState('medium');
   const [settingsConfigured, setSettingsConfigured] = useState(false);
 
   const {
-    generatedIcon,
-    generatedIcons,
-    actualPrompt,
-    originalIcon,
+    generatedLogo,
+    originalLogo,
     isGenerating,
     setGenerationMode,
-    generateIconFromText,
-    generateMultipleIcons,
-    upgradeExistingIcon,
-    handleIconSelect,
+    generateLogoFromText,
+    upgradeExistingLogo,
+    handleLogoSelect,
     reset,
     setIsGenerating,
-  } = useIconGeneration();
+  } = useLogoGeneration();
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
-      toast.error('Please enter a description for the icon');
+      toast.error('Please enter a description for the logo');
       return;
     }
-    
-    if (useVariants && variants.length > 0 && variants.some(v => v.trim())) {
-      const validVariants = variants.filter(v => v.trim());
-      await generateMultipleIcons(prompt, validVariants, style, size);
-    } else {
-      await generateIconFromText(prompt, style, size);
-    }
-  };
-
-  const addVariant = () => {
-    setVariants([...variants, '']);
-  };
-
-  const removeVariant = (index: number) => {
-    setVariants(variants.filter((_, i) => i !== index));
-  };
-
-  const updateVariant = (index: number, value: string) => {
-    const newVariants = [...variants];
-    newVariants[index] = value;
-    setVariants(newVariants);
-  };
-
-  const handleDownloadAll = () => {
-    generatedIcons.forEach((icon, index) => {
-      setTimeout(() => {
-        downloadImage(icon.image, icon.fileName);
-      }, index * 200);
-    });
-    toast.success(`Downloading ${generatedIcons.length} icons...`);
-  };
-
-  const handleDownloadIcon = (icon: typeof generatedIcons[0]) => {
-    downloadImage(icon.image, icon.fileName);
-    toast.success(`${icon.prompt} downloaded!`);
+    await generateLogoFromText(prompt, style, size, companyName || undefined, tagline || undefined);
   };
 
   const handleUpgrade = async () => {
-    if (!originalIcon) return;
-    await upgradeExistingIcon(originalIcon, upgradeLevel, style);
+    if (!originalLogo) return;
+    await upgradeExistingLogo(originalLogo, upgradeLevel, style);
   };
 
   const handleDownload = () => {
-    if (!generatedIcon) return;
-    downloadImage(generatedIcon, `icon-${Date.now()}.png`);
-    toast.success("Icon downloaded!");
+    if (!generatedLogo) return;
+    downloadImage(generatedLogo, `logo-${Date.now()}.png`);
+    toast.success("Logo downloaded!");
   };
 
   const handleModeChange = (newMode: 'generate' | 'upgrade') => {
@@ -107,15 +69,11 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
 
   const handleSettingsReady = () => {
     if (mode === 'generate' && !prompt.trim()) {
-      toast.error('Please enter a description for the icon');
+      toast.error('Please enter a description for the logo');
       return;
     }
-    if (mode === 'generate' && useVariants && variants.every(v => !v.trim())) {
-      toast.error('Please add at least one variant description');
-      return;
-    }
-    if (mode === 'upgrade' && !originalIcon) {
-      toast.error('Please upload an icon first');
+    if (mode === 'upgrade' && !originalLogo) {
+      toast.error('Please upload a logo first');
       return;
     }
     setSettingsConfigured(true);
@@ -125,16 +83,15 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
   const getCurrentStep = () => {
     if (!settingsConfigured) return 1;
     if (mode === 'generate' && !prompt.trim()) return 2;
-    if (mode === 'upgrade' && !originalIcon) return 2;
+    if (mode === 'upgrade' && !originalLogo) return 2;
     return 3;
   };
 
   const currentStep = getCurrentStep();
-  const hasResults = generatedIcon || generatedIcons.length > 0;
   const steps = [
     { number: 1, label: mode === 'generate' ? "Describe" : "Upload", status: currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming" as const },
     { number: 2, label: mode === 'generate' ? "Generate" : "Upgrade", status: currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming" as const },
-    { number: 3, label: "Result", status: currentStep >= 3 ? (hasResults ? "current" : "upcoming") : "upcoming" as const },
+    { number: 3, label: "Result", status: currentStep >= 3 ? (generatedLogo ? "current" : "upcoming") : "upcoming" as const },
   ];
 
   return (
@@ -152,11 +109,11 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="generate" className="gap-2">
               <Sparkles className="w-4 h-4" />
-              Generate New Icon
+              Generate New Logo
             </TabsTrigger>
             <TabsTrigger value="upgrade" className="gap-2">
-              <Zap className="w-4 h-4" />
-              Upgrade Existing Icon
+              <Palette className="w-4 h-4" />
+              Upgrade Existing Logo
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -167,88 +124,51 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
           {!settingsConfigured ? (
             <Card className="space-y-6 p-6">
               <div className="text-center mb-4">
-                <h2 className="text-xl font-semibold mb-2">Describe Your Icon</h2>
-                <p className="text-sm text-muted-foreground">Tell us what kind of icon you want to generate</p>
+                <h2 className="text-xl font-semibold mb-2">Describe Your Logo</h2>
+                <p className="text-sm text-muted-foreground">Tell us about your brand and logo vision</p>
               </div>
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="prompt">Main Icon Description *</Label>
-                  <Textarea
-                    id="prompt"
-                    placeholder="e.g., A modern phone icon, A minimalist home icon, A bold settings gear icon..."
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    rows={3}
-                    className="resize-none"
+                  <Label htmlFor="company-name">Company/Brand Name (Optional)</Label>
+                  <Input
+                    id="company-name"
+                    placeholder="e.g., TechCorp, MyBrand"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Be specific about style, colors, and purpose for best results
+                    Your company or brand name to include in the logo
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-2 p-4 border rounded-lg bg-muted/30">
-                  <Checkbox
-                    id="use-variants"
-                    checked={useVariants}
-                    onCheckedChange={(checked) => {
-                      setUseVariants(checked as boolean);
-                      if (!checked) {
-                        setVariants(['']);
-                      }
-                    }}
+                <div className="space-y-2">
+                  <Label htmlFor="tagline">Tagline/Slogan (Optional)</Label>
+                  <Input
+                    id="tagline"
+                    placeholder="e.g., Innovation First, Quality Matters"
+                    value={tagline}
+                    onChange={(e) => setTagline(e.target.value)}
                   />
-                  <Label htmlFor="use-variants" className="cursor-pointer flex-1">
-                    <span className="font-medium">Generate Multiple Variants</span>
-                    <p className="text-xs text-muted-foreground font-normal">
-                      Create related icons in the same style (e.g., phone, close, open, forward, back)
-                    </p>
-                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    A short tagline or slogan to include below the logo
+                  </p>
                 </div>
 
-                {useVariants && (
-                  <div className="space-y-3 p-4 border rounded-lg bg-muted/20">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Variant Descriptions</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addVariant}
-                        className="gap-1"
-                      >
-                        <Plus className="w-3 h-3" />
-                        Add Variant
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      {variants.map((variant, index) => (
-                        <div key={index} className="flex gap-2">
-                          <Input
-                            placeholder={`Variant ${index + 1} (e.g., close, open, forward, back...)`}
-                            value={variant}
-                            onChange={(e) => updateVariant(index, e.target.value)}
-                            className="flex-1"
-                          />
-                          {variants.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeVariant(index)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      All variants will be generated in the same style as the main icon
-                    </p>
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="prompt">Logo Description *</Label>
+                  <Textarea
+                    id="prompt"
+                    placeholder="e.g., A modern tech company logo with geometric shapes, A classic coffee shop logo with warm colors, A minimalist fitness brand logo..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    rows={4}
+                    className="resize-none"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Be specific about style, colors, industry, and visual elements for best results
+                  </p>
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -259,13 +179,14 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="modern">Modern</SelectItem>
+                        <SelectItem value="classic">Classic</SelectItem>
                         <SelectItem value="minimalist">Minimalist</SelectItem>
                         <SelectItem value="bold">Bold</SelectItem>
-                        <SelectItem value="outline">Outline</SelectItem>
-                        <SelectItem value="filled">Filled</SelectItem>
-                        <SelectItem value="gradient">Gradient</SelectItem>
-                        <SelectItem value="3d">3D</SelectItem>
-                        <SelectItem value="flat">Flat</SelectItem>
+                        <SelectItem value="elegant">Elegant</SelectItem>
+                        <SelectItem value="playful">Playful</SelectItem>
+                        <SelectItem value="corporate">Corporate</SelectItem>
+                        <SelectItem value="creative">Creative</SelectItem>
+                        <SelectItem value="vintage">Vintage</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -277,9 +198,9 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="256">256x256</SelectItem>
                         <SelectItem value="512">512x512</SelectItem>
                         <SelectItem value="1024">1024x1024</SelectItem>
+                        <SelectItem value="2048">2048x2048</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -288,13 +209,13 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                 <Button
                   onClick={handleSettingsReady}
                   className="w-full"
-                  disabled={!prompt.trim() || isGenerating || (useVariants && variants.every(v => !v.trim()))}
+                  disabled={!prompt.trim() || isGenerating}
                 >
                   Continue to Generate
                 </Button>
               </div>
             </Card>
-          ) : !generatedIcon ? (
+          ) : !generatedLogo ? (
             <Card className="space-y-6 p-6">
               <div className="text-center mb-4">
                 <h2 className="text-xl font-semibold mb-2">Ready to Generate</h2>
@@ -311,19 +232,18 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
 
               <div className="space-y-4">
                 <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                  <p className="text-sm font-medium">Main Icon:</p>
+                  <p className="text-sm font-medium">Description:</p>
                   <p className="text-sm text-muted-foreground">{prompt}</p>
-                  {useVariants && variants.some(v => v.trim()) && (
+                  {companyName && (
                     <>
-                      <p className="text-sm font-medium mt-3">Variants:</p>
-                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                        {variants.filter(v => v.trim()).map((variant, i) => (
-                          <li key={i}>{variant}</li>
-                        ))}
-                      </ul>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Will generate {1 + variants.filter(v => v.trim()).length} icon{1 + variants.filter(v => v.trim()).length > 1 ? 's' : ''} total
-                      </p>
+                      <p className="text-sm font-medium mt-2">Company Name:</p>
+                      <p className="text-sm text-muted-foreground">{companyName}</p>
+                    </>
+                  )}
+                  {tagline && (
+                    <>
+                      <p className="text-sm font-medium mt-2">Tagline:</p>
+                      <p className="text-sm text-muted-foreground">{tagline}</p>
                     </>
                   )}
                 </div>
@@ -331,107 +251,27 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                 <Button
                   onClick={handleGenerate}
                   className="w-full"
-                  disabled={isGenerating || !prompt.trim() || (useVariants && variants.every(v => !v.trim()))}
+                  disabled={isGenerating || !prompt.trim()}
                   size="lg"
                 >
                   {isGenerating ? (
                     <>
                       <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                      {useVariants && variants.some(v => v.trim()) 
-                        ? `Generating ${1 + variants.filter(v => v.trim()).length} Icons...`
-                        : 'Generating Icon...'}
+                      Generating Logo...
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4 mr-2" />
-                      {useVariants && variants.some(v => v.trim())
-                        ? `Generate ${1 + variants.filter(v => v.trim()).length} Icons`
-                        : 'Generate Icon'}
+                      Generate Logo
                     </>
                   )}
                 </Button>
               </div>
             </Card>
-          ) : generatedIcons.length > 0 ? (
+          ) : (
             <>
               <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-xl font-semibold">Generated Icons ({generatedIcons.length})</h2>
-                  <Button
-                    onClick={handleDownloadAll}
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download All
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Style: <span className="font-medium capitalize">{style}</span> • 
-                  Size: <span className="font-medium">{size}x{size}</span>
-                </p>
-                {generatedIcons[0]?.actualPrompt && (
-                  <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
-                    <p className="text-xs font-medium mb-1 text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
-                    <p className="text-xs text-foreground font-mono break-words">{generatedIcons[0].actualPrompt}</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-                {generatedIcons.map((icon) => (
-                  <Card key={icon.id} className="overflow-hidden">
-                    <div className="aspect-square p-4 bg-muted/30 flex items-center justify-center">
-                      <img
-                        src={icon.image}
-                        alt={icon.prompt}
-                        className="max-w-full max-h-full object-contain rounded"
-                      />
-                    </div>
-                    <CardContent className="p-4">
-                      <p className="text-xs font-medium mb-2 truncate" title={icon.prompt}>
-                        {icon.prompt}
-                      </p>
-                      {icon.actualPrompt && (
-                        <div className="mb-2 p-2 bg-muted/30 rounded text-xs">
-                          <p className="text-[10px] font-medium mb-1 text-muted-foreground">AI Prompt:</p>
-                          <p className="text-[10px] font-mono break-words line-clamp-2">{icon.actualPrompt}</p>
-                        </div>
-                      )}
-                      <Button
-                        onClick={() => handleDownloadIcon(icon)}
-                        size="sm"
-                        variant="outline"
-                        className="w-full gap-2"
-                      >
-                        <Download className="w-3 h-3" />
-                        Download
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              <div className="flex gap-3 justify-center">
-                <Button
-                  onClick={() => {
-                    reset();
-                    setSettingsConfigured(false);
-                    setPrompt('');
-                    setVariants(['']);
-                    setUseVariants(false);
-                  }}
-                  variant="outline"
-                >
-                  Generate Another
-                </Button>
-              </div>
-            </>
-          ) : generatedIcon ? (
-            <>
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold mb-2">Generated Icon</h2>
+                <h2 className="text-xl font-semibold mb-2">Generated Logo</h2>
                 <p className="text-sm text-muted-foreground mb-3">
                   Style: <span className="font-medium capitalize">{style}</span> • 
                   Size: <span className="font-medium">{size}x{size}</span>
@@ -446,8 +286,8 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
 
               <div className="mb-4">
                 <img
-                  src={generatedIcon}
-                  alt="Generated icon"
+                  src={generatedLogo}
+                  alt="Generated logo"
                   className="max-w-full max-h-96 mx-auto rounded-lg border border-border shadow-lg"
                 />
               </div>
@@ -457,15 +297,15 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   onClick={handleDownload}
                   className="gap-2"
                 >
-                  Download Icon
+                  Download Logo
                 </Button>
                 <Button
                   onClick={() => {
                     reset();
                     setSettingsConfigured(false);
                     setPrompt('');
-                    setVariants(['']);
-                    setUseVariants(false);
+                    setCompanyName('');
+                    setTagline('');
                   }}
                   variant="outline"
                 >
@@ -473,18 +313,18 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                 </Button>
               </div>
             </>
-          ) : null}
+          )}
         </>
       ) : (
         <>
           {!settingsConfigured ? (
             <Card className="space-y-6 p-6">
               <div className="text-center mb-4">
-                <h2 className="text-xl font-semibold mb-2">Upload Icon to Upgrade</h2>
-                <p className="text-sm text-muted-foreground">Select an existing icon to enhance with AI</p>
+                <h2 className="text-xl font-semibold mb-2">Upload Logo to Upgrade</h2>
+                <p className="text-sm text-muted-foreground">Select an existing logo to enhance with AI</p>
               </div>
 
-              {!originalIcon ? (
+              {!originalLogo ? (
                 <ImageUpload
                   onImageSelect={async (file) => {
                     const base64 = await new Promise<string>((resolve) => {
@@ -492,20 +332,20 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                       reader.onloadend = () => resolve(reader.result as string);
                       reader.readAsDataURL(file);
                     });
-                    setOriginalIcon(base64);
+                    setOriginalLogo(base64);
                   }}
                   disabled={isGenerating}
-                  label="Upload Icon"
-                  description="Drag and drop or click to select an icon to upgrade"
+                  label="Upload Logo"
+                  description="Drag and drop or click to select a logo to upgrade"
                 />
               ) : (
                 <div className="space-y-4">
                   <div className="p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm font-medium mb-2">Uploaded Icon:</p>
+                    <p className="text-sm font-medium mb-2">Uploaded Logo:</p>
                     <img
-                      src={originalIcon}
-                      alt="Original icon"
-                      className="max-w-32 max-h-32 mx-auto rounded"
+                      src={originalLogo}
+                      alt="Original logo"
+                      className="max-w-64 max-h-64 mx-auto rounded"
                     />
                   </div>
 
@@ -532,13 +372,14 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="modern">Modern</SelectItem>
+                          <SelectItem value="classic">Classic</SelectItem>
                           <SelectItem value="minimalist">Minimalist</SelectItem>
                           <SelectItem value="bold">Bold</SelectItem>
-                          <SelectItem value="outline">Outline</SelectItem>
-                          <SelectItem value="filled">Filled</SelectItem>
-                          <SelectItem value="gradient">Gradient</SelectItem>
-                          <SelectItem value="3d">3D</SelectItem>
-                          <SelectItem value="flat">Flat</SelectItem>
+                          <SelectItem value="elegant">Elegant</SelectItem>
+                          <SelectItem value="playful">Playful</SelectItem>
+                          <SelectItem value="corporate">Corporate</SelectItem>
+                          <SelectItem value="creative">Creative</SelectItem>
+                          <SelectItem value="vintage">Vintage</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -547,13 +388,13 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   <div className="flex gap-3">
                     <Button
                       onClick={() => {
-                        setOriginalIcon(null);
+                        setOriginalLogo(null);
                         reset();
                       }}
                       variant="outline"
                       className="flex-1"
                     >
-                      Change Icon
+                      Change Logo
                     </Button>
                     <Button
                       onClick={handleSettingsReady}
@@ -565,7 +406,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                 </div>
               )}
             </Card>
-          ) : !generatedIcon ? (
+          ) : !generatedLogo ? (
             <Card className="space-y-6 p-6">
               <div className="text-center mb-4">
                 <h2 className="text-xl font-semibold mb-2">Ready to Upgrade</h2>
@@ -580,14 +421,14 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                 </div>
               </div>
 
-              {originalIcon && (
+              {originalLogo && (
                 <div className="space-y-4">
                   <div className="p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm font-medium mb-2">Original Icon:</p>
+                    <p className="text-sm font-medium mb-2">Original Logo:</p>
                     <img
-                      src={originalIcon}
-                      alt="Original icon"
-                      className="max-w-32 max-h-32 mx-auto rounded"
+                      src={originalLogo}
+                      alt="Original logo"
+                      className="max-w-64 max-h-64 mx-auto rounded"
                     />
                   </div>
 
@@ -599,13 +440,13 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   >
                     {isGenerating ? (
                       <>
-                        <Zap className="w-4 h-4 mr-2 animate-spin" />
-                        Upgrading Icon...
+                        <Palette className="w-4 h-4 mr-2 animate-spin" />
+                        Upgrading Logo...
                       </>
                     ) : (
                       <>
-                        <Zap className="w-4 h-4 mr-2" />
-                        Upgrade Icon
+                        <Palette className="w-4 h-4 mr-2" />
+                        Upgrade Logo
                       </>
                     )}
                   </Button>
@@ -615,7 +456,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
           ) : (
             <>
               <div className="mb-6">
-                <h2 className="text-xl font-semibold mb-2">Upgraded Icon</h2>
+                <h2 className="text-xl font-semibold mb-2">Upgraded Logo</h2>
                 <p className="text-sm text-muted-foreground mb-3">
                   Level: <span className="font-medium capitalize">{upgradeLevel}</span> • 
                   Style: <span className="font-medium capitalize">{style}</span>
@@ -629,8 +470,8 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
               </div>
 
               <ImageComparison
-                originalImage={originalIcon || ''}
-                enhancedImage={generatedIcon}
+                originalImage={originalLogo || ''}
+                enhancedImage={generatedLogo}
                 isProcessing={isGenerating}
                 onDownload={handleDownload}
                 originalLabel="Original"
@@ -642,7 +483,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   onClick={() => {
                     reset();
                     setSettingsConfigured(false);
-                    setOriginalIcon(null);
+                    setOriginalLogo(null);
                   }}
                   variant="outline"
                 >

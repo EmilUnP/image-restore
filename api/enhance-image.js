@@ -99,7 +99,7 @@ export default async function handler(req, res) {
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
 
     try {
       // Determine MIME type from base64 string
