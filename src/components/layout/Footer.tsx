@@ -1,5 +1,6 @@
 import { Sparkles, Github, Twitter, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 export const Footer = () => {
   return (
@@ -47,12 +48,21 @@ export const Footer = () => {
             <ul className="space-y-3 text-sm">
               {['Features', 'Pricing', 'Integrations', 'API'].map((item) => (
                 <li key={item}>
-                  <a 
-                    href={`#${item.toLowerCase()}`} 
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 font-medium hover:translate-x-1 inline-block transition-transform"
-                  >
-                    {item}
-                  </a>
+                  {item === 'Pricing' ? (
+                    <Link 
+                      to="/pricing"
+                      className="text-muted-foreground hover:text-primary transition-colors duration-200 font-medium hover:translate-x-1 inline-block transition-transform"
+                    >
+                      {item}
+                    </Link>
+                  ) : (
+                    <a 
+                      href={`#${item.toLowerCase()}`} 
+                      className="text-muted-foreground hover:text-primary transition-colors duration-200 font-medium hover:translate-x-1 inline-block transition-transform"
+                    >
+                      {item}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>

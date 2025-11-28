@@ -3,6 +3,7 @@ import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Footer } from "@/components/layout/Footer";
 import { LandingPage } from "@/components/layout/LandingPage";
+import { Dashboard } from "@/components/layout/Dashboard";
 import { ProfilePage } from "@/components/profile/ProfilePage";
 import { EnhancementWorkflow } from "@/components/enhancement/EnhancementWorkflow";
 import { TranslationWorkflow } from "@/components/translation/TranslationWorkflow";
@@ -118,7 +119,11 @@ const Index = () => {
             {viewMode === 'profile' ? (
               <ProfilePage onBack={() => setViewMode('landing')} />
             ) : !selectedFunction ? (
-              <LandingPage onFunctionSelect={handleFunctionSelect} />
+              isAuthenticated ? (
+                <Dashboard onFunctionSelect={handleFunctionSelect} />
+              ) : (
+                <LandingPage onFunctionSelect={handleFunctionSelect} />
+              )
             ) : selectedFunction === 'enhance' ? (
               <EnhancementWorkflow onBack={handleBack} />
             ) : selectedFunction === 'translate' ? (
