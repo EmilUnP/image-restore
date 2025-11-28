@@ -12,7 +12,7 @@ import { ImageComparison } from "@/components/shared/ImageComparison";
 import { BackButton } from "@/components/shared/BackButton";
 import { StepIndicator } from "@/components/shared/StepIndicator";
 import { useIconGeneration } from "@/hooks/useIconGeneration";
-import { downloadImage } from "@/lib/utils";
+import { downloadImage, downloadImageInFormat } from "@/lib/utils";
 import { toast } from "sonner";
 import { Zap, Sparkles, Plus, X, Download, Copy, Check } from "lucide-react";
 
@@ -30,6 +30,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
   const [upgradeLevel, setUpgradeLevel] = useState('medium');
   const [settingsConfigured, setSettingsConfigured] = useState(false);
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
+  const [exportFormat, setExportFormat] = useState<'png' | 'svg'>('png');
 
   const {
     generatedIcon,
@@ -74,18 +75,40 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
     setVariants(newVariants);
   };
 
-  const handleDownloadAll = () => {
-    generatedIcons.forEach((icon, index) => {
-      setTimeout(() => {
-        downloadImage(icon.image, icon.fileName);
-      }, index * 200);
-    });
-    toast.success(`Downloading ${generatedIcons.length} icons...`);
+  const handleDownloadAll = async () => {
+    try {
+      for (let index = 0; index < generatedIcons.length; index++) {
+        const icon = generatedIcons[index];
+        await new Promise(resolve => setTimeout(resolve, index * 200));
+        await downloadImageInFormat(
+          icon.image, 
+          icon.fileName, 
+          exportFormat,
+          parseInt(size),
+          parseInt(size)
+        );
+      }
+      toast.success(`Downloading ${generatedIcons.length} icons as ${exportFormat.toUpperCase()}...`);
+    } catch (error) {
+      toast.error('Failed to download some icons');
+      console.error('Download error:', error);
+    }
   };
 
-  const handleDownloadIcon = (icon: typeof generatedIcons[0]) => {
-    downloadImage(icon.image, icon.fileName);
-    toast.success(`${icon.prompt} downloaded!`);
+  const handleDownloadIcon = async (icon: typeof generatedIcons[0]) => {
+    try {
+      await downloadImageInFormat(
+        icon.image, 
+        icon.fileName, 
+        exportFormat,
+        parseInt(size),
+        parseInt(size)
+      );
+      toast.success(`${icon.prompt} downloaded as ${exportFormat.toUpperCase()}!`);
+    } catch (error) {
+      toast.error('Failed to download icon');
+      console.error('Download error:', error);
+    }
   };
 
   const handleCopyPrompt = async (promptText: string, promptId: string) => {
@@ -104,10 +127,21 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
     await upgradeExistingIcon(originalIcon, upgradeLevel, style);
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!generatedIcon) return;
-    downloadImage(generatedIcon, `icon-${Date.now()}.png`);
-    toast.success("Icon downloaded!");
+    try {
+      await downloadImageInFormat(
+        generatedIcon, 
+        `icon-${Date.now()}.png`, 
+        exportFormat,
+        parseInt(size),
+        parseInt(size)
+      );
+      toast.success(`Icon downloaded as ${exportFormat.toUpperCase()}!`);
+    } catch (error) {
+      toast.error('Failed to download icon');
+      console.error('Download error:', error);
+    }
   };
 
   const handleModeChange = (newMode: 'generate' | 'upgrade') => {
@@ -302,6 +336,22 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   </div>
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="export-format">Export Format</Label>
+                  <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
+                    <SelectTrigger id="export-format">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="png">PNG</SelectItem>
+                      <SelectItem value="svg">SVG</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Choose PNG for pixel-based or SVG for scalable vector format
+                  </p>
+                </div>
+
                 <Button
                   onClick={handleSettingsReady}
                   className="w-full"
@@ -445,27 +495,41 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
               ) : null}
 
               {generatedIcons.length > 0 && (
-                <div className="flex gap-3 justify-center">
-                  <Button
-                    onClick={handleDownloadAll}
-                    className="gap-2"
-                    disabled={isGenerating || generatedIcons.filter(i => i.image).length === 0}
-                  >
-                    <Download className="w-4 h-4" />
-                    Download All
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      reset();
-                      setSettingsConfigured(false);
-                      setPrompt('');
-                      setVariants(['']);
-                      setUseVariants(false);
-                    }}
-                    variant="outline"
-                  >
-                    Generate Another Set
-                  </Button>
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="export-format-icons" className="text-sm">Export Format:</Label>
+                    <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
+                      <SelectTrigger id="export-format-icons" className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="png">PNG</SelectItem>
+                        <SelectItem value="svg">SVG</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={handleDownloadAll}
+                      className="gap-2"
+                      disabled={isGenerating || generatedIcons.filter(i => i.image).length === 0}
+                    >
+                      <Download className="w-4 h-4" />
+                      Download All
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        reset();
+                        setSettingsConfigured(false);
+                        setPrompt('');
+                        setVariants(['']);
+                        setUseVariants(false);
+                      }}
+                      variant="outline"
+                    >
+                      Generate Another Set
+                    </Button>
+                  </div>
                 </div>
               )}
             </>
@@ -493,25 +557,39 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                 />
               </div>
 
-              <div className="flex gap-3 justify-center">
-                <Button
-                  onClick={handleDownload}
-                  className="gap-2"
-                >
-                  Download Icon
-                </Button>
-                <Button
-                  onClick={() => {
-                    reset();
-                    setSettingsConfigured(false);
-                    setPrompt('');
-                    setVariants(['']);
-                    setUseVariants(false);
-                  }}
-                  variant="outline"
-                >
-                  Generate Another
-                </Button>
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="export-format-single" className="text-sm">Export Format:</Label>
+                  <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
+                    <SelectTrigger id="export-format-single" className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="png">PNG</SelectItem>
+                      <SelectItem value="svg">SVG</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleDownload}
+                    className="gap-2"
+                  >
+                    Download Icon
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      reset();
+                      setSettingsConfigured(false);
+                      setPrompt('');
+                      setVariants(['']);
+                      setUseVariants(false);
+                    }}
+                    variant="outline"
+                  >
+                    Generate Another
+                  </Button>
+                </div>
               </div>
             </>
           ) : null}

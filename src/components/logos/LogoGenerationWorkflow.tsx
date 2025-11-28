@@ -11,7 +11,7 @@ import { ImageComparison } from "@/components/shared/ImageComparison";
 import { BackButton } from "@/components/shared/BackButton";
 import { StepIndicator } from "@/components/shared/StepIndicator";
 import { useLogoGeneration } from "@/hooks/useLogoGeneration";
-import { downloadImage } from "@/lib/utils";
+import { downloadImage, downloadImageInFormat } from "@/lib/utils";
 import { toast } from "sonner";
 import { Palette, Sparkles, Copy, Check } from "lucide-react";
 
@@ -29,6 +29,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
   const [upgradeLevel, setUpgradeLevel] = useState('medium');
   const [settingsConfigured, setSettingsConfigured] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'png' | 'svg'>('png');
 
   const {
     generatedLogo,
@@ -56,10 +57,21 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
     await upgradeExistingLogo(originalLogo, upgradeLevel, style);
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!generatedLogo) return;
-    downloadImage(generatedLogo, `logo-${Date.now()}.png`);
-    toast.success("Logo downloaded!");
+    try {
+      await downloadImageInFormat(
+        generatedLogo, 
+        `logo-${Date.now()}.png`, 
+        exportFormat,
+        parseInt(size),
+        parseInt(size)
+      );
+      toast.success(`Logo downloaded as ${exportFormat.toUpperCase()}!`);
+    } catch (error) {
+      toast.error('Failed to download logo');
+      console.error('Download error:', error);
+    }
   };
 
   const handleCopyPrompt = async (promptText: string) => {
@@ -336,25 +348,39 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                 />
               </div>
 
-              <div className="flex gap-3 justify-center">
-                <Button
-                  onClick={handleDownload}
-                  className="gap-2"
-                >
-                  Download Logo
-                </Button>
-                <Button
-                  onClick={() => {
-                    reset();
-                    setSettingsConfigured(false);
-                    setPrompt('');
-                    setCompanyName('');
-                    setTagline('');
-                  }}
-                  variant="outline"
-                >
-                  Generate Another
-                </Button>
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="export-format" className="text-sm">Export Format:</Label>
+                  <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
+                    <SelectTrigger id="export-format" className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="png">PNG</SelectItem>
+                      <SelectItem value="svg">SVG</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleDownload}
+                    className="gap-2"
+                  >
+                    Download Logo
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      reset();
+                      setSettingsConfigured(false);
+                      setPrompt('');
+                      setCompanyName('');
+                      setTagline('');
+                    }}
+                    variant="outline"
+                  >
+                    Generate Another
+                  </Button>
+                </div>
               </div>
             </>
           )}
@@ -546,7 +572,19 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                 processedLabel="Upgraded"
               />
 
-              <div className="flex gap-3 justify-center pt-4">
+              <div className="flex flex-col items-center gap-3 pt-4">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="export-format-upgrade" className="text-sm">Export Format:</Label>
+                  <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
+                    <SelectTrigger id="export-format-upgrade" className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="png">PNG</SelectItem>
+                      <SelectItem value="svg">SVG</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Button
                   onClick={() => {
                     reset();
