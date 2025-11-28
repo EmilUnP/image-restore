@@ -486,41 +486,41 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
           {getFeatures(onFunctionSelect).map((feature, index) => {
             const Icon = feature.icon;
             return (
               <Card
                 key={index}
-                className="group relative overflow-hidden hover:shadow-2xl transition-all duration-500 cursor-pointer border-2 hover:border-primary/50 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm"
+                className="group relative overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border border-border/50 hover:border-primary/30 bg-gradient-to-br from-card/95 to-card/90 backdrop-blur-sm"
                 onClick={() => onFunctionSelect(feature.function)}
               >
                 {/* Gradient overlay on hover */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/0 via-primary/0 to-accent/0 group-hover:from-primary/5 group-hover:via-primary/5 group-hover:to-accent/5 transition-all duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-accent/0 group-hover:from-primary/5 group-hover:to-accent/5 transition-all duration-300" />
                 
-                <CardHeader className="relative z-10">
-                  <div className="flex items-start gap-4">
-                    <div className={`relative p-4 rounded-2xl ${feature.bgColor} group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg`}>
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <Icon className={`h-7 w-7 ${feature.color} relative z-10`} />
+                <CardHeader className="relative z-10 p-5">
+                  <div className="flex flex-col items-center text-center space-y-3">
+                    <div className={`relative p-3 rounded-xl ${feature.bgColor} group-hover:scale-110 transition-transform duration-300`}>
+                      <Icon className={`h-6 w-6 ${feature.color} relative z-10`} />
                     </div>
-                    <div className="flex-1 pt-1">
-                      <CardTitle className="text-2xl mb-3 font-bold group-hover:text-primary transition-colors">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg font-bold mb-2 group-hover:text-primary transition-colors">
                         {feature.title}
                       </CardTitle>
-                      <CardDescription className="text-base leading-relaxed">
+                      <CardDescription className="text-sm leading-relaxed text-muted-foreground">
                         {feature.description}
                       </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="relative z-10">
+                <CardContent className="relative z-10 p-5 pt-0">
                   <Button
                     variant="ghost"
-                    className="w-full group-hover:text-primary font-semibold rounded-xl"
+                    size="sm"
+                    className="w-full group-hover:text-primary font-medium rounded-lg"
                   >
                     Try Now
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="ml-2 h-3 w-3 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </CardContent>
               </Card>
