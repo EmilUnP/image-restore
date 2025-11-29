@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -22,6 +23,7 @@ const Index = () => {
   const [sidebarMinimal, setSidebarMinimal] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('landing');
   const { isAuthenticated } = useAuthContext();
+  const location = useLocation();
 
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
@@ -106,6 +108,20 @@ const Index = () => {
 
   const showLandingPage = !isAuthenticated && !selectedFunction && viewMode !== 'profile';
   const showDashboard = isAuthenticated && viewMode === 'landing' && !selectedFunction;
+
+  // Handle hash navigation - scroll to section when hash is present in URL
+  useEffect(() => {
+    if (location.hash && showLandingPage) {
+      // Wait a bit for the page to render, then scroll to the hash
+      const timer = setTimeout(() => {
+        const element = document.querySelector(location.hash);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [location.hash, showLandingPage]);
   
   return (
     <div className={`min-h-screen flex flex-col ${showLandingPage ? 'bg-slate-950' : 'bg-gradient-to-br from-background via-background to-accent/5'}`}>

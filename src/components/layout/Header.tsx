@@ -124,9 +124,15 @@ export const Header = ({
                   const handleClick = (e: React.MouseEvent) => {
                     if (item.isHash) {
                       e.preventDefault();
-                      const element = document.querySelector(item.href);
-                      if (element) {
-                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      // If we're on the landing page, just scroll to the section
+                      if (location.pathname === '/') {
+                        const element = document.querySelector(item.href);
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      } else {
+                        // If we're on a different page, navigate to landing page with hash
+                        navigate(`/${item.href}`);
                       }
                     }
                   };
