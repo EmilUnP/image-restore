@@ -101,16 +101,6 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
           </div>
 
           <div className="relative z-10 max-w-7xl mx-auto text-center space-y-8">
-            {/* Badge */}
-            <div className="flex justify-center">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-sm">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-primary">
-                  Next-Generation AI Technology
-                </span>
-              </div>
-            </div>
-            
             {/* Heading */}
             <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight">
               <span className="block text-slate-100">Transform Your</span>
@@ -150,14 +140,10 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
         </section>
 
         {/* Bento Grid Section */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             {/* Section Header */}
             <div className="text-center space-y-4 mb-16">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30 text-primary text-sm font-semibold">
-                <Sparkles className="h-4 w-4" />
-                <span>AI-Powered Platform</span>
-              </div>
               <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
                 Your AI Workspace
               </h2>
@@ -237,10 +223,6 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
           <div className="max-w-7xl mx-auto">
             {/* Section Header */}
             <div className="text-center space-y-4 mb-16">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/20 border border-accent/30 text-accent text-sm font-semibold">
-                <Zap className="h-4 w-4" />
-                <span>Feature Set</span>
-            </div>
               <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
                 Everything You Need
             </h2>
@@ -303,10 +285,6 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
                 {/* Left Side */}
               <div className="space-y-8">
               <div>
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-6 border border-primary/20">
-                  <Check className="h-3 w-3" />
-                  <span>Why Choose Us</span>
-                </div>
                     <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-4 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
                       Why Choose VisionAI?
                 </h2>
@@ -368,10 +346,6 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
             <div className="bg-gradient-to-br from-slate-800/50 to-slate-800/30 backdrop-blur-sm rounded-3xl p-12 lg:p-16 border border-primary/40 text-center">
               <div className="space-y-8">
               <div>
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 text-primary text-xs font-semibold mb-6">
-                    <Rocket className="h-3 w-3" />
-                  <span>Get Started Now</span>
-                </div>
                   <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent mb-4">
                     Ready to Transform Your Images?
                 </h2>

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { LoginDialog } from "@/components/auth/LoginDialog";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -25,10 +25,23 @@ export const Header = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [internalLoginOpen, setInternalLoginOpen] = useState(false);
   const { user, login, logout, isLoading } = useAuthContext();
+  const navigate = useNavigate();
+  const location = useLocation();
   
   // Use external state if provided, otherwise use internal state
   const loginOpen = externalLoginOpen !== undefined ? externalLoginOpen : internalLoginOpen;
   const setLoginOpen = setExternalLoginOpen || setInternalLoginOpen;
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (location.pathname === '/') {
+      // If already on landing page, scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Navigate to landing page
+      navigate('/');
+    }
+  };
 
   const handleLogin = async (email: string, password: string) => {
     await login(email, password);
@@ -70,7 +83,11 @@ export const Header = ({
                   )}
                 </Button>
               )}
-              <div className="flex items-center gap-3 group cursor-pointer">
+              <Link 
+                to="/" 
+                onClick={handleLogoClick}
+                className="flex items-center gap-3 group cursor-pointer"
+              >
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-accent rounded-xl blur-lg opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-primary via-primary/90 to-accent shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform duration-300">
@@ -85,18 +102,42 @@ export const Header = ({
                     AI Image Studio
                   </span>
                 </div>
-              </div>
+              </Link>
             </div>
 
             {/* Navigation - Desktop */}
             {!user && (
               <nav className="hidden md:flex items-center gap-1">
                 {[
-                  { label: "Features", href: "/#features" },
-                  { label: "How It Works", href: "/#how-it-works" },
-                  { label: "Pricing", href: "/pricing" },
-                ].map((item) => (
-                  item.href.startsWith('/') ? (
+                  { label: "Features", href: "#features", isHash: true },
+                  { label: "How It Works", href: "#how-it-works", isHash: true },
+                  { label: "Pricing", href: "/pricing", isHash: false },
+                ].map((item) => {
+                  const handleClick = (e: React.MouseEvent) => {
+                    if (item.isHash) {
+                      e.preventDefault();
+                      const element = document.querySelector(item.href);
+                      if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }
+                  };
+
+                  if (item.isHash) {
+                    return (
+                      <a
+                        key={item.label}
+                        href={item.href}
+                        onClick={handleClick}
+                        className="relative px-4 py-2 text-sm font-medium text-slate-300 transition-all duration-200 hover:text-slate-100 rounded-lg hover:bg-slate-800/50 group cursor-pointer"
+                      >
+                        {item.label}
+                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-accent scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
+                      </a>
+                    );
+                  }
+
+                  return (
                     <Link
                       key={item.label}
                       to={item.href}
@@ -105,17 +146,8 @@ export const Header = ({
                       {item.label}
                       <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-accent scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
                     </Link>
-                  ) : (
-                    <a
-                      key={item.label}
-                      href={item.href}
-                      className="relative px-4 py-2 text-sm font-medium text-slate-300 transition-all duration-200 hover:text-slate-100 rounded-lg hover:bg-slate-800/50 group"
-                    >
-                      {item.label}
-                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-accent scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
-                    </a>
-                  )
-                ))}
+                  );
+                })}
               </nav>
             )}
 
