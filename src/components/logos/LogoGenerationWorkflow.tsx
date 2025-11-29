@@ -13,7 +13,7 @@ import { StepIndicator } from "@/components/shared/StepIndicator";
 import { useLogoGeneration } from "@/hooks/useLogoGeneration";
 import { downloadImage, downloadImageInFormat } from "@/lib/utils";
 import { toast } from "sonner";
-import { Palette, Sparkles, Copy, Check } from "lucide-react";
+import { Palette, Sparkles, Copy, Check, Download } from "lucide-react";
 
 interface LogoGenerationWorkflowProps {
   onBack: () => void;
@@ -120,24 +120,43 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
   ];
 
   return (
-    <>
+    <div className="space-y-6 animate-fade-in">
       <BackButton onClick={onBack} variant="floating" />
       
+      {/* Enhanced Header */}
+      <div className="flex items-center gap-4 mb-2">
+        <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 border border-primary/20 backdrop-blur-sm shadow-lg shadow-primary/10">
+          <Palette className="w-6 h-6 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent animate-gradient">
+            Logo Generator
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">Create professional logos with AI-powered design</p>
+        </div>
+      </div>
+      
       {/* Step Indicator */}
-      <div className="mb-4">
+      <div className="mb-6">
         <StepIndicator steps={steps} />
       </div>
 
-      {/* Mode Selection */}
-      <div className="mb-4">
+      {/* Enhanced Mode Selection */}
+      <div className="mb-6">
         <Tabs value={mode} onValueChange={(value) => handleModeChange(value as 'generate' | 'upgrade')}>
-          <TabsList className="grid w-full grid-cols-2 bg-background/40 backdrop-blur-sm border border-primary/20 p-0.5 rounded-lg h-9">
-            <TabsTrigger value="generate" className="gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
-              <Sparkles className="w-3 h-3" />
+          <TabsList className="grid w-full grid-cols-2 bg-card/60 backdrop-blur-xl border border-primary/30 p-1 rounded-xl h-12 shadow-lg shadow-primary/5">
+            <TabsTrigger 
+              value="generate" 
+              className="gap-2 text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 transition-all duration-300 rounded-lg"
+            >
+              <Sparkles className="w-4 h-4" />
               Generate
             </TabsTrigger>
-            <TabsTrigger value="upgrade" className="gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
-              <Palette className="w-3 h-3" />
+            <TabsTrigger 
+              value="upgrade" 
+              className="gap-2 text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 transition-all duration-300 rounded-lg"
+            >
+              <Palette className="w-4 h-4" />
               Upgrade
             </TabsTrigger>
           </TabsList>
@@ -149,48 +168,51 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
           {!settingsConfigured ? (
             <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
               <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="company-name" className="text-xs text-foreground/70">Company Name (Optional)</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="company-name" className="text-sm font-semibold text-foreground">Company Name <span className="text-muted-foreground font-normal">(Optional)</span></Label>
                   <Input
                     id="company-name"
                     placeholder="TechCorp, MyBrand"
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
-                    className="bg-background/30 border-primary/20 text-foreground placeholder:text-muted-foreground focus:border-primary/50 h-9 text-sm"
+                    className="bg-card/50 backdrop-blur-sm border-2 border-primary/30 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 h-11 text-sm rounded-xl transition-all duration-300"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="tagline" className="text-xs text-foreground/70">Tagline (Optional)</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="tagline" className="text-sm font-semibold text-foreground">Tagline <span className="text-muted-foreground font-normal">(Optional)</span></Label>
                   <Input
                     id="tagline"
                     placeholder="Innovation First"
                     value={tagline}
                     onChange={(e) => setTagline(e.target.value)}
-                    className="bg-background/30 border-primary/20 text-foreground placeholder:text-muted-foreground focus:border-primary/50 h-9 text-sm"
+                    className="bg-card/50 backdrop-blur-sm border-2 border-primary/30 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 h-11 text-sm rounded-xl transition-all duration-300"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="prompt" className="text-xs text-foreground/70">Description *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="prompt" className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    Description <span className="text-destructive">*</span>
+                  </Label>
                   <Textarea
                     id="prompt"
-                    placeholder="A modern tech logo with geometric shapes..."
+                    placeholder="A modern tech logo with geometric shapes, clean lines, and a professional color scheme..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    rows={3}
-                    className="resize-none bg-background/30 border-primary/20 text-foreground placeholder:text-muted-foreground focus:border-primary/50 text-sm"
+                    rows={4}
+                    className="resize-none bg-card/50 backdrop-blur-sm border-2 border-primary/30 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 text-sm rounded-xl transition-all duration-300"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="style" className="text-xs text-foreground/70">Style</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="style" className="text-sm font-semibold text-foreground">Style</Label>
                     <Select value={style} onValueChange={setStyle}>
-                      <SelectTrigger id="style" className="h-9 text-sm bg-background/30 border-primary/20">
+                      <SelectTrigger id="style" className="h-11 text-sm bg-card/50 backdrop-blur-sm border-2 border-primary/30 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-card/95 backdrop-blur-xl border-primary/30">
                         <SelectItem value="modern">Modern</SelectItem>
                         <SelectItem value="classic">Classic</SelectItem>
                         <SelectItem value="minimalist">Minimalist</SelectItem>
@@ -204,13 +226,13 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                     </Select>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="size" className="text-xs text-foreground/70">Size</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="size" className="text-sm font-semibold text-foreground">Size</Label>
                     <Select value={size} onValueChange={setSize}>
-                      <SelectTrigger id="size" className="h-9 text-sm bg-background/30 border-primary/20">
+                      <SelectTrigger id="size" className="h-11 text-sm bg-card/50 backdrop-blur-sm border-2 border-primary/30 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-card/95 backdrop-blur-xl border-primary/30">
                         <SelectItem value="512">512x512</SelectItem>
                         <SelectItem value="1024">1024x1024</SelectItem>
                         <SelectItem value="2048">2048x2048</SelectItem>
@@ -221,43 +243,50 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
 
                 <Button
                   onClick={handleSettingsReady}
-                  className="w-full h-9 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-sm font-semibold"
+                  className="w-full h-12 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 text-base font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={!prompt.trim() || isGenerating}
                 >
-                  Generate
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Continue to Generate
                 </Button>
               </div>
             </Card>
           ) : !generatedLogo ? (
-            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-foreground/70">
-                    <span className="capitalize">{style}</span> • {size}x{size}
+            <Card className="p-6 bg-card/60 backdrop-blur-xl border border-primary/30 shadow-xl shadow-primary/10 rounded-2xl transition-all duration-300">
+              <div className="space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-primary/20">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/20 border border-primary/30">
+                      <Palette className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground capitalize">{style} Style</p>
+                      <p className="text-xs text-muted-foreground">{size}x{size} pixels</p>
+                    </div>
                   </div>
-                  <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="h-7 text-xs text-foreground/70 hover:text-foreground">
+                  <Button onClick={() => setSettingsConfigured(false)} variant="outline" size="sm" className="h-8 text-xs border-primary/30 hover:bg-primary/10 transition-all duration-300 rounded-lg">
                     Edit
                   </Button>
                 </div>
-                <div className="p-3 bg-background/30 rounded-lg border border-primary/20">
-                  <p className="text-xs text-foreground/90">{prompt}</p>
-                  {companyName && <p className="text-xs text-foreground/60 mt-1">Company: {companyName}</p>}
-                  {tagline && <p className="text-xs text-foreground/60 mt-0.5">Tagline: {tagline}</p>}
+                <div className="p-4 bg-gradient-to-br from-card/60 to-card/40 backdrop-blur-sm rounded-xl border-2 border-primary/20 shadow-md">
+                  <p className="text-sm text-foreground/90 font-medium">{prompt}</p>
+                  {companyName && <p className="text-xs text-muted-foreground mt-2">Company: <span className="font-semibold">{companyName}</span></p>}
+                  {tagline && <p className="text-xs text-muted-foreground mt-1">Tagline: <span className="font-semibold">{tagline}</span></p>}
                 </div>
                 <Button
                   onClick={handleGenerate}
-                  className="w-full h-9 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-sm font-semibold"
+                  className="w-full h-12 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 text-base font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isGenerating || !prompt.trim()}
                 >
                   {isGenerating ? (
                     <>
-                      <Sparkles className="w-3 h-3 mr-1.5 animate-spin" />
-                      Generating...
+                      <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                      Generating Logo...
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-3 h-3 mr-1.5" />
-                      Generate
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate Logo
                     </>
                   )}
                 </Button>
@@ -265,18 +294,25 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
             </Card>
           ) : (
             <>
-              <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-foreground/70">
-                      <span className="capitalize">{style}</span> • {size}x{size}
+              <Card className="p-6 bg-card/60 backdrop-blur-xl border border-primary/30 shadow-xl shadow-primary/10 rounded-2xl transition-all duration-300 animate-fade-in">
+                <div className="space-y-5">
+                  {/* Result Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-primary/20">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/20 border border-primary/30">
+                        <Check className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground capitalize">{style} Style</p>
+                        <p className="text-xs text-muted-foreground">{size}x{size} pixels</p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
-                        <SelectTrigger className="h-7 w-20 text-xs bg-background/30 border-primary/20">
+                        <SelectTrigger className="h-9 w-24 text-sm bg-card/50 backdrop-blur-sm border-2 border-primary/30 focus:border-primary/60 rounded-lg">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-card/95 backdrop-blur-xl border-primary/30">
                           <SelectItem value="png">PNG</SelectItem>
                           <SelectItem value="svg">SVG</SelectItem>
                         </SelectContent>
@@ -284,37 +320,57 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                     </div>
                   </div>
                   
+                  {/* Generated Logo */}
                   <div className="relative group">
-                    <img
-                      src={generatedLogo}
-                      alt="Generated logo"
-                      className="w-full max-h-64 object-contain rounded-lg border border-primary/20 bg-background/20 p-4"
-                    />
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-accent/20 rounded-xl blur-2xl opacity-50 group-hover:opacity-75 transition-opacity duration-300"></div>
+                    <div className="relative w-full max-h-80 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm p-8 flex items-center justify-center overflow-hidden shadow-2xl shadow-primary/20 transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-primary/30">
+                      <img
+                        src={generatedLogo}
+                        alt="Generated logo"
+                        className="w-full h-full object-contain max-h-72 rounded-lg transition-transform duration-300 group-hover:scale-[1.02]"
+                      />
+                    </div>
                   </div>
 
+                  {/* AI Prompt Display */}
                   {actualPrompt && (
-                    <div className="p-2 bg-background/30 rounded border border-primary/20">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-[10px] text-foreground/60 uppercase">AI Prompt:</p>
+                    <div className="p-4 bg-gradient-to-br from-card/60 to-card/40 backdrop-blur-sm rounded-xl border-2 border-primary/20 shadow-md transition-all duration-300 hover:border-primary/30 hover:shadow-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-primary" />
+                          <p className="text-xs font-semibold text-foreground uppercase tracking-wide">AI Prompt</p>
+                        </div>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-5 px-2 text-[10px]"
+                          className="h-7 px-3 text-xs hover:bg-primary/10 transition-all duration-300"
                           onClick={() => handleCopyPrompt(actualPrompt)}
                         >
-                          {copiedPrompt ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                          {copiedPrompt ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 mr-1.5 text-primary" />
+                              Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5 mr-1.5" />
+                              Copy
+                            </>
+                          )}
                         </Button>
                       </div>
-                      <p className="text-[10px] text-foreground/80 font-mono line-clamp-2">{actualPrompt}</p>
+                      <p className="text-xs text-foreground/80 font-mono line-clamp-3 bg-background/30 p-2 rounded-lg border border-primary/10">{actualPrompt}</p>
                     </div>
                   )}
 
-                  <div className="flex gap-2">
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-2">
                     <Button
                       onClick={handleDownload}
-                      className="flex-1 h-8 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-xs font-semibold"
+                      className="flex-1 h-11 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 text-sm font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 rounded-xl"
                     >
-                      Download
+                      <Download className="w-4 h-4 mr-2" />
+                      Download {exportFormat.toUpperCase()}
                     </Button>
                     <Button
                       onClick={() => {
@@ -325,9 +381,9 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                         setTagline('');
                       }}
                       variant="outline"
-                      className="h-8 text-xs border-primary/20 text-foreground/70 hover:text-foreground hover:border-primary/40"
+                      className="h-11 px-6 text-sm font-medium border-2 border-primary/30 text-foreground hover:bg-primary/10 hover:border-primary/50 transition-all duration-300 rounded-xl"
                     >
-                      New
+                      New Logo
                     </Button>
                   </div>
                 </div>
@@ -515,7 +571,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
           )}
         </>
       )}
-    </>
+    </div>
   );
 };
 
