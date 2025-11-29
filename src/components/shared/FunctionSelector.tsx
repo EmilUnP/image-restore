@@ -1,8 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Languages, Zap, Palette } from "lucide-react";
+import { Sparkles, Languages, Zap, Palette, Share2 } from "lucide-react";
 
-type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | null;
+type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | null;
 
 interface FunctionSelectorProps {
   onFunctionSelect: (func: AppFunction) => void;

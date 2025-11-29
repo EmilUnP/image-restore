@@ -10,9 +10,10 @@ import { EnhancementWorkflow } from "@/components/enhancement/EnhancementWorkflo
 import { TranslationWorkflow } from "@/components/translation/TranslationWorkflow";
 import { IconGenerationWorkflow } from "@/components/icons/IconGenerationWorkflow";
 import { LogoGenerationWorkflow } from "@/components/logos/LogoGenerationWorkflow";
+import { SocialPostGenerationWorkflow } from "@/components/social/SocialPostGenerationWorkflow";
 import { useAuthContext } from "@/contexts/AuthContext";
 
-type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | null;
+type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | null;
 type ViewMode = 'landing' | 'profile' | 'function';
 
 const Index = () => {
@@ -161,9 +162,11 @@ const Index = () => {
                 <TranslationWorkflow onBack={handleBack} />
               ) : selectedFunction === 'icons' ? (
                 <IconGenerationWorkflow onBack={handleBack} />
-              ) : (
+              ) : selectedFunction === 'logos' ? (
                 <LogoGenerationWorkflow onBack={handleBack} />
-              )}
+              ) : selectedFunction === 'social' ? (
+                <SocialPostGenerationWorkflow onBack={handleBack} />
+              ) : null}
             </div>
           )}
         </main>

@@ -5,13 +5,14 @@ import {
   Languages, 
   Zap, 
   Palette,
+  Share2,
   X,
   Image as ImageIcon,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
 
-type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | null;
+type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | null;
 
 interface SidebarProps {
   selectedFunction: AppFunction;
@@ -54,6 +55,14 @@ const functions = [
     icon: Palette,
     color: 'text-orange-400',
     bgColor: 'bg-orange-500/10',
+  },
+  {
+    id: 'social' as AppFunction,
+    name: 'Social Post Generator',
+    description: 'Create stunning social posts',
+    icon: Share2,
+    color: 'text-pink-400',
+    bgColor: 'bg-pink-500/10',
   },
 ];
 

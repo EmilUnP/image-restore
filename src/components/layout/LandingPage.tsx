@@ -5,6 +5,7 @@ import {
   Languages,
   Zap,
   Palette,
+  Share2,
   ArrowRight,
   Check,
   Rocket,
@@ -12,7 +13,7 @@ import {
 import MagicBento from "./MagicBento";
 import LightRays from "./LightRays";
 
-type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | null;
+type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | null;
 
 interface LandingPageProps {
   onFunctionSelect: (func: AppFunction) => void;
@@ -50,6 +51,14 @@ const features = [
     color: "text-orange-400",
     bgColor: "bg-orange-500/10",
     function: 'logos' as AppFunction,
+  },
+  {
+    icon: Share2,
+    title: "Social Post Generator",
+    description: "Create stunning social media posts. Generate from scratch, use reference images, or combine multiple inspirations.",
+    color: "text-pink-400",
+    bgColor: "bg-pink-500/10",
+    function: 'social' as AppFunction,
   },
 ];
 

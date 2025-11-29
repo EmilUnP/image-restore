@@ -418,3 +418,65 @@ export const upgradeLogo = async (request: UpgradeLogoRequest): Promise<UpgradeL
   return await response.json();
 };
 
+export interface GenerateSocialPostRequest {
+  prompt: string;
+  aspectRatio?: string;
+  style?: string;
+  referenceImage?: string;
+  referenceImages?: string[];
+}
+
+export interface GenerateSocialPostResponse {
+  generatedPost?: string;
+  message?: string;
+  error?: string;
+  actualPrompt?: string;
+  style?: string;
+  aspectRatio?: string;
+}
+
+export const generateSocialPost = async (request: GenerateSocialPostRequest): Promise<GenerateSocialPostResponse> => {
+  const API_URL = getApiUrl();
+  const url = `${API_URL}/api/generate-social-post`;
+  
+  console.log('[API] generateSocialPost - Calling URL:', url);
+  console.log('[API] generateSocialPost - Request:', { 
+    prompt: request.prompt, 
+    style: request.style, 
+    aspectRatio: request.aspectRatio,
+    hasReferenceImage: !!request.referenceImage,
+    referenceImagesCount: request.referenceImages?.length || 0
+  });
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  console.log('[API] generateSocialPost - Response status:', response.status);
+  
+  let responseData: GenerateSocialPostResponse;
+  try {
+    const responseText = await response.text();
+    console.log('[API] generateSocialPost - Raw response text (first 500 chars):', responseText.substring(0, 500));
+    responseData = JSON.parse(responseText);
+    console.log('[API] generateSocialPost - Parsed response keys:', Object.keys(responseData));
+  } catch (e) {
+    console.error('[API] generateSocialPost - Failed to parse response:', e);
+    throw new Error(`Server responded with non-JSON: ${response.status}`);
+  }
+
+  if (!response.ok) {
+    const errorMessage = responseData.error || `Failed to generate social post. Error: ${response.status}`;
+    return {
+      ...responseData,
+      error: errorMessage,
+    };
+  }
+
+  return responseData;
+};
+
