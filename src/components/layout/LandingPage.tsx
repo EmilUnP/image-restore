@@ -181,6 +181,8 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
                     description: 'Transform your images with powerful AI tools. Enhance quality, translate text, generate icons and logos.',
                     label: 'Get Started',
                     icon: Rocket,
+                    image: 'get start.png',
+                    imagePosition: 'background',
                     onClick: () => onFunctionSelect('enhance'),
                   },
                   {
@@ -189,6 +191,8 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
                     description: 'Create multiple variants instantly',
                     label: 'Icons',
                     icon: Zap,
+                    image: 'icons.png',
+                    imagePosition: 'background',
                     onClick: () => onFunctionSelect('icons'),
                   },
                   {
@@ -197,6 +201,8 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
                     description: 'Create professional logos',
                     label: 'Logos',
                     icon: Palette,
+                    image: 'logos.png',
+                    imagePosition: 'background',
                     onClick: () => onFunctionSelect('logos'),
                   },
                   {
@@ -205,6 +211,8 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
                     description: 'Translate text in images to 100+ languages',
                     label: 'Translate',
                     icon: Languages,
+                    image: 'translate.png',
+                    imagePosition: 'background',
                     onClick: () => onFunctionSelect('translate'),
                   },
                   {
@@ -213,6 +221,8 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
                     description: 'Process multiple images at once',
                     label: 'Batch',
                     icon: Sparkles,
+                    image: 'batch.png',
+                    imagePosition: 'background',
                   },
                   {
                     color: 'transparent',
@@ -220,6 +230,8 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
                     description: 'Results in seconds',
                     label: 'Speed',
                     icon: Zap,
+                    image: 'speed.png',
+                    imagePosition: 'background',
                   },
                 ]}
               />

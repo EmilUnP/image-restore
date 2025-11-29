@@ -18,6 +18,8 @@ export interface BentoCardProps {
   description?: string;
   label?: string;
   icon?: React.ElementType;
+  image?: string; // Path to image in public/bento-images folder (e.g., "image1.jpg")
+  imagePosition?: 'background' | 'foreground'; // Whether image is background or foreground
   onClick?: () => void;
   textAutoHide?: boolean;
   disableAnimations?: boolean;
@@ -538,14 +540,45 @@ const MagicBento: React.FC<BentoProps> = ({
           const cardProps = {
             className: baseClassName,
             style: {
-              backgroundColor: card.color || 'transparent',
-              '--glow-color': glowColor
+              backgroundColor: card.color || (card.image ? 'transparent' : 'transparent'),
+              '--glow-color': glowColor,
+              position: 'relative' as const,
+              overflow: 'hidden' as const,
             } as React.CSSProperties,
             onClick: card.onClick
           };
 
+          // Determine if image should be background or foreground
+          const imagePosition = card.imagePosition || 'background';
+          // Encode the image filename to handle spaces and special characters
+          const imageUrl = card.image ? `/bento-images/${encodeURIComponent(card.image)}` : null;
+          
           const cardContent = (
             <>
+              {/* Background Image */}
+              {imageUrl && imagePosition === 'background' && (
+                <div 
+                  className="absolute inset-0 z-0 rounded-[20px] overflow-hidden"
+                  style={{
+                    backgroundImage: `url("${imageUrl}")`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                  }}
+                />
+              )}
+              
+              {/* Foreground Image */}
+              {imageUrl && imagePosition === 'foreground' && (
+                <div className="absolute inset-0 z-0 rounded-[20px] overflow-hidden flex items-center justify-center">
+                  <img 
+                    src={imageUrl} 
+                    alt={card.title || 'Bento card image'}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              
               <div className="magic-bento-card__header">
                 {IconComponent && (
                   <div className="magic-bento-card__icon">
