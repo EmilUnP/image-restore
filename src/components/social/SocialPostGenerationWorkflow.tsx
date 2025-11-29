@@ -54,6 +54,10 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
       toast.error('Maximum 3 reference images allowed');
       return;
     }
+    if (!image || typeof image !== 'string') {
+      toast.error('Invalid image format');
+      return;
+    }
     setReferenceImages([...referenceImages, image]);
     setGeneratedPost(null);
     setActualPrompt(null);
@@ -81,12 +85,24 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
 
     setIsGenerating(true);
     try {
+      // Validate and filter reference images
+      let validReferenceImages: string[] | undefined;
+      if (mode === 'multi-reference' && referenceImages.length > 0) {
+        validReferenceImages = referenceImages.filter((img): img is string => 
+          typeof img === 'string' && img.length > 0
+        );
+        if (validReferenceImages.length === 0) {
+          toast.error('Please upload valid reference images');
+          return;
+        }
+      }
+
       const response = await generateSocialPost({
         prompt,
         aspectRatio,
         style,
-        referenceImage: mode === 'single-reference' ? referenceImage : undefined,
-        referenceImages: mode === 'multi-reference' && referenceImages.length > 0 ? referenceImages : undefined,
+        referenceImage: mode === 'single-reference' && referenceImage ? referenceImage : undefined,
+        referenceImages: validReferenceImages,
       });
 
       if (response.error) {
@@ -177,15 +193,26 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
                 <Label className="text-xs text-foreground/70">Reference Image</Label>
                 {referenceImage ? (
                   <div className="relative">
-                    <img
-                      src={referenceImage}
-                      alt="Reference"
-                      className="w-full max-h-48 object-contain rounded-lg border border-primary/20 bg-background/20 p-2"
-                    />
+                    <div className="w-full max-h-48 rounded-lg border border-primary/20 bg-background/20 p-2 flex items-center justify-center overflow-hidden">
+                      {referenceImage && typeof referenceImage === 'string' ? (
+                        <img
+                          src={referenceImage}
+                          alt="Reference"
+                          className="w-full h-full object-contain max-h-44"
+                          onError={(e) => {
+                            console.error('Image load error:', e);
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="text-xs text-foreground/40">Invalid image</div>
+                      )}
+                    </div>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="absolute top-2 right-2 h-6 w-6 rounded-full bg-background/80 hover:bg-background"
+                      className="absolute top-2 right-2 h-6 w-6 rounded-full bg-background/90 hover:bg-background border border-primary/20"
                       onClick={handleReferenceImageRemove}
                     >
                       <X className="h-3 w-3" />
@@ -209,28 +236,41 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
                 </Label>
                 <div className="grid grid-cols-3 gap-2">
                   {referenceImages.map((img, index) => (
-                    <div key={index} className="relative">
-                      <img
-                        src={img}
-                        alt={`Reference ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg border border-primary/20"
-                      />
+                    <div key={index} className="relative group">
+                      <div className="w-full h-24 rounded-lg border border-primary/20 overflow-hidden bg-background/20 flex items-center justify-center">
+                        {img && typeof img === 'string' ? (
+                          <img
+                            src={img}
+                            alt={`Reference ${index + 1}`}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              console.error('Image load error:', e);
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="text-xs text-foreground/40">Invalid</div>
+                        )}
+                      </div>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="absolute top-1 right-1 h-5 w-5 rounded-full bg-background/80 hover:bg-background"
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-background/90 hover:bg-background border border-primary/20"
                         onClick={() => handleMultiReferenceImageRemove(index)}
                       >
-                        <X className="h-2.5 w-2.5" />
+                        <X className="h-3 w-3" />
                       </Button>
                     </div>
                   ))}
                   {referenceImages.length < 3 && (
-                    <ImageUpload
-                      onImageSelect={handleMultiReferenceImageAdd}
-                      maxSizeMB={10}
-                      className="border-primary/20 h-24"
-                    />
+                    <div className="h-24">
+                      <ImageUpload
+                        onImageSelect={handleMultiReferenceImageAdd}
+                        maxSizeMB={10}
+                        className="border-primary/20 h-full"
+                      />
+                    </div>
                   )}
                 </div>
               </div>

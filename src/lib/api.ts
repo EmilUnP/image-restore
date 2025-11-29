@@ -462,10 +462,24 @@ export const generateSocialPost = async (request: GenerateSocialPostRequest): Pr
   try {
     const responseText = await response.text();
     console.log('[API] generateSocialPost - Raw response text (first 500 chars):', responseText.substring(0, 500));
-    responseData = JSON.parse(responseText);
-    console.log('[API] generateSocialPost - Parsed response keys:', Object.keys(responseData));
+    
+    if (!responseText || responseText.trim().length === 0) {
+      throw new Error('Server returned empty response');
+    }
+    
+    try {
+      responseData = JSON.parse(responseText);
+      console.log('[API] generateSocialPost - Parsed response keys:', Object.keys(responseData));
+    } catch (parseError) {
+      console.error('[API] generateSocialPost - JSON parse error:', parseError);
+      console.error('[API] generateSocialPost - Response text:', responseText);
+      throw new Error(`Server returned invalid JSON. Status: ${response.status}. Response: ${responseText.substring(0, 200)}`);
+    }
   } catch (e) {
     console.error('[API] generateSocialPost - Failed to parse response:', e);
+    if (e instanceof Error) {
+      throw e;
+    }
     throw new Error(`Server responded with non-JSON: ${response.status}`);
   }
 

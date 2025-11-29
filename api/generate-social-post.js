@@ -129,15 +129,31 @@ The social media post should be visually appealing, professional, and ready to u
         });
       }
       
-      if (referenceImages && referenceImages.length > 0) {
+      if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
         for (const refImg of referenceImages) {
+          // Validate that refImg is a string
+          if (!refImg || typeof refImg !== 'string') {
+            console.warn('[Vercel Function] Skipping invalid reference image:', typeof refImg);
+            continue;
+          }
+          
           const base64Data = refImg.includes(',') 
             ? refImg.split(',')[1] 
             : refImg;
+          
+          // Determine MIME type
+          let mimeType = 'image/png';
+          if (refImg.includes('data:image/')) {
+            const mimeMatch = refImg.match(/data:image\/([^;]+)/);
+            if (mimeMatch) {
+              mimeType = `image/${mimeMatch[1]}`;
+            }
+          }
+          
           contentParts.push({
             inlineData: {
               data: base64Data,
-              mimeType: 'image/png'
+              mimeType: mimeType
             }
           });
         }
