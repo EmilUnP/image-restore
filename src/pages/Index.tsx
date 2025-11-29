@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Footer } from "@/components/layout/Footer";
@@ -16,6 +17,7 @@ type ViewMode = 'landing' | 'profile' | 'function';
 const Index = () => {
   const [selectedFunction, setSelectedFunction] = useState<AppFunction>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarMinimal, setSidebarMinimal] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('landing');
   const { isAuthenticated } = useAuthContext();
 
@@ -39,6 +41,12 @@ const Index = () => {
   const handleProfileClick = () => {
     setViewMode('profile');
     setSelectedFunction(null);
+  };
+
+  const handleLogoClick = () => {
+    setViewMode('landing');
+    setSelectedFunction(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Keyboard shortcuts
@@ -84,7 +92,17 @@ const Index = () => {
     }
   }, [isAuthenticated, loginDialogOpen]);
 
-  const showLandingPage = !isAuthenticated && !selectedFunction && viewMode !== 'profile';
+  // Reset view state when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSelectedFunction(null);
+      setViewMode('landing');
+      setSidebarOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isAuthenticated]);
+
+  const showLandingPage = (!isAuthenticated || (isAuthenticated && viewMode === 'landing')) && !selectedFunction && viewMode !== 'profile';
   
   return (
     <div className={`min-h-screen flex flex-col ${showLandingPage ? 'bg-slate-950' : 'bg-gradient-to-br from-background via-background to-accent/5'}`}>
@@ -101,6 +119,7 @@ const Index = () => {
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
         showMenuButton={isAuthenticated}
         onProfileClick={handleProfileClick}
+        onLogoClick={handleLogoClick}
         loginDialogOpen={loginDialogOpen}
         onLoginDialogOpenChange={setLoginDialogOpen}
       />
@@ -113,11 +132,17 @@ const Index = () => {
             onFunctionSelect={handleFunctionSelect}
             onClose={() => setSidebarOpen(false)}
             isOpen={sidebarOpen}
+            isMinimal={sidebarMinimal}
+            onToggleMinimal={() => setSidebarMinimal(!sidebarMinimal)}
           />
         )}
 
         {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 relative ${isAuthenticated ? 'lg:ml-72' : ''} ${showLandingPage ? '' : 'z-10'}`}>
+        <main className={cn(
+          "flex-1 transition-all duration-300 relative",
+          isAuthenticated && !sidebarMinimal ? 'lg:ml-72' : isAuthenticated && sidebarMinimal ? 'lg:ml-20' : '',
+          showLandingPage ? '' : 'z-10'
+        )}>
           {showLandingPage ? (
             <LandingPage onFunctionSelect={handleFunctionSelect} />
           ) : (

@@ -11,6 +11,7 @@ interface HeaderProps {
   onMenuClick?: () => void;
   showMenuButton?: boolean;
   onProfileClick?: () => void;
+  onLogoClick?: () => void;
   loginDialogOpen?: boolean;
   onLoginDialogOpenChange?: (open: boolean) => void;
 }
@@ -19,6 +20,7 @@ export const Header = ({
   onMenuClick, 
   showMenuButton = false, 
   onProfileClick,
+  onLogoClick,
   loginDialogOpen: externalLoginOpen,
   onLoginDialogOpenChange: setExternalLoginOpen
 }: HeaderProps) => {
@@ -34,12 +36,18 @@ export const Header = ({
 
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (location.pathname === '/') {
-      // If already on landing page, scroll to top
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (onLogoClick) {
+      // Use callback if provided (for viewMode-based navigation)
+      onLogoClick();
     } else {
-      // Navigate to landing page
-      navigate('/');
+      // Fallback to router navigation
+      if (location.pathname === '/') {
+        // If already on landing page, scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        // Navigate to landing page
+        navigate('/');
+      }
     }
   };
 
