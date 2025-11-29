@@ -133,11 +133,11 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
   };
 
   const currentStep = getCurrentStep();
-  const steps = [
-    { number: 1, label: "Settings", status: currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming" as const },
-    { number: 2, label: "Upload", status: currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming" as const },
-    { number: 3, label: "Review", status: currentStep > 3 ? "completed" : currentStep === 3 ? "current" : "upcoming" as const },
-    { number: 4, label: "Results", status: currentStep >= 4 ? (translatedImage ? "current" : "upcoming") : "upcoming" as const },
+  const steps: Array<{ number: number; label: string; status: "completed" | "current" | "upcoming" }> = [
+    { number: 1, label: "Settings", status: currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming" },
+    { number: 2, label: "Upload", status: currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming" },
+    { number: 3, label: "Review", status: currentStep > 3 ? "completed" : currentStep === 3 ? "current" : "upcoming" },
+    { number: 4, label: "Results", status: currentStep >= 4 ? (translatedImage ? "current" : "upcoming") : "upcoming" },
   ];
 
   return (
@@ -151,9 +151,11 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
 
       {!settingsConfigured ? (
         <>
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold mb-2">Configure Translation Settings</h2>
-            <p className="text-sm text-muted-foreground">Select language and adjust translation quality options</p>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
+              Configure Translation Settings
+            </h2>
+            <p className="text-sm text-slate-400">Select language and adjust translation quality options</p>
           </div>
           <LanguageSelector
             language={selectedLanguage}
@@ -167,11 +169,11 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
               disabled={isProcessing}
             />
           </div>
-          <div className="flex justify-center pt-4">
+          <div className="flex justify-center pt-6">
             <Button
               onClick={handleSettingsReady}
-              size="default"
-              className="gap-2"
+              size="lg"
+              className="gap-2 h-12 bg-gradient-to-r from-primary via-primary to-accent hover:opacity-90 font-bold shadow-lg shadow-primary/30 hover:shadow-primary/40 transition-all duration-300"
             >
               Continue to Upload
               <Languages className="w-4 h-4" />
@@ -180,13 +182,15 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
         </>
       ) : !originalImage ? (
         <>
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold mb-2">Upload Your Image</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Target language: <span className="font-medium">{languageName}</span>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
+              Upload Your Image
+            </h2>
+            <p className="text-sm text-slate-400 mb-4">
+              Target language: <span className="font-medium text-slate-300">{languageName}</span>
             </p>
             <div className="flex items-center justify-center gap-3">
-              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
+              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="text-slate-300 hover:text-slate-100 hover:bg-slate-800/50">
                 Change Settings
               </Button>
             </div>
@@ -206,10 +210,12 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
         </>
       ) : showTextDetection && originalImage ? (
         <>
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold mb-2">Review & Translate Text</h2>
-            <p className="text-sm text-muted-foreground">
-              Review detected text, edit if needed, then translate to <span className="font-medium">{languageName}</span>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
+              Review & Translate Text
+            </h2>
+            <p className="text-sm text-slate-400">
+              Review detected text, edit if needed, then translate to <span className="font-medium text-slate-300">{languageName}</span>
             </p>
           </div>
           <TextDetectionAndTranslation
@@ -227,11 +233,13 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
       ) : (
         <>
           <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">Translation Results</h2>
-            <p className="text-sm text-muted-foreground">
-              Language: <span className="font-medium">{languageName}</span> • 
-              Quality: <span className="font-medium capitalize">{translationSettings.quality}</span> • 
-              Style: <span className="font-medium capitalize">{translationSettings.textStyle}</span>
+            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
+              Translation Results
+            </h2>
+            <p className="text-sm text-slate-400">
+              Language: <span className="font-medium text-slate-300">{languageName}</span> • 
+              Quality: <span className="font-medium capitalize text-slate-300">{translationSettings.quality}</span> • 
+              Style: <span className="font-medium capitalize text-slate-300">{translationSettings.textStyle}</span>
             </p>
           </div>
           <ImageComparison

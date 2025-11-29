@@ -139,10 +139,10 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
   };
 
   const currentStep = getCurrentStep();
-  const steps = [
-    { number: 1, label: "Settings", status: currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming" as const },
-    { number: 2, label: "Upload", status: currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming" as const },
-    { number: 3, label: "Results", status: currentStep >= 3 ? (enhancedImage || batchImages.length > 0 ? "current" : "upcoming") : "upcoming" as const },
+  const steps: Array<{ number: number; label: string; status: "completed" | "current" | "upcoming" }> = [
+    { number: 1, label: "Settings", status: currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming" },
+    { number: 2, label: "Upload", status: currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming" },
+    { number: 3, label: "Results", status: currentStep >= 3 ? (enhancedImage || batchImages.length > 0 ? "current" : "upcoming") : "upcoming" },
   ];
 
   return (
@@ -156,9 +156,11 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
 
       {!settingsConfigured ? (
         <>
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold mb-2">Choose Enhancement Settings</h2>
-            <p className="text-sm text-muted-foreground">Select your enhancement mode and intensity level</p>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
+              Choose Enhancement Settings
+            </h2>
+            <p className="text-sm text-slate-400">Select your enhancement mode and intensity level</p>
           </div>
           <EnhancementModeSelector
             mode={enhancementMode}
@@ -167,11 +169,11 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             onIntensityChange={setEnhancementIntensity}
             disabled={isProcessing}
           />
-          <div className="flex justify-center pt-4">
+          <div className="flex justify-center pt-6">
             <Button
               onClick={handleSettingsReady}
-              size="default"
-              className="gap-2"
+              size="lg"
+              className="gap-2 h-12 bg-gradient-to-r from-primary via-primary to-accent hover:opacity-90 font-bold shadow-lg shadow-primary/30 hover:shadow-primary/40 transition-all duration-300"
             >
               Continue to Upload
               <ImageIcon className="w-4 h-4" />
@@ -180,14 +182,16 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
         </>
       ) : processingMode === 'single' && !originalImage ? (
         <>
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold mb-2">Upload Your Image</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Mode: <span className="font-medium capitalize">{enhancementMode}</span> • 
-              Intensity: <span className="font-medium capitalize">{enhancementIntensity}</span>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
+              Upload Your Image
+            </h2>
+            <p className="text-sm text-slate-400 mb-4">
+              Mode: <span className="font-medium capitalize text-slate-300">{enhancementMode}</span> • 
+              Intensity: <span className="font-medium capitalize text-slate-300">{enhancementIntensity}</span>
             </p>
             <div className="flex items-center justify-center gap-3">
-              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
+              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="text-slate-300 hover:text-slate-100 hover:bg-slate-800/50">
                 Change Settings
               </Button>
               <Button
@@ -197,7 +201,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 }}
                 variant="outline"
                 size="sm"
-                className="gap-2"
+                className="gap-2 border-slate-700/70 text-slate-300 hover:text-slate-100 hover:bg-slate-800/50 hover:border-primary/50"
               >
                 <Layers className="w-4 h-4" />
                 Batch Mode
@@ -213,14 +217,16 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
         </>
       ) : processingMode === 'batch' && batchImages.length === 0 ? (
         <>
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold mb-2">Upload Multiple Images</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Mode: <span className="font-medium capitalize">{enhancementMode}</span> • 
-              Intensity: <span className="font-medium capitalize">{enhancementIntensity}</span>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
+              Upload Multiple Images
+            </h2>
+            <p className="text-sm text-slate-400 mb-4">
+              Mode: <span className="font-medium capitalize text-slate-300">{enhancementMode}</span> • 
+              Intensity: <span className="font-medium capitalize text-slate-300">{enhancementIntensity}</span>
             </p>
             <div className="flex items-center justify-center gap-3">
-              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
+              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="text-slate-300 hover:text-slate-100 hover:bg-slate-800/50">
                 Change Settings
               </Button>
               <Button
@@ -230,7 +236,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 }}
                 variant="outline"
                 size="sm"
-                className="gap-2"
+                className="gap-2 border-slate-700/70 text-slate-300 hover:text-slate-100 hover:bg-slate-800/50 hover:border-primary/50"
               >
                 <ImageIcon className="w-4 h-4" />
                 Single Mode
@@ -246,10 +252,12 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
       ) : processingMode === 'batch' && batchImages.length > 0 ? (
         <>
           <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">Batch Processing Results</h2>
-            <p className="text-sm text-muted-foreground">
-              Mode: <span className="font-medium capitalize">{enhancementMode}</span> • 
-              Intensity: <span className="font-medium capitalize">{enhancementIntensity}</span>
+            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
+              Batch Processing Results
+            </h2>
+            <p className="text-sm text-slate-400">
+              Mode: <span className="font-medium capitalize text-slate-300">{enhancementMode}</span> • 
+              Intensity: <span className="font-medium capitalize text-slate-300">{enhancementIntensity}</span>
             </p>
           </div>
           <BatchResults
@@ -262,10 +270,12 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
       ) : (
         <>
           <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">Processing Results</h2>
-            <p className="text-sm text-muted-foreground">
-              Mode: <span className="font-medium capitalize">{enhancementMode}</span> • 
-              Intensity: <span className="font-medium capitalize">{enhancementIntensity}</span>
+            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
+              Processing Results
+            </h2>
+            <p className="text-sm text-slate-400">
+              Mode: <span className="font-medium capitalize text-slate-300">{enhancementMode}</span> • 
+              Intensity: <span className="font-medium capitalize text-slate-300">{enhancementIntensity}</span>
             </p>
           </div>
           <ImageComparison
@@ -283,7 +293,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 variant="outline" 
                 size="default" 
                 disabled={isProcessing}
-                className="gap-2"
+                className="gap-2 border-slate-700/70 text-slate-300 hover:text-slate-100 hover:bg-slate-800/50 hover:border-primary/50"
               >
                 Re-enhance with Current Settings
               </Button>

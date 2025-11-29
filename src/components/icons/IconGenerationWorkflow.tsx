@@ -193,21 +193,21 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
       <BackButton onClick={onBack} variant="floating" />
       
       {/* Step Indicator */}
-      <div className="mb-6">
+      <div className="mb-4">
         <StepIndicator steps={steps} />
       </div>
 
       {/* Mode Selection */}
-      <div className="mb-6">
+      <div className="mb-4">
         <Tabs value={mode} onValueChange={(value) => handleModeChange(value as 'generate' | 'upgrade')}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="generate" className="gap-2">
-              <Sparkles className="w-4 h-4" />
-              Generate New Icon
+          <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 border border-slate-700/70 p-0.5 rounded-lg h-9">
+            <TabsTrigger value="generate" className="gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
+              <Sparkles className="w-3 h-3" />
+              Generate
             </TabsTrigger>
-            <TabsTrigger value="upgrade" className="gap-2">
-              <Zap className="w-4 h-4" />
-              Upgrade Existing Icon
+            <TabsTrigger value="upgrade" className="gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
+              <Zap className="w-3 h-3" />
+              Upgrade
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -216,29 +216,21 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
       {mode === 'generate' ? (
         <>
           {!settingsConfigured ? (
-            <Card className="space-y-6 p-6">
-              <div className="text-center mb-4">
-                <h2 className="text-xl font-semibold mb-2">Describe Your Icon</h2>
-                <p className="text-sm text-muted-foreground">Tell us what kind of icon you want to generate</p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="prompt">Main Icon Description *</Label>
+            <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="prompt" className="text-xs text-slate-400">Description *</Label>
                   <Textarea
                     id="prompt"
-                    placeholder="e.g., A modern phone icon, A minimalist home icon, A bold settings gear icon..."
+                    placeholder="A modern phone icon, minimalist home icon..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     rows={3}
-                    className="resize-none"
+                    className="resize-none bg-slate-900/50 border-slate-700/70 text-slate-100 placeholder:text-slate-500 focus:border-primary/50 text-sm"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Be specific about style, colors, and purpose for best results
-                  </p>
                 </div>
 
-                <div className="flex items-center space-x-2 p-4 border rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-2 p-2 border border-slate-700/70 rounded bg-slate-900/30">
                   <Checkbox
                     id="use-variants"
                     checked={useVariants}
@@ -249,37 +241,33 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                       }
                     }}
                   />
-                  <Label htmlFor="use-variants" className="cursor-pointer flex-1">
-                    <span className="font-medium">Generate Multiple Variants</span>
-                    <p className="text-xs text-muted-foreground font-normal">
-                      Create related icons in the same style (e.g., phone, close, open, forward, back)
-                    </p>
+                  <Label htmlFor="use-variants" className="cursor-pointer text-xs text-slate-300">
+                    Generate Multiple Variants
                   </Label>
                 </div>
 
                 {useVariants && (
-                  <div className="space-y-3 p-4 border rounded-lg bg-muted/20">
+                  <div className="space-y-2 p-3 border border-slate-700/70 rounded bg-slate-900/20">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Variant Descriptions</Label>
+                      <Label className="text-xs text-slate-400">Variants</Label>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={addVariant}
-                        className="gap-1"
+                        className="h-6 px-2 text-xs"
                       >
                         <Plus className="w-3 h-3" />
-                        Add Variant
                       </Button>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {variants.map((variant, index) => (
-                        <div key={index} className="flex gap-2">
+                        <div key={index} className="flex gap-1.5">
                           <Input
-                            placeholder={`Variant ${index + 1} (e.g., close, open, forward, back...)`}
+                            placeholder={`Variant ${index + 1}`}
                             value={variant}
                             onChange={(e) => updateVariant(index, e.target.value)}
-                            className="flex-1"
+                            className="flex-1 h-8 text-sm bg-slate-900/50 border-slate-700/70"
                           />
                           {variants.length > 1 && (
                             <Button
@@ -287,25 +275,22 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                               variant="ghost"
                               size="sm"
                               onClick={() => removeVariant(index)}
-                              className="text-destructive hover:text-destructive"
+                              className="h-8 w-8 p-0 text-slate-400 hover:text-red-400"
                             >
-                              <X className="w-4 h-4" />
+                              <X className="w-3 h-3" />
                             </Button>
                           )}
                         </div>
                       ))}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      All variants will be generated in the same style as the main icon
-                    </p>
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="style">Style</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="style" className="text-xs text-slate-400">Style</Label>
                     <Select value={style} onValueChange={setStyle}>
-                      <SelectTrigger id="style">
+                      <SelectTrigger id="style" className="h-9 text-sm bg-slate-900/50 border-slate-700/70">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -321,10 +306,10 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="size">Size</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="size" className="text-xs text-slate-400">Size</Label>
                     <Select value={size} onValueChange={setSize}>
-                      <SelectTrigger id="size">
+                      <SelectTrigger id="size" className="h-9 text-sm bg-slate-900/50 border-slate-700/70">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -336,232 +321,132 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="export-format">Export Format</Label>
-                  <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
-                    <SelectTrigger id="export-format">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="png">PNG</SelectItem>
-                      <SelectItem value="svg">SVG</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Choose PNG for pixel-based or SVG for scalable vector format
-                  </p>
-                </div>
-
                 <Button
                   onClick={handleSettingsReady}
-                  className="w-full"
+                  className="w-full h-9 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-sm font-semibold"
                   disabled={!prompt.trim() || isGenerating || (useVariants && variants.every(v => !v.trim()))}
                 >
-                  Continue to Generate
+                  Generate
                 </Button>
               </div>
             </Card>
           ) : generatedIcons.length > 0 || isGenerating ? (
-            <>
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-xl font-semibold">
-                    {isGenerating ? 'Generating Icons...' : `Generated Icons (${generatedIcons.length})`}
-                  </h2>
+            <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-slate-400">
+                    {isGenerating ? 'Generating...' : `${generatedIcons.length} icons`} • <span className="capitalize">{style}</span> • {size}x{size}
+                  </div>
                   {!isGenerating && generatedIcons.length > 0 && (
                     <Button
                       onClick={handleDownloadAll}
                       variant="outline"
                       size="sm"
-                      className="gap-2"
+                      className="h-7 text-xs gap-1.5"
                     >
-                      <Download className="w-4 h-4" />
-                      Download All
+                      <Download className="w-3 h-3" />
+                      All
                     </Button>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Style: <span className="font-medium capitalize">{style}</span> • 
-                  Size: <span className="font-medium">{size}x{size}</span>
-                  {isGenerating && (
-                    <span className="ml-2">• Generating {generatedIcons.length + 1} of {1 + variants.filter(v => v.trim()).length}...</span>
-                  )}
-                </p>
-                {generatedIcons[0]?.actualPrompt && (
-                  <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-medium text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-2 text-xs"
-                        onClick={() => handleCopyPrompt(generatedIcons[0].actualPrompt || '', 'main-prompt')}
-                      >
-                        {copiedPromptId === 'main-prompt' ? (
-                          <>
-                            <Check className="w-3 h-3 mr-1" />
-                            Copied
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3 mr-1" />
-                            Copy
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-foreground font-mono break-words">{generatedIcons[0].actualPrompt}</p>
-                  </div>
-                )}
-              </div>
-
-              {generatedIcons.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-                  {generatedIcons.map((icon) => (
-                    <Card key={icon.id} className="overflow-hidden">
-                      <div className="aspect-square p-4 bg-muted/30 flex items-center justify-center">
-                        {icon.image ? (
-                          <img
-                            src={icon.image}
-                            alt={icon.prompt}
-                            className="max-w-full max-h-full object-contain rounded"
-                          />
-                        ) : (
-                          <div className="text-center space-y-2">
-                            <Sparkles className="w-8 h-8 mx-auto animate-spin text-primary" />
-                            <p className="text-xs text-muted-foreground">Generating...</p>
+                {generatedIcons.length > 0 ? (
+                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                      {generatedIcons.map((icon) => (
+                        <div key={icon.id} className="group relative">
+                          <div className="aspect-square p-2 bg-slate-900/50 rounded border border-slate-700/70 flex items-center justify-center hover:border-primary/50 transition-colors">
+                            {icon.image ? (
+                              <img
+                                src={icon.image}
+                                alt={icon.prompt}
+                                className="w-full h-full object-contain rounded"
+                              />
+                            ) : (
+                              <Sparkles className="w-6 h-6 animate-spin text-primary" />
+                            )}
                           </div>
-                        )}
-                      </div>
-                    <CardContent className="p-4">
-                      <p className="text-xs font-medium mb-2 truncate" title={icon.prompt}>
-                        {icon.prompt}
-                      </p>
-                      {icon.actualPrompt && (
-                        <div className="mb-2 p-2 bg-muted/30 rounded text-xs">
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="text-[10px] font-medium text-muted-foreground">AI Prompt:</p>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 px-1.5 text-[10px]"
-                              onClick={() => handleCopyPrompt(icon.actualPrompt || '', icon.id)}
-                            >
-                              {copiedPromptId === icon.id ? (
-                                <Check className="w-2.5 h-2.5" />
-                              ) : (
-                                <Copy className="w-2.5 h-2.5" />
+                          {icon.image && (
+                            <div className="absolute inset-0 bg-slate-900/90 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center gap-1">
+                              <Button
+                                onClick={() => handleDownloadIcon(icon)}
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2 text-xs"
+                              >
+                                <Download className="w-3 h-3" />
+                              </Button>
+                              {icon.actualPrompt && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={() => handleCopyPrompt(icon.actualPrompt || '', icon.id)}
+                                >
+                                  {copiedPromptId === icon.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                </Button>
                               )}
-                            </Button>
-                          </div>
-                          <p className="text-[10px] font-mono break-words line-clamp-2">{icon.actualPrompt}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {isGenerating && (
+                        <div className="aspect-square p-2 bg-slate-900/50 rounded border border-dashed border-slate-700/70 flex items-center justify-center">
+                          <Sparkles className="w-6 h-6 animate-spin text-primary" />
                         </div>
                       )}
-                      {icon.image && (
+                    </div>
+                  ) : isGenerating ? (
+                    <div className="text-center py-4">
+                      <Sparkles className="w-8 h-8 mx-auto animate-spin text-primary" />
+                    </div>
+                  ) : null}
+
+                  {generatedIcons.length > 0 && (
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-700/70">
+                      <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
+                        <SelectTrigger className="h-7 w-20 text-xs bg-slate-900/50 border-slate-700/70">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="png">PNG</SelectItem>
+                          <SelectItem value="svg">SVG</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex gap-2">
                         <Button
-                          onClick={() => handleDownloadIcon(icon)}
-                          size="sm"
-                          variant="outline"
-                          className="w-full gap-2"
+                          onClick={handleDownloadAll}
+                          className="h-7 px-3 text-xs gap-1.5"
+                          disabled={isGenerating || generatedIcons.filter(i => i.image).length === 0}
                         >
                           <Download className="w-3 h-3" />
-                          Download
+                          All
                         </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-                {isGenerating && (
-                  <Card className="overflow-hidden border-dashed">
-                    <div className="aspect-square p-4 bg-muted/30 flex items-center justify-center">
-                      <div className="text-center space-y-2">
-                        <Sparkles className="w-8 h-8 mx-auto animate-spin text-primary" />
-                        <p className="text-xs text-muted-foreground">Generating...</p>
+                        <Button
+                          onClick={() => {
+                            reset();
+                            setSettingsConfigured(false);
+                            setPrompt('');
+                            setVariants(['']);
+                            setUseVariants(false);
+                          }}
+                          variant="outline"
+                          className="h-7 px-3 text-xs border-slate-700/70 text-slate-300 hover:text-slate-100"
+                        >
+                          New
+                        </Button>
                       </div>
                     </div>
-                    <CardContent className="p-4">
-                      <p className="text-xs font-medium mb-2 text-muted-foreground">
-                        Generating icon {generatedIcons.length + 1}...
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-              ) : isGenerating ? (
-                <div className="text-center py-8">
-                  <Sparkles className="w-12 h-12 mx-auto animate-spin text-primary mb-4" />
-                  <p className="text-muted-foreground">Starting generation...</p>
+                  )}
                 </div>
-              ) : null}
-
-              {generatedIcons.length > 0 && (
-                <div className="flex flex-col items-center gap-3 mt-6">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="export-format-icons" className="text-sm">Export Format:</Label>
-                    <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
-                      <SelectTrigger id="export-format-icons" className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="png">PNG</SelectItem>
-                        <SelectItem value="svg">SVG</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={handleDownloadAll}
-                      className="gap-2"
-                      disabled={isGenerating || generatedIcons.filter(i => i.image).length === 0}
-                    >
-                      <Download className="w-4 h-4" />
-                      Download All
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        reset();
-                        setSettingsConfigured(false);
-                        setPrompt('');
-                        setVariants(['']);
-                        setUseVariants(false);
-                      }}
-                      variant="outline"
-                    >
-                      Generate Another Set
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
+              </Card>
           ) : generatedIcon ? (
-            <>
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold mb-2">Generated Icon</h2>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Style: <span className="font-medium capitalize">{style}</span> • 
-                  Size: <span className="font-medium">{size}x{size}</span>
-                </p>
-                {actualPrompt && (
-                  <div className="p-3 bg-muted/50 rounded-lg border border-border/50 mb-4">
-                    <p className="text-xs font-medium mb-1 text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
-                    <p className="text-xs text-foreground font-mono break-words">{actualPrompt}</p>
+            <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-slate-400">
+                    <span className="capitalize">{style}</span> • {size}x{size}
                   </div>
-                )}
-              </div>
-
-              <div className="mb-4">
-                <img
-                  src={generatedIcon}
-                  alt="Generated icon"
-                  className="max-w-full max-h-96 mx-auto rounded-lg border border-border shadow-lg"
-                />
-              </div>
-
-              <div className="flex flex-col items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="export-format-single" className="text-sm">Export Format:</Label>
                   <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
-                    <SelectTrigger id="export-format-single" className="w-32">
+                    <SelectTrigger className="h-7 w-20 text-xs bg-slate-900/50 border-slate-700/70">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -570,12 +455,38 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex gap-3">
+                
+                <div className="p-4 bg-slate-900/30 rounded-lg border border-slate-700/70">
+                  <img
+                    src={generatedIcon}
+                    alt="Generated icon"
+                    className="w-full max-h-64 object-contain mx-auto"
+                  />
+                </div>
+
+                {actualPrompt && (
+                  <div className="p-2 bg-slate-900/50 rounded border border-slate-700/70">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-[10px] text-slate-400 uppercase">AI Prompt:</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 px-2 text-[10px]"
+                        onClick={() => handleCopyPrompt(actualPrompt, 'single-prompt')}
+                      >
+                        {copiedPromptId === 'single-prompt' ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                      </Button>
+                    </div>
+                    <p className="text-[10px] text-slate-300 font-mono line-clamp-2">{actualPrompt}</p>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
                   <Button
                     onClick={handleDownload}
-                    className="gap-2"
+                    className="flex-1 h-8 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-xs font-semibold"
                   >
-                    Download Icon
+                    Download
                   </Button>
                   <Button
                     onClick={() => {
@@ -586,201 +497,189 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                       setUseVariants(false);
                     }}
                     variant="outline"
+                    className="h-8 text-xs border-slate-700/70 text-slate-300 hover:text-slate-100"
                   >
-                    Generate Another
+                    New
                   </Button>
                 </div>
               </div>
-            </>
+            </Card>
           ) : null}
         </>
       ) : (
         <>
           {!settingsConfigured ? (
-            <Card className="space-y-6 p-6">
-              <div className="text-center mb-4">
-                <h2 className="text-xl font-semibold mb-2">Upload Icon to Upgrade</h2>
-                <p className="text-sm text-muted-foreground">Select an existing icon to enhance with AI</p>
-              </div>
+            <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+              <div className="space-y-3">
 
-              {!originalIcon ? (
-                <ImageUpload
-                  onImageSelect={(file) => handleIconSelect(file, upgradeLevel, style)}
-                  disabled={isGenerating}
-                  label="Upload Icon"
-                  description="Drag and drop or click to select an icon to upgrade"
-                />
-              ) : (
-                <div className="space-y-4">
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm font-medium mb-2">Uploaded Icon:</p>
-                    <img
-                      src={originalIcon}
-                      alt="Original icon"
-                      className="max-w-32 max-h-32 mx-auto rounded"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="upgrade-level">Upgrade Level</Label>
-                      <Select value={upgradeLevel} onValueChange={setUpgradeLevel}>
-                        <SelectTrigger id="upgrade-level">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">Low (Subtle)</SelectItem>
-                          <SelectItem value="medium">Medium (Balanced)</SelectItem>
-                          <SelectItem value="high">High (Maximum)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="upgrade-style">Style</Label>
-                      <Select value={style} onValueChange={setStyle}>
-                        <SelectTrigger id="upgrade-style">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="modern">Modern</SelectItem>
-                          <SelectItem value="minimalist">Minimalist</SelectItem>
-                          <SelectItem value="bold">Bold</SelectItem>
-                          <SelectItem value="outline">Outline</SelectItem>
-                          <SelectItem value="filled">Filled</SelectItem>
-                          <SelectItem value="gradient">Gradient</SelectItem>
-                          <SelectItem value="3d">3D</SelectItem>
-                          <SelectItem value="flat">Flat</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={() => {
-                        reset();
-                      }}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      Change Icon
-                    </Button>
-                    <Button
-                      onClick={handleSettingsReady}
-                      className="flex-1"
-                    >
-                      Continue to Upgrade
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </Card>
-          ) : !generatedIcon ? (
-            <Card className="space-y-6 p-6">
-              <div className="text-center mb-4">
-                <h2 className="text-xl font-semibold mb-2">Ready to Upgrade</h2>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Level: <span className="font-medium capitalize">{upgradeLevel}</span> • 
-                  Style: <span className="font-medium capitalize">{style}</span>
-                </p>
-                <div className="flex items-center justify-center gap-3">
-                  <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
-                    Change Settings
-                  </Button>
-                </div>
-              </div>
-
-              {originalIcon && (
-                <div className="space-y-4">
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm font-medium mb-2">Original Icon:</p>
-                    <img
-                      src={originalIcon}
-                      alt="Original icon"
-                      className="max-w-32 max-h-32 mx-auto rounded"
-                    />
-                  </div>
-
-                  <Button
-                    onClick={handleUpgrade}
-                    className="w-full"
+                {!originalIcon ? (
+                  <ImageUpload
+                    onImageSelect={(file) => handleIconSelect(file, upgradeLevel, style)}
                     disabled={isGenerating}
-                    size="lg"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Zap className="w-4 h-4 mr-2 animate-spin" />
-                        Upgrading Icon...
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="w-4 h-4 mr-2" />
-                        Upgrade Icon
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </Card>
-          ) : (
-            <>
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold mb-2">Upgraded Icon</h2>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Level: <span className="font-medium capitalize">{upgradeLevel}</span> • 
-                  Style: <span className="font-medium capitalize">{style}</span>
-                </p>
-                {actualPrompt && (
-                  <div className="p-3 bg-muted/50 rounded-lg border border-border/50 mb-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-medium text-muted-foreground">Actual Prompt Sent to Gemini AI:</p>
+                    label="Upload Icon"
+                    description="Drag and drop or click to select"
+                  />
+                ) : (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/70">
+                      <img
+                        src={originalIcon}
+                        alt="Original icon"
+                        className="w-24 h-24 mx-auto object-contain rounded"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="upgrade-level" className="text-xs text-slate-400">Level</Label>
+                        <Select value={upgradeLevel} onValueChange={setUpgradeLevel}>
+                          <SelectTrigger id="upgrade-level" className="h-9 text-sm bg-slate-900/50 border-slate-700/70">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low">Low</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="upgrade-style" className="text-xs text-slate-400">Style</Label>
+                        <Select value={style} onValueChange={setStyle}>
+                          <SelectTrigger id="upgrade-style" className="h-9 text-sm bg-slate-900/50 border-slate-700/70">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="modern">Modern</SelectItem>
+                            <SelectItem value="minimalist">Minimalist</SelectItem>
+                            <SelectItem value="bold">Bold</SelectItem>
+                            <SelectItem value="outline">Outline</SelectItem>
+                            <SelectItem value="filled">Filled</SelectItem>
+                            <SelectItem value="gradient">Gradient</SelectItem>
+                            <SelectItem value="3d">3D</SelectItem>
+                            <SelectItem value="flat">Flat</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-2 text-xs"
-                        onClick={() => handleCopyPrompt(actualPrompt, 'upgrade-prompt')}
+                        onClick={() => reset()}
+                        variant="outline"
+                        className="flex-1 h-9 text-sm border-slate-700/70 text-slate-300 hover:text-slate-100"
                       >
-                        {copiedPromptId === 'upgrade-prompt' ? (
-                          <>
-                            <Check className="w-3 h-3 mr-1" />
-                            Copied
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3 mr-1" />
-                            Copy
-                          </>
-                        )}
+                        Change
+                      </Button>
+                      <Button
+                        onClick={handleSettingsReady}
+                        className="flex-1 h-9 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-sm font-semibold"
+                      >
+                        Upgrade
                       </Button>
                     </div>
-                    <p className="text-xs text-foreground font-mono break-words">{actualPrompt}</p>
                   </div>
                 )}
               </div>
-
-              <ImageComparison
-                originalImage={originalIcon || ''}
-                enhancedImage={generatedIcon}
-                isProcessing={isGenerating}
-                onDownload={handleDownload}
-                originalLabel="Original"
-                processedLabel="Upgraded"
-              />
-
-              <div className="flex gap-3 justify-center pt-4">
-                <Button
-                  onClick={() => {
-                    reset();
-                    setSettingsConfigured(false);
-                    reset();
-                    setSettingsConfigured(false);
-                  }}
-                  variant="outline"
-                >
-                  Upgrade Another
-                </Button>
+            </Card>
+          ) : !generatedIcon ? (
+            <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-slate-400">
+                    <span className="capitalize">{upgradeLevel}</span> • <span className="capitalize">{style}</span>
+                  </div>
+                  <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="h-7 text-xs text-slate-400 hover:text-slate-200">
+                    Edit
+                  </Button>
+                </div>
+                {originalIcon && (
+                  <>
+                    <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/70">
+                      <img
+                        src={originalIcon}
+                        alt="Original icon"
+                        className="w-24 h-24 mx-auto object-contain rounded"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleUpgrade}
+                      className="w-full h-9 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-sm font-semibold"
+                      disabled={isGenerating}
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Zap className="w-3 h-3 mr-1.5 animate-spin" />
+                          Upgrading...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-3 h-3 mr-1.5" />
+                          Upgrade
+                        </>
+                      )}
+                    </Button>
+                  </>
+                )}
               </div>
+            </Card>
+          ) : (
+            <>
+              <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-slate-400">
+                      <span className="capitalize">{upgradeLevel}</span> • <span className="capitalize">{style}</span>
+                    </div>
+                    <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
+                      <SelectTrigger className="h-7 w-20 text-xs bg-slate-900/50 border-slate-700/70">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="png">PNG</SelectItem>
+                        <SelectItem value="svg">SVG</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <ImageComparison
+                    originalImage={originalIcon || ''}
+                    enhancedImage={generatedIcon}
+                    isProcessing={isGenerating}
+                    onDownload={handleDownload}
+                    originalLabel="Original"
+                    processedLabel="Upgraded"
+                  />
+
+                  {actualPrompt && (
+                    <div className="p-2 bg-slate-900/50 rounded border border-slate-700/70">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[10px] text-slate-400 uppercase">AI Prompt:</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 px-2 text-[10px]"
+                          onClick={() => handleCopyPrompt(actualPrompt, 'upgrade-prompt')}
+                        >
+                          {copiedPromptId === 'upgrade-prompt' ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                        </Button>
+                      </div>
+                      <p className="text-[10px] text-slate-300 font-mono line-clamp-2">{actualPrompt}</p>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={() => {
+                      reset();
+                      setSettingsConfigured(false);
+                    }}
+                    variant="outline"
+                    className="w-full h-8 text-xs border-slate-700/70 text-slate-300 hover:text-slate-100"
+                  >
+                    Upgrade Another
+                  </Button>
+                </div>
+              </Card>
             </>
           )}
         </>

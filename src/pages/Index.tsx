@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Footer } from "@/components/layout/Footer";
 import { LandingPage } from "@/components/layout/LandingPage";
+import { Dashboard } from "@/components/layout/Dashboard";
 import { ProfilePage } from "@/components/profile/ProfilePage";
 import { EnhancementWorkflow } from "@/components/enhancement/EnhancementWorkflow";
 import { TranslationWorkflow } from "@/components/translation/TranslationWorkflow";
@@ -102,11 +103,12 @@ const Index = () => {
     }
   }, [isAuthenticated]);
 
-  const showLandingPage = (!isAuthenticated || (isAuthenticated && viewMode === 'landing')) && !selectedFunction && viewMode !== 'profile';
+  const showLandingPage = !isAuthenticated && !selectedFunction && viewMode !== 'profile';
+  const showDashboard = isAuthenticated && viewMode === 'landing' && !selectedFunction;
   
   return (
     <div className={`min-h-screen flex flex-col ${showLandingPage ? 'bg-slate-950' : 'bg-gradient-to-br from-background via-background to-accent/5'}`}>
-      {/* Background Effects - Only show when NOT on landing page */}
+      {/* Background Effects - Show for dashboard and function pages, but not landing page */}
       {!showLandingPage && (
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
           <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl animate-pulse-slow" />
@@ -145,6 +147,10 @@ const Index = () => {
         )}>
           {showLandingPage ? (
             <LandingPage onFunctionSelect={handleFunctionSelect} />
+          ) : showDashboard ? (
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+              <Dashboard onFunctionSelect={handleFunctionSelect} />
+            </div>
           ) : (
             <div className={`container mx-auto px-4 sm:px-6 lg:px-8 ${!selectedFunction && !isAuthenticated ? 'py-4 lg:py-6' : 'py-8 lg:py-12'}`}>
               {viewMode === 'profile' ? (
