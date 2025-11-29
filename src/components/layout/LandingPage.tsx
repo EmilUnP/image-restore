@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import MagicBento, { BentoCardProps } from "./MagicBento";
+import LightRays from "./LightRays";
 
 type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | null;
 
@@ -73,8 +74,23 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
 
       <div className="space-y-20 py-8 lg:py-12 relative">
         {/* Hero Section */}
-        <section className="text-center space-y-8 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative pt-8 lg:pt-12 pb-12 lg:pb-16">
-        <div className="relative z-10 space-y-6">
+        <section className="text-center space-y-8 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative pt-8 lg:pt-12 pb-12 lg:pb-16 overflow-hidden" style={{ minHeight: '600px' }}>
+          {/* Light Rays Animation */}
+          <div style={{ width: '100%', height: '600px', position: 'absolute', top: 0, left: 0, zIndex: 1, pointerEvents: 'none' }}>
+            <LightRays
+              raysOrigin="top-center"
+              raysColor="#00ffff"
+              raysSpeed={1.5}
+              lightSpread={0.8}
+              rayLength={1.2}
+              followMouse={true}
+              mouseInfluence={0.1}
+              noiseAmount={0.1}
+              distortion={0.05}
+              className="custom-rays"
+            />
+          </div>
+          <div className="relative z-10 space-y-6">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight">
             <span className="block text-slate-100">Transform Your</span>
             <span className="block bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
