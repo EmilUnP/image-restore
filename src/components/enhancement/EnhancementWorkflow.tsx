@@ -20,6 +20,7 @@ interface EnhancementWorkflowProps {
 export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
   const [enhancementMode, setEnhancementMode] = useState<string>("photo");
   const [enhancementIntensity, setEnhancementIntensity] = useState<string>("medium");
+  const [enhancementQuality, setEnhancementQuality] = useState<string>("original");
   const [settingsConfigured, setSettingsConfigured] = useState<boolean>(false);
   const [processingMode, setProcessingMode] = useState<'single' | 'batch'>('single');
   
@@ -48,7 +49,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
   const handleReEnhance = async () => {
     if (!originalImage) return;
     setIsProcessing(true);
-    await processImage(originalImage, enhancementMode, enhancementIntensity);
+    await processImage(originalImage, enhancementMode, enhancementIntensity, enhancementQuality);
   };
 
   const handleBatchImagesSelect = async (files: File[]) => {
@@ -92,7 +93,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
       );
 
       try {
-        const result = await processImage(image.original, enhancementMode, enhancementIntensity);
+        const result = await processImage(image.original, enhancementMode, enhancementIntensity, enhancementQuality);
         if (result) {
           setBatchImages(prev => 
             prev.map(img => 
@@ -165,8 +166,10 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
           <EnhancementModeSelector
             mode={enhancementMode}
             intensity={enhancementIntensity}
+            quality={enhancementQuality}
             onModeChange={setEnhancementMode}
             onIntensityChange={setEnhancementIntensity}
+            onQualityChange={setEnhancementQuality}
             disabled={isProcessing}
           />
           <div className="flex justify-center pt-6">
@@ -189,6 +192,9 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             <p className="text-sm text-slate-400 mb-4">
               Mode: <span className="font-medium capitalize text-slate-300">{enhancementMode}</span> • 
               Intensity: <span className="font-medium capitalize text-slate-300">{enhancementIntensity}</span>
+              {enhancementQuality !== 'original' && (
+                <> • Quality: <span className="font-medium uppercase text-slate-300">{enhancementQuality}</span></>
+              )}
             </p>
             <div className="flex items-center justify-center gap-3">
               <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="text-slate-300 hover:text-slate-100 hover:bg-slate-800/50">
@@ -209,7 +215,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             </div>
           </div>
           <ImageUpload
-            onImageSelect={(file) => handleImageSelect(file, enhancementMode, enhancementIntensity)}
+            onImageSelect={(file) => handleImageSelect(file, enhancementMode, enhancementIntensity, enhancementQuality)}
             disabled={isProcessing}
             label="Upload Image"
             description="Drag and drop or click to select an image to enhance"
@@ -224,6 +230,9 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
             <p className="text-sm text-slate-400 mb-4">
               Mode: <span className="font-medium capitalize text-slate-300">{enhancementMode}</span> • 
               Intensity: <span className="font-medium capitalize text-slate-300">{enhancementIntensity}</span>
+              {enhancementQuality !== 'original' && (
+                <> • Quality: <span className="font-medium uppercase text-slate-300">{enhancementQuality}</span></>
+              )}
             </p>
             <div className="flex items-center justify-center gap-3">
               <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="text-slate-300 hover:text-slate-100 hover:bg-slate-800/50">

@@ -6,6 +6,7 @@ export interface EnhanceImageRequest {
   image: string;
   mode: string;
   intensity: string;
+  quality?: string;
 }
 
 export interface EnhanceImageResponse {

@@ -818,7 +818,7 @@ app.delete('/api/admin/images/:folderType/:filename', async (req, res) => {
 // Image enhancement endpoint
 app.post('/api/enhance-image', async (req, res) => {
   try {
-    const { image, mode = 'photo', intensity = 'medium' } = req.body;
+    const { image, mode = 'photo', intensity = 'medium', quality = 'original' } = req.body;
     
     if (!image) {
       return res.status(400).json({ error: 'No image provided' });
@@ -854,7 +854,17 @@ app.post('/api/enhance-image', async (req, res) => {
       intensityModifier = ' Apply balanced, moderate enhancements.';
     }
 
-    const prompt = enhancementConfig.prompt + intensityModifier;
+    // Add quality/resolution requirements
+    let qualityModifier = '';
+    if (quality === '2k') {
+      qualityModifier = ' Output the enhanced image at 2K resolution (2048 pixels maximum dimension). Upscale the image while maintaining quality and sharpness.';
+    } else if (quality === '4k') {
+      qualityModifier = ' Output the enhanced image at 4K resolution (4096 pixels maximum dimension). Upscale the image to ultra-high quality with maximum sharpness and detail preservation.';
+    } else {
+      qualityModifier = ' Maintain the original image resolution.';
+    }
+
+    const prompt = enhancementConfig.prompt + intensityModifier + qualityModifier;
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
