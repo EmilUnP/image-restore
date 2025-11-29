@@ -131,7 +131,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
       {/* Mode Selection */}
       <div className="mb-4">
         <Tabs value={mode} onValueChange={(value) => handleModeChange(value as 'generate' | 'upgrade')}>
-          <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 border border-slate-700/70 p-0.5 rounded-lg h-9">
+          <TabsList className="grid w-full grid-cols-2 bg-background/40 backdrop-blur-sm border border-primary/20 p-0.5 rounded-lg h-9">
             <TabsTrigger value="generate" className="gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
               <Sparkles className="w-3 h-3" />
               Generate
@@ -147,47 +147,47 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
       {mode === 'generate' ? (
         <>
           {!settingsConfigured ? (
-            <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
               <div className="space-y-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="company-name" className="text-xs text-slate-400">Company Name (Optional)</Label>
+                  <Label htmlFor="company-name" className="text-xs text-foreground/70">Company Name (Optional)</Label>
                   <Input
                     id="company-name"
                     placeholder="TechCorp, MyBrand"
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
-                    className="bg-slate-900/50 border-slate-700/70 text-slate-100 placeholder:text-slate-500 focus:border-primary/50 h-9 text-sm"
+                    className="bg-background/30 border-primary/20 text-foreground placeholder:text-muted-foreground focus:border-primary/50 h-9 text-sm"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="tagline" className="text-xs text-slate-400">Tagline (Optional)</Label>
+                  <Label htmlFor="tagline" className="text-xs text-foreground/70">Tagline (Optional)</Label>
                   <Input
                     id="tagline"
                     placeholder="Innovation First"
                     value={tagline}
                     onChange={(e) => setTagline(e.target.value)}
-                    className="bg-slate-900/50 border-slate-700/70 text-slate-100 placeholder:text-slate-500 focus:border-primary/50 h-9 text-sm"
+                    className="bg-background/30 border-primary/20 text-foreground placeholder:text-muted-foreground focus:border-primary/50 h-9 text-sm"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="prompt" className="text-xs text-slate-400">Description *</Label>
+                  <Label htmlFor="prompt" className="text-xs text-foreground/70">Description *</Label>
                   <Textarea
                     id="prompt"
                     placeholder="A modern tech logo with geometric shapes..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     rows={3}
-                    className="resize-none bg-slate-900/50 border-slate-700/70 text-slate-100 placeholder:text-slate-500 focus:border-primary/50 text-sm"
+                    className="resize-none bg-background/30 border-primary/20 text-foreground placeholder:text-muted-foreground focus:border-primary/50 text-sm"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="style" className="text-xs text-slate-400">Style</Label>
+                    <Label htmlFor="style" className="text-xs text-foreground/70">Style</Label>
                     <Select value={style} onValueChange={setStyle}>
-                      <SelectTrigger id="style" className="h-9 text-sm bg-slate-900/50 border-slate-700/70">
+                      <SelectTrigger id="style" className="h-9 text-sm bg-background/30 border-primary/20">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -205,9 +205,9 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="size" className="text-xs text-slate-400">Size</Label>
+                    <Label htmlFor="size" className="text-xs text-foreground/70">Size</Label>
                     <Select value={size} onValueChange={setSize}>
-                      <SelectTrigger id="size" className="h-9 text-sm bg-slate-900/50 border-slate-700/70">
+                      <SelectTrigger id="size" className="h-9 text-sm bg-background/30 border-primary/20">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -229,20 +229,20 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
               </div>
             </Card>
           ) : !generatedLogo ? (
-            <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-slate-400">
+                  <div className="text-xs text-foreground/70">
                     <span className="capitalize">{style}</span> • {size}x{size}
                   </div>
-                  <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="h-7 text-xs text-slate-400 hover:text-slate-200">
+                  <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="h-7 text-xs text-foreground/70 hover:text-foreground">
                     Edit
                   </Button>
                 </div>
-                <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/70">
-                  <p className="text-xs text-slate-300">{prompt}</p>
-                  {companyName && <p className="text-xs text-slate-400 mt-1">Company: {companyName}</p>}
-                  {tagline && <p className="text-xs text-slate-400 mt-0.5">Tagline: {tagline}</p>}
+                <div className="p-3 bg-background/30 rounded-lg border border-primary/20">
+                  <p className="text-xs text-foreground/90">{prompt}</p>
+                  {companyName && <p className="text-xs text-foreground/60 mt-1">Company: {companyName}</p>}
+                  {tagline && <p className="text-xs text-foreground/60 mt-0.5">Tagline: {tagline}</p>}
                 </div>
                 <Button
                   onClick={handleGenerate}
@@ -265,15 +265,15 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
             </Card>
           ) : (
             <>
-              <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+              <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs text-slate-400">
+                    <div className="text-xs text-foreground/70">
                       <span className="capitalize">{style}</span> • {size}x{size}
                     </div>
                     <div className="flex items-center gap-2">
                       <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
-                        <SelectTrigger className="h-7 w-20 text-xs bg-slate-900/50 border-slate-700/70">
+                        <SelectTrigger className="h-7 w-20 text-xs bg-background/30 border-primary/20">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -288,14 +288,14 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                     <img
                       src={generatedLogo}
                       alt="Generated logo"
-                      className="w-full max-h-64 object-contain rounded-lg border border-slate-700/70 bg-slate-900/30 p-4"
+                      className="w-full max-h-64 object-contain rounded-lg border border-primary/20 bg-background/20 p-4"
                     />
                   </div>
 
                   {actualPrompt && (
-                    <div className="p-2 bg-slate-900/50 rounded border border-slate-700/70">
+                    <div className="p-2 bg-background/30 rounded border border-primary/20">
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-[10px] text-slate-400 uppercase">AI Prompt:</p>
+                        <p className="text-[10px] text-foreground/60 uppercase">AI Prompt:</p>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -305,7 +305,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                           {copiedPrompt ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                         </Button>
                       </div>
-                      <p className="text-[10px] text-slate-300 font-mono line-clamp-2">{actualPrompt}</p>
+                      <p className="text-[10px] text-foreground/80 font-mono line-clamp-2">{actualPrompt}</p>
                     </div>
                   )}
 
@@ -325,7 +325,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                         setTagline('');
                       }}
                       variant="outline"
-                      className="h-8 text-xs border-slate-700/70 text-slate-300 hover:text-slate-100 hover:bg-slate-800/50"
+                      className="h-8 text-xs border-primary/20 text-foreground/70 hover:text-foreground hover:border-primary/40"
                     >
                       New
                     </Button>
@@ -338,7 +338,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
       ) : (
         <>
           {!settingsConfigured ? (
-            <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
               <div className="space-y-3">
 
                 {!originalLogo ? (
@@ -350,7 +350,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                   />
                 ) : (
                   <div className="space-y-3">
-                    <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/70">
+                    <div className="p-3 bg-background/30 rounded-lg border border-primary/20">
                       <img
                         src={originalLogo}
                         alt="Original logo"
@@ -360,9 +360,9 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <Label htmlFor="upgrade-level" className="text-xs text-slate-400">Level</Label>
+                        <Label htmlFor="upgrade-level" className="text-xs text-foreground/70">Level</Label>
                         <Select value={upgradeLevel} onValueChange={setUpgradeLevel}>
-                          <SelectTrigger id="upgrade-level" className="h-9 text-sm bg-slate-900/50 border-slate-700/70">
+                          <SelectTrigger id="upgrade-level" className="h-9 text-sm bg-background/30 border-primary/20">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -374,9 +374,9 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label htmlFor="upgrade-style" className="text-xs text-slate-400">Style</Label>
+                        <Label htmlFor="upgrade-style" className="text-xs text-foreground/70">Style</Label>
                         <Select value={style} onValueChange={setStyle}>
-                          <SelectTrigger id="upgrade-style" className="h-9 text-sm bg-slate-900/50 border-slate-700/70">
+                          <SelectTrigger id="upgrade-style" className="h-9 text-sm bg-background/30 border-primary/20">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -398,7 +398,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                       <Button
                         onClick={() => reset()}
                         variant="outline"
-                        className="flex-1 h-9 text-sm border-slate-700/70 text-slate-300 hover:text-slate-100"
+                        className="flex-1 h-9 text-sm border-primary/20 text-foreground/70 hover:text-foreground hover:border-primary/40"
                       >
                         Change
                       </Button>
@@ -414,19 +414,19 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
               </div>
             </Card>
           ) : !generatedLogo ? (
-            <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-slate-400">
+                  <div className="text-xs text-foreground/70">
                     <span className="capitalize">{upgradeLevel}</span> • <span className="capitalize">{style}</span>
                   </div>
-                  <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="h-7 text-xs text-slate-400 hover:text-slate-200">
+                  <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="h-7 text-xs text-foreground/70 hover:text-foreground">
                     Edit
                   </Button>
                 </div>
                 {originalLogo && (
                   <>
-                    <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/70">
+                    <div className="p-3 bg-background/30 rounded-lg border border-primary/20">
                       <img
                         src={originalLogo}
                         alt="Original logo"
@@ -456,14 +456,14 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
             </Card>
           ) : (
             <>
-              <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+              <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs text-slate-400">
+                    <div className="text-xs text-foreground/70">
                       <span className="capitalize">{upgradeLevel}</span> • <span className="capitalize">{style}</span>
                     </div>
                     <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
-                      <SelectTrigger className="h-7 w-20 text-xs bg-slate-900/50 border-slate-700/70">
+                      <SelectTrigger className="h-7 w-20 text-xs bg-background/30 border-primary/20">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -483,9 +483,9 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                   />
 
                   {actualPrompt && (
-                    <div className="p-2 bg-slate-900/50 rounded border border-slate-700/70">
+                    <div className="p-2 bg-background/30 rounded border border-primary/20">
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-[10px] text-slate-400 uppercase">AI Prompt:</p>
+                        <p className="text-[10px] text-foreground/60 uppercase">AI Prompt:</p>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -495,7 +495,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                           {copiedPrompt ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                         </Button>
                       </div>
-                      <p className="text-[10px] text-slate-300 font-mono line-clamp-2">{actualPrompt}</p>
+                      <p className="text-[10px] text-foreground/80 font-mono line-clamp-2">{actualPrompt}</p>
                     </div>
                   )}
 
@@ -505,7 +505,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                       setSettingsConfigured(false);
                     }}
                     variant="outline"
-                    className="w-full h-8 text-xs border-slate-700/70 text-slate-300 hover:text-slate-100"
+                    className="w-full h-8 text-xs border-primary/20 text-foreground/70 hover:text-foreground hover:border-primary/40"
                   >
                     Upgrade Another
                   </Button>

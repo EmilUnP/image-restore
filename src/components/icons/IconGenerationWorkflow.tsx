@@ -200,7 +200,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
       {/* Mode Selection */}
       <div className="mb-4">
         <Tabs value={mode} onValueChange={(value) => handleModeChange(value as 'generate' | 'upgrade')}>
-          <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 border border-slate-700/70 p-0.5 rounded-lg h-9">
+          <TabsList className="grid w-full grid-cols-2 bg-background/40 backdrop-blur-sm border border-primary/20 p-0.5 rounded-lg h-9">
             <TabsTrigger value="generate" className="gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
               <Sparkles className="w-3 h-3" />
               Generate
@@ -216,21 +216,21 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
       {mode === 'generate' ? (
         <>
           {!settingsConfigured ? (
-            <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
               <div className="space-y-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="prompt" className="text-xs text-slate-400">Description *</Label>
+                  <Label htmlFor="prompt" className="text-xs text-foreground/70">Description *</Label>
                   <Textarea
                     id="prompt"
                     placeholder="A modern phone icon, minimalist home icon..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     rows={3}
-                    className="resize-none bg-slate-900/50 border-slate-700/70 text-slate-100 placeholder:text-slate-500 focus:border-primary/50 text-sm"
+                    className="resize-none bg-background/30 border-primary/20 text-foreground placeholder:text-muted-foreground focus:border-primary/50 text-sm"
                   />
                 </div>
 
-                <div className="flex items-center space-x-2 p-2 border border-slate-700/70 rounded bg-slate-900/30">
+                <div className="flex items-center space-x-2 p-2 border border-primary/20 rounded bg-background/20">
                   <Checkbox
                     id="use-variants"
                     checked={useVariants}
@@ -241,15 +241,15 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                       }
                     }}
                   />
-                  <Label htmlFor="use-variants" className="cursor-pointer text-xs text-slate-300">
+                  <Label htmlFor="use-variants" className="cursor-pointer text-xs text-foreground/90">
                     Generate Multiple Variants
                   </Label>
                 </div>
 
                 {useVariants && (
-                  <div className="space-y-2 p-3 border border-slate-700/70 rounded bg-slate-900/20">
+                  <div className="space-y-2 p-3 border border-primary/20 rounded bg-background/20">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs text-slate-400">Variants</Label>
+                      <Label className="text-xs text-foreground/70">Variants</Label>
                       <Button
                         type="button"
                         variant="outline"
@@ -267,7 +267,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                             placeholder={`Variant ${index + 1}`}
                             value={variant}
                             onChange={(e) => updateVariant(index, e.target.value)}
-                            className="flex-1 h-8 text-sm bg-slate-900/50 border-slate-700/70"
+                            className="flex-1 h-8 text-sm bg-background/30 border-primary/20"
                           />
                           {variants.length > 1 && (
                             <Button
@@ -275,7 +275,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                               variant="ghost"
                               size="sm"
                               onClick={() => removeVariant(index)}
-                              className="h-8 w-8 p-0 text-slate-400 hover:text-red-400"
+                              className="h-8 w-8 p-0 text-foreground/70 hover:text-red-400"
                             >
                               <X className="w-3 h-3" />
                             </Button>
@@ -288,9 +288,9 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="style" className="text-xs text-slate-400">Style</Label>
+                    <Label htmlFor="style" className="text-xs text-foreground/70">Style</Label>
                     <Select value={style} onValueChange={setStyle}>
-                      <SelectTrigger id="style" className="h-9 text-sm bg-slate-900/50 border-slate-700/70">
+                      <SelectTrigger id="style" className="h-9 text-sm bg-background/30 border-primary/20">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -307,9 +307,9 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="size" className="text-xs text-slate-400">Size</Label>
+                    <Label htmlFor="size" className="text-xs text-foreground/70">Size</Label>
                     <Select value={size} onValueChange={setSize}>
-                      <SelectTrigger id="size" className="h-9 text-sm bg-slate-900/50 border-slate-700/70">
+                      <SelectTrigger id="size" className="h-9 text-sm bg-background/30 border-primary/20">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -331,10 +331,10 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
               </div>
             </Card>
           ) : generatedIcons.length > 0 || isGenerating ? (
-            <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-slate-400">
+                  <div className="text-xs text-foreground/70">
                     {isGenerating ? 'Generating...' : `${generatedIcons.length} icons`} • <span className="capitalize">{style}</span> • {size}x{size}
                   </div>
                   {!isGenerating && generatedIcons.length > 0 && (
@@ -353,7 +353,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                     <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                       {generatedIcons.map((icon) => (
                         <div key={icon.id} className="group relative">
-                          <div className="aspect-square p-2 bg-slate-900/50 rounded border border-slate-700/70 flex items-center justify-center hover:border-primary/50 transition-colors">
+                          <div className="aspect-square p-2 bg-background/30 rounded border border-primary/20 flex items-center justify-center hover:border-primary/50 transition-colors">
                             {icon.image ? (
                               <img
                                 src={icon.image}
@@ -365,7 +365,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                             )}
                           </div>
                           {icon.image && (
-                            <div className="absolute inset-0 bg-slate-900/90 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center gap-1">
+                            <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center gap-1">
                               <Button
                                 onClick={() => handleDownloadIcon(icon)}
                                 size="sm"
@@ -389,7 +389,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                         </div>
                       ))}
                       {isGenerating && (
-                        <div className="aspect-square p-2 bg-slate-900/50 rounded border border-dashed border-slate-700/70 flex items-center justify-center">
+                        <div className="aspect-square p-2 bg-background/30 rounded border border-dashed border-primary/20 flex items-center justify-center">
                           <Sparkles className="w-6 h-6 animate-spin text-primary" />
                         </div>
                       )}
@@ -401,9 +401,9 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   ) : null}
 
                   {generatedIcons.length > 0 && (
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-700/70">
+                    <div className="flex items-center justify-between pt-2 border-t border-primary/20">
                       <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
-                        <SelectTrigger className="h-7 w-20 text-xs bg-slate-900/50 border-slate-700/70">
+                        <SelectTrigger className="h-7 w-20 text-xs bg-background/30 border-primary/20">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -429,7 +429,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                             setUseVariants(false);
                           }}
                           variant="outline"
-                          className="h-7 px-3 text-xs border-slate-700/70 text-slate-300 hover:text-slate-100"
+                          className="h-7 px-3 text-xs border-primary/20 text-foreground/90 hover:text-foreground"
                         >
                           New
                         </Button>
@@ -439,14 +439,14 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                 </div>
               </Card>
           ) : generatedIcon ? (
-            <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-slate-400">
+                  <div className="text-xs text-foreground/70">
                     <span className="capitalize">{style}</span> • {size}x{size}
                   </div>
                   <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
-                    <SelectTrigger className="h-7 w-20 text-xs bg-slate-900/50 border-slate-700/70">
+                    <SelectTrigger className="h-7 w-20 text-xs bg-background/30 border-primary/20">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -456,7 +456,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   </Select>
                 </div>
                 
-                <div className="p-4 bg-slate-900/30 rounded-lg border border-slate-700/70">
+                <div className="p-4 bg-background/20 rounded-lg border border-primary/20">
                   <img
                     src={generatedIcon}
                     alt="Generated icon"
@@ -465,9 +465,9 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                 </div>
 
                 {actualPrompt && (
-                  <div className="p-2 bg-slate-900/50 rounded border border-slate-700/70">
+                  <div className="p-2 bg-background/30 rounded border border-primary/20">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-[10px] text-slate-400 uppercase">AI Prompt:</p>
+                      <p className="text-[10px] text-foreground/70 uppercase">AI Prompt:</p>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -477,7 +477,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                         {copiedPromptId === 'single-prompt' ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                       </Button>
                     </div>
-                    <p className="text-[10px] text-slate-300 font-mono line-clamp-2">{actualPrompt}</p>
+                    <p className="text-[10px] text-foreground/90 font-mono line-clamp-2">{actualPrompt}</p>
                   </div>
                 )}
 
@@ -497,7 +497,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                       setUseVariants(false);
                     }}
                     variant="outline"
-                    className="h-8 text-xs border-slate-700/70 text-slate-300 hover:text-slate-100"
+                    className="h-8 text-xs border-primary/20 text-foreground/90 hover:text-foreground"
                   >
                     New
                   </Button>
@@ -509,7 +509,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
       ) : (
         <>
           {!settingsConfigured ? (
-            <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
               <div className="space-y-3">
 
                 {!originalIcon ? (
@@ -521,7 +521,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   />
                 ) : (
                   <div className="space-y-3">
-                    <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/70">
+                    <div className="p-3 bg-background/30 rounded-lg border border-primary/20">
                       <img
                         src={originalIcon}
                         alt="Original icon"
@@ -531,9 +531,9 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <Label htmlFor="upgrade-level" className="text-xs text-slate-400">Level</Label>
+                        <Label htmlFor="upgrade-level" className="text-xs text-foreground/70">Level</Label>
                         <Select value={upgradeLevel} onValueChange={setUpgradeLevel}>
-                          <SelectTrigger id="upgrade-level" className="h-9 text-sm bg-slate-900/50 border-slate-700/70">
+                          <SelectTrigger id="upgrade-level" className="h-9 text-sm bg-background/30 border-primary/20">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -545,9 +545,9 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label htmlFor="upgrade-style" className="text-xs text-slate-400">Style</Label>
+                        <Label htmlFor="upgrade-style" className="text-xs text-foreground/70">Style</Label>
                         <Select value={style} onValueChange={setStyle}>
-                          <SelectTrigger id="upgrade-style" className="h-9 text-sm bg-slate-900/50 border-slate-700/70">
+                          <SelectTrigger id="upgrade-style" className="h-9 text-sm bg-background/30 border-primary/20">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -568,7 +568,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                       <Button
                         onClick={() => reset()}
                         variant="outline"
-                        className="flex-1 h-9 text-sm border-slate-700/70 text-slate-300 hover:text-slate-100"
+                        className="flex-1 h-9 text-sm border-primary/20 text-foreground/90 hover:text-foreground"
                       >
                         Change
                       </Button>
@@ -584,19 +584,19 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
               </div>
             </Card>
           ) : !generatedIcon ? (
-            <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-slate-400">
+                  <div className="text-xs text-foreground/70">
                     <span className="capitalize">{upgradeLevel}</span> • <span className="capitalize">{style}</span>
                   </div>
-                  <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="h-7 text-xs text-slate-400 hover:text-slate-200">
+                  <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="h-7 text-xs text-foreground/70 hover:text-foreground">
                     Edit
                   </Button>
                 </div>
                 {originalIcon && (
                   <>
-                    <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/70">
+                    <div className="p-3 bg-background/30 rounded-lg border border-primary/20">
                       <img
                         src={originalIcon}
                         alt="Original icon"
@@ -626,14 +626,14 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
             </Card>
           ) : (
             <>
-              <Card className="p-4 bg-slate-800/50 backdrop-blur-sm border-slate-700/70">
+              <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs text-slate-400">
+                    <div className="text-xs text-foreground/70">
                       <span className="capitalize">{upgradeLevel}</span> • <span className="capitalize">{style}</span>
                     </div>
                     <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'png' | 'svg')}>
-                      <SelectTrigger className="h-7 w-20 text-xs bg-slate-900/50 border-slate-700/70">
+                      <SelectTrigger className="h-7 w-20 text-xs bg-background/30 border-primary/20">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -652,9 +652,9 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   />
 
                   {actualPrompt && (
-                    <div className="p-2 bg-slate-900/50 rounded border border-slate-700/70">
+                    <div className="p-2 bg-background/30 rounded border border-primary/20">
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-[10px] text-slate-400 uppercase">AI Prompt:</p>
+                        <p className="text-[10px] text-foreground/70 uppercase">AI Prompt:</p>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -664,7 +664,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                           {copiedPromptId === 'upgrade-prompt' ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                         </Button>
                       </div>
-                      <p className="text-[10px] text-slate-300 font-mono line-clamp-2">{actualPrompt}</p>
+                      <p className="text-[10px] text-foreground/90 font-mono line-clamp-2">{actualPrompt}</p>
                     </div>
                   )}
 
@@ -674,7 +674,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                       setSettingsConfigured(false);
                     }}
                     variant="outline"
-                    className="w-full h-8 text-xs border-slate-700/70 text-slate-300 hover:text-slate-100"
+                    className="w-full h-8 text-xs border-primary/20 text-foreground/90 hover:text-foreground"
                   >
                     Upgrade Another
                   </Button>
