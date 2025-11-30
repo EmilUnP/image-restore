@@ -26,24 +26,41 @@ export default async function handler(req, res) {
     const model = genAI.getGenerativeModel({ model: 'gemini-3-pro-image-preview' });
 
     // Construct the prompt for inpainting/object removal
-    const prompt = `You are an expert image editor. Remove the objects or areas marked in the mask image from the original image. 
+    const prompt = `You are a professional image inpainting specialist. Your task is to remove ONLY the areas marked in white in the mask image from the original image.
 
-Requirements:
-1. The mask image shows white areas that need to be removed (inpainted)
-2. The black areas in the mask should remain unchanged
-3. Use intelligent inpainting to fill removed areas with contextually appropriate content
-4. Maintain the overall style, lighting, and perspective of the original image
-5. Ensure seamless blending so the removed areas look natural
-6. Preserve all non-marked areas exactly as they are
-7. Return only the cleaned image as a base64-encoded PNG
+CRITICAL INSTRUCTIONS - FOLLOW EXACTLY:
 
-Process:
-- Analyze the original image and the mask
-- Identify what needs to be removed (white areas in mask)
-- Use advanced inpainting techniques to fill those areas
-- Return the result as a high-quality image
+1. MASK INTERPRETATION:
+   - WHITE pixels in the mask = areas to REMOVE and fill with background
+   - BLACK pixels in the mask = areas to KEEP EXACTLY AS THEY ARE
+   - Do NOT modify anything outside the white mask areas
 
-Return the cleaned image as a base64-encoded PNG string (data:image/png;base64,... format).`;
+2. REMOVAL PROCESS:
+   - Remove ONLY the objects/areas shown in white in the mask
+   - Fill removed areas by extending and blending the surrounding background
+   - Use context-aware inpainting that matches the immediate surrounding pixels
+   - The filled area should look like the background naturally continues
+
+3. STRICT PROHIBITIONS:
+   - DO NOT add any new objects, elements, or details
+   - DO NOT modify colors, lighting, or style outside the mask area
+   - DO NOT change any part of the image that is NOT marked in white
+   - DO NOT add text, shapes, or any visual elements
+   - DO NOT enhance or improve anything - only remove what's marked
+
+4. QUALITY REQUIREMENTS:
+   - The result should look like the object was never there
+   - Seamless blending with surrounding background
+   - Maintain exact same resolution, colors, and quality
+   - No visible artifacts, blur, or distortion
+   - Natural continuation of background patterns/textures
+
+5. OUTPUT:
+   - Return ONLY the inpainted image
+   - The image should be identical to the original EXCEPT for the removed white mask areas
+   - All other areas must remain pixel-perfect unchanged
+
+Remember: Your ONLY job is to remove what's marked in white and fill it with background. Do NOT add anything new. Do NOT modify anything else.`;
 
     const imageParts = [
       {

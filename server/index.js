@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { put, list, del } from '@vercel/blob';
+import sharp from 'sharp';
 import {
   createTextTranslationService,
   TranslationServiceError,
@@ -815,6 +816,105 @@ app.delete('/api/admin/images/:folderType/:filename', async (req, res) => {
   }
 });
 
+// Helper function to resize/upscale image based on quality setting
+async function resizeImageByQuality(base64Image, quality, mimeType = 'image/jpeg') {
+  try {
+    // Extract base64 data
+    const base64Data = base64Image.includes(',') 
+      ? base64Image.split(',')[1] 
+      : base64Image;
+    
+    // Convert base64 to buffer
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+    
+    // Get current image dimensions
+    const metadata = await sharp(imageBuffer).metadata();
+    const { width, height } = metadata;
+    
+    // Determine target max dimension based on quality
+    let targetMaxDimension = null;
+    if (quality === '2k') {
+      targetMaxDimension = 2048;
+    } else if (quality === '4k') {
+      targetMaxDimension = 4096;
+    }
+    
+    // If no quality setting, return original
+    if (!targetMaxDimension) {
+      return base64Image.includes('data:') ? base64Image : `data:${mimeType};base64,${base64Data}`;
+    }
+    
+    // Calculate the maximum dimension of the current image
+    const maxDimension = Math.max(width, height);
+    
+    // Only resize if the image is smaller than the target
+    if (maxDimension < targetMaxDimension) {
+      // Calculate scale factor to upscale to target
+      const scaleFactor = targetMaxDimension / maxDimension;
+      const newWidth = Math.round(width * scaleFactor);
+      const newHeight = Math.round(height * scaleFactor);
+      
+      console.log(`Upscaling image from ${width}x${height} to ${newWidth}x${newHeight} (${quality})`);
+      
+      // Use high-quality upscaling with Lanczos3 kernel and sharpening
+      let sharpInstance = sharp(imageBuffer)
+        .resize(newWidth, newHeight, {
+          kernel: sharp.kernel.lanczos3, // Best quality upscaling kernel
+          fit: 'inside',
+          withoutEnlargement: false
+        })
+        .sharpen({
+          sigma: 1.5,
+          flat: 1.0,
+          jagged: 2.0
+        }); // Enhanced sharpening for upscaled images
+      
+      // Preserve format and apply quality settings
+      if (mimeType === 'image/png') {
+        sharpInstance = sharpInstance.png({ compressionLevel: 9 });
+      } else {
+        sharpInstance = sharpInstance.jpeg({ quality: 95, mozjpeg: true });
+      }
+      
+      const resizedBuffer = await sharpInstance.toBuffer();
+      
+      return `data:${mimeType};base64,${resizedBuffer.toString('base64')}`;
+    } else if (maxDimension > targetMaxDimension) {
+      // Downscale if image is larger than target
+      const scaleFactor = targetMaxDimension / maxDimension;
+      const newWidth = Math.round(width * scaleFactor);
+      const newHeight = Math.round(height * scaleFactor);
+      
+      console.log(`Downscaling image from ${width}x${height} to ${newWidth}x${newHeight} (${quality})`);
+      
+      let sharpInstance = sharp(imageBuffer)
+        .resize(newWidth, newHeight, {
+          kernel: sharp.kernel.lanczos3,
+          fit: 'inside',
+          withoutEnlargement: false
+        });
+      
+      // Preserve format and apply quality settings
+      if (mimeType === 'image/png') {
+        sharpInstance = sharpInstance.png({ compressionLevel: 9 });
+      } else {
+        sharpInstance = sharpInstance.jpeg({ quality: 95, mozjpeg: true });
+      }
+      
+      const resizedBuffer = await sharpInstance.toBuffer();
+      
+      return `data:${mimeType};base64,${resizedBuffer.toString('base64')}`;
+    }
+    
+    // Image is already at target size, return original
+    return base64Image.includes('data:') ? base64Image : `data:${mimeType};base64,${base64Data}`;
+  } catch (error) {
+    console.error('Error resizing image:', error);
+    // Return original image if resizing fails
+    return base64Image.includes('data:') ? base64Image : `data:${mimeType};base64,${base64Image}`;
+  }
+}
+
 // Image enhancement endpoint
 app.post('/api/enhance-image', async (req, res) => {
   try {
@@ -901,12 +1001,25 @@ app.post('/api/enhance-image', async (req, res) => {
         }
       }
       
-      // If enhanced image is returned, use it
+      // If enhanced image is returned, process it
       if (enhancedImageBase64) {
+        // Apply quality-based resizing if quality is set
+        let finalImage = `data:${mimeType};base64,${enhancedImageBase64}`;
+        
+        if (quality === '2k' || quality === '4k') {
+          try {
+            finalImage = await resizeImageByQuality(enhancedImageBase64, quality, mimeType);
+          } catch (resizeError) {
+            console.error('Error resizing enhanced image:', resizeError);
+            // Continue with original enhanced image if resizing fails
+          }
+        }
+        
         return res.json({ 
-          enhancedImage: `data:${mimeType};base64,${enhancedImageBase64}`,
-          message: `Image enhanced successfully using ${validMode} mode.`,
-          mode: validMode
+          enhancedImage: finalImage,
+          message: `Image enhanced successfully using ${validMode} mode${quality !== 'original' ? ` at ${quality.toUpperCase()} quality` : ''}.`,
+          mode: validMode,
+          quality: quality
         });
       } else {
         // Return original image with analysis
@@ -2133,24 +2246,41 @@ app.post('/api/remove-object', async (req, res) => {
     const model = genAI.getGenerativeModel({ model: 'gemini-3-pro-image-preview' });
 
     // Construct the prompt for inpainting/object removal
-    const prompt = `You are an expert image editor. Remove the objects or areas marked in the mask image from the original image. 
+    const prompt = `You are a professional image inpainting specialist. Your task is to remove ONLY the areas marked in white in the mask image from the original image.
 
-Requirements:
-1. The mask image shows white areas that need to be removed (inpainted)
-2. The black areas in the mask should remain unchanged
-3. Use intelligent inpainting to fill removed areas with contextually appropriate content
-4. Maintain the overall style, lighting, and perspective of the original image
-5. Ensure seamless blending so the removed areas look natural
-6. Preserve all non-marked areas exactly as they are
-7. Return only the cleaned image as a base64-encoded PNG
+CRITICAL INSTRUCTIONS - FOLLOW EXACTLY:
 
-Process:
-- Analyze the original image and the mask
-- Identify what needs to be removed (white areas in mask)
-- Use advanced inpainting techniques to fill those areas
-- Return the result as a high-quality image
+1. MASK INTERPRETATION:
+   - WHITE pixels in the mask = areas to REMOVE and fill with background
+   - BLACK pixels in the mask = areas to KEEP EXACTLY AS THEY ARE
+   - Do NOT modify anything outside the white mask areas
 
-Return the cleaned image as a base64-encoded PNG string (data:image/png;base64,... format).`;
+2. REMOVAL PROCESS:
+   - Remove ONLY the objects/areas shown in white in the mask
+   - Fill removed areas by extending and blending the surrounding background
+   - Use context-aware inpainting that matches the immediate surrounding pixels
+   - The filled area should look like the background naturally continues
+
+3. STRICT PROHIBITIONS:
+   - DO NOT add any new objects, elements, or details
+   - DO NOT modify colors, lighting, or style outside the mask area
+   - DO NOT change any part of the image that is NOT marked in white
+   - DO NOT add text, shapes, or any visual elements
+   - DO NOT enhance or improve anything - only remove what's marked
+
+4. QUALITY REQUIREMENTS:
+   - The result should look like the object was never there
+   - Seamless blending with surrounding background
+   - Maintain exact same resolution, colors, and quality
+   - No visible artifacts, blur, or distortion
+   - Natural continuation of background patterns/textures
+
+5. OUTPUT:
+   - Return ONLY the inpainted image
+   - The image should be identical to the original EXCEPT for the removed white mask areas
+   - All other areas must remain pixel-perfect unchanged
+
+Remember: Your ONLY job is to remove what's marked in white and fill it with background. Do NOT add anything new. Do NOT modify anything else.`;
 
     // Extract base64 data from images
     const imageBase64 = image.includes('data:image') ? image.split(',')[1] : image;
