@@ -26,10 +26,12 @@ export const ObjectRemovalWorkflow = ({ onBack }: ObjectRemovalWorkflowProps) =>
   const [tool, setTool] = useState<Tool>('brush');
   const [isDrawing, setIsDrawing] = useState(false);
   const [maskData, setMaskData] = useState<ImageData | null>(null);
+  const [originalImageDimensions, setOriginalImageDimensions] = useState<{ width: number; height: number } | null>(null);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const maskCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const { fileToBase64 } = useImageUpload();
 
   // Initialize canvas
@@ -45,28 +47,41 @@ export const ObjectRemovalWorkflow = ({ onBack }: ObjectRemovalWorkflowProps) =>
         const container = containerRef.current;
         if (!container) return;
 
+        // Store original dimensions
+        setOriginalImageDimensions({ width: img.width, height: img.height });
+
         const maxWidth = container.clientWidth;
         const maxHeight = window.innerHeight * 0.6;
         
-        let width = img.width;
-        let height = img.height;
+        let displayWidth = img.width;
+        let displayHeight = img.height;
         
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
+        if (displayWidth > maxWidth) {
+          displayHeight = (displayHeight * maxWidth) / displayWidth;
+          displayWidth = maxWidth;
         }
-        if (height > maxHeight) {
-          width = (width * maxHeight) / height;
-          height = maxHeight;
+        if (displayHeight > maxHeight) {
+          displayWidth = (displayWidth * maxHeight) / displayHeight;
+          displayHeight = maxHeight;
         }
 
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = displayWidth;
+        canvas.height = displayHeight;
         
-        ctx.drawImage(img, 0, 0, width, height);
+        ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
+        
+        // Initialize mask canvas with display dimensions (for drawing)
+        const maskCanvas = document.createElement('canvas');
+        maskCanvas.width = displayWidth;
+        maskCanvas.height = displayHeight;
+        maskCanvasRef.current = maskCanvas;
+        const maskCtx = maskCanvas.getContext('2d');
+        if (maskCtx) {
+          maskCtx.clearRect(0, 0, displayWidth, displayHeight);
+        }
         
         // Initialize mask as transparent
-        const mask = ctx.createImageData(width, height);
+        const mask = maskCtx?.createImageData(displayWidth, displayHeight) || null;
         setMaskData(mask);
       };
       img.src = originalImage;
@@ -101,19 +116,29 @@ export const ObjectRemovalWorkflow = ({ onBack }: ObjectRemovalWorkflowProps) =>
 
   const drawOnCanvas = useCallback((x: number, y: number, isEraser: boolean) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const maskCanvas = maskCanvasRef.current;
+    if (!canvas || !imageRef.current || !maskCanvas) return;
 
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return;
+    const maskCtx = maskCanvas.getContext('2d');
+    if (!ctx || !maskCtx) return;
 
-    ctx.globalCompositeOperation = isEraser ? 'destination-out' : 'source-over';
-    ctx.fillStyle = isEraser ? 'rgba(0,0,0,1)' : 'rgba(255,0,0,0.5)';
-    ctx.beginPath();
-    ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-    ctx.fill();
+    // Draw on mask canvas with fully opaque red for better detection
+    maskCtx.globalCompositeOperation = isEraser ? 'destination-out' : 'source-over';
+    maskCtx.fillStyle = isEraser ? 'rgba(0,0,0,1)' : 'rgba(255,0,0,1)'; // Fully opaque red
+    maskCtx.beginPath();
+    maskCtx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+    maskCtx.fill();
+
+    // Redraw the main canvas: image + mask overlay (with transparency for visual)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(imageRef.current, 0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = 0.5; // Visual transparency
+    ctx.drawImage(maskCanvas, 0, 0);
+    ctx.globalAlpha = 1.0;
 
     // Update mask data
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const imageData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
     setMaskData(imageData);
   }, [brushSize]);
 
@@ -139,22 +164,28 @@ export const ObjectRemovalWorkflow = ({ onBack }: ObjectRemovalWorkflowProps) =>
   };
 
   const clearMask = () => {
-    if (!canvasRef.current || !imageRef.current) return;
+    if (!canvasRef.current || !imageRef.current || !maskCanvasRef.current) return;
     
     const canvas = canvasRef.current;
+    const maskCanvas = maskCanvasRef.current;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const maskCtx = maskCanvas.getContext('2d');
+    if (!ctx || !maskCtx) return;
 
+    // Clear mask canvas
+    maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+    
+    // Redraw main canvas with just the image
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(imageRef.current, 0, 0, canvas.width, canvas.height);
     
-    const mask = ctx.createImageData(canvas.width, canvas.height);
+    const mask = maskCtx.createImageData(maskCanvas.width, maskCanvas.height);
     setMaskData(mask);
     toast.success("Mask cleared");
   };
 
   const handleRemove = async () => {
-    if (!originalImage || !maskData) {
+    if (!originalImage || !maskData || !maskCanvasRef.current) {
       toast.error("Please select areas to remove first");
       return;
     }
@@ -162,45 +193,83 @@ export const ObjectRemovalWorkflow = ({ onBack }: ObjectRemovalWorkflowProps) =>
     setIsRemoving(true);
     try {
       // Convert mask to base64
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const maskCanvas = document.createElement('canvas');
-      maskCanvas.width = canvas.width;
-      maskCanvas.height = canvas.height;
+      const maskCanvas = maskCanvasRef.current;
       const maskCtx = maskCanvas.getContext('2d');
       if (!maskCtx) return;
 
-      // Create binary mask (white = remove, black = keep)
-      const imageData = maskCtx.createImageData(canvas.width, canvas.height);
-      const originalCtx = canvas.getContext('2d');
-      if (!originalCtx) return;
-
-      const originalData = originalCtx.getImageData(0, 0, canvas.width, canvas.height);
+      // Get mask data from the mask canvas
+      const maskImageData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
       
-      for (let i = 0; i < originalData.data.length; i += 4) {
-        const r = originalData.data[i];
-        const g = originalData.data[i + 1];
-        const b = originalData.data[i + 2];
-        const a = originalData.data[i + 3];
+      // Create binary mask (white = remove, black = keep)
+      const binaryMaskCanvas = document.createElement('canvas');
+      binaryMaskCanvas.width = maskCanvas.width;
+      binaryMaskCanvas.height = maskCanvas.height;
+      const binaryMaskCtx = binaryMaskCanvas.getContext('2d');
+      if (!binaryMaskCtx) return;
+
+      const binaryImageData = binaryMaskCtx.createImageData(maskCanvas.width, maskCanvas.height);
+      
+      let markedPixels = 0;
+      for (let i = 0; i < maskImageData.data.length; i += 4) {
+        const r = maskImageData.data[i];
+        const g = maskImageData.data[i + 1];
+        const b = maskImageData.data[i + 2];
+        const a = maskImageData.data[i + 3];
         
         // If pixel is marked (red overlay), mark as white in mask (to remove)
-        // Otherwise mark as black (to keep)
-        if (r > 200 && g < 50 && b < 50 && a > 100) {
-          imageData.data[i] = 255;     // R
-          imageData.data[i + 1] = 255;  // G
-          imageData.data[i + 2] = 255;  // B
-          imageData.data[i + 3] = 255;  // A
+        // Check for red color - be more lenient with detection
+        // Red pixels should have: high red, low green, low blue, and some alpha
+        const isRed = r > 100 && g < r * 0.5 && b < r * 0.5 && a > 50;
+        
+        if (isRed) {
+          markedPixels++;
+          binaryImageData.data[i] = 255;     // R
+          binaryImageData.data[i + 1] = 255;  // G
+          binaryImageData.data[i + 2] = 255;  // B
+          binaryImageData.data[i + 3] = 255;  // A
         } else {
-          imageData.data[i] = 0;       // R
-          imageData.data[i + 1] = 0;   // G
-          imageData.data[i + 2] = 0;    // B
-          imageData.data[i + 3] = 255;  // A
+          binaryImageData.data[i] = 0;       // R
+          binaryImageData.data[i + 1] = 0;   // G
+          binaryImageData.data[i + 2] = 0;    // B
+          binaryImageData.data[i + 3] = 255;  // A
         }
       }
+      
+      console.log(`[Object Removal] Detected ${markedPixels} marked pixels in mask`);
+      
+      if (markedPixels === 0) {
+        toast.error("No areas selected. Please draw on the image first.");
+        setIsRemoving(false);
+        return;
+      }
 
-      maskCtx.putImageData(imageData, 0, 0);
-      const maskBase64 = maskCanvas.toDataURL('image/png');
+      binaryMaskCtx.putImageData(binaryImageData, 0, 0);
+      
+      // Scale mask to original image dimensions if needed
+      let finalMaskCanvas = binaryMaskCanvas;
+      if (originalImageDimensions && 
+          (binaryMaskCanvas.width !== originalImageDimensions.width || 
+           binaryMaskCanvas.height !== originalImageDimensions.height)) {
+        console.log(`[Object Removal] Scaling mask from ${binaryMaskCanvas.width}x${binaryMaskCanvas.height} to ${originalImageDimensions.width}x${originalImageDimensions.height}`);
+        
+        const scaledMaskCanvas = document.createElement('canvas');
+        scaledMaskCanvas.width = originalImageDimensions.width;
+        scaledMaskCanvas.height = originalImageDimensions.height;
+        const scaledCtx = scaledMaskCanvas.getContext('2d');
+        if (scaledCtx) {
+          scaledCtx.drawImage(binaryMaskCanvas, 0, 0, scaledMaskCanvas.width, scaledMaskCanvas.height);
+          finalMaskCanvas = scaledMaskCanvas;
+        }
+      }
+      
+      const maskBase64 = finalMaskCanvas.toDataURL('image/png');
+      
+      // Debug: Log mask info
+      console.log(`[Object Removal] Original image size: ${originalImageDimensions?.width}x${originalImageDimensions?.height}`);
+      console.log(`[Object Removal] Display mask size: ${maskCanvas.width}x${maskCanvas.height}`);
+      console.log(`[Object Removal] Final mask size: ${finalMaskCanvas.width}x${finalMaskCanvas.height}`);
+      console.log(`[Object Removal] Marked pixels: ${markedPixels}`);
+      console.log(`[Object Removal] Mask base64 length: ${maskBase64.length}`);
 
       const result = await removeObject(originalImage, maskBase64);
       if (result?.cleanedImage) {
@@ -278,36 +347,36 @@ export const ObjectRemovalWorkflow = ({ onBack }: ObjectRemovalWorkflowProps) =>
               title="Select Areas to Remove"
               description="Draw on the image to mark areas you want to remove"
             >
-              <div className="p-6">
-              <div 
-                ref={containerRef}
-                className="relative w-full flex justify-center items-center bg-slate-900/50 rounded-xl p-4 overflow-auto"
-                style={{ maxHeight: '70vh' }}
-              >
-                <div className="relative inline-block">
-                  <canvas
-                    ref={canvasRef}
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
-                    className="cursor-crosshair max-w-full h-auto rounded-lg shadow-2xl"
-                    style={{ imageRendering: 'auto' }}
-                  />
-                  {!maskData && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 rounded-lg">
-                      <p className="text-muted-foreground">Loading image...</p>
-                    </div>
-                  )}
+              <div className="p-6 space-y-4">
+                <div 
+                  ref={containerRef}
+                  className="relative w-full flex justify-center items-center bg-slate-900/50 rounded-xl p-4 overflow-auto"
+                  style={{ maxHeight: '70vh' }}
+                >
+                  <div className="relative inline-block">
+                    <canvas
+                      ref={canvasRef}
+                      onMouseDown={handleMouseDown}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                      className="cursor-crosshair max-w-full h-auto rounded-lg shadow-2xl"
+                      style={{ imageRendering: 'auto' }}
+                    />
+                    {!maskData && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 rounded-lg">
+                        <p className="text-muted-foreground">Loading image...</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">
+                    <span className="inline-block w-3 h-3 bg-red-500/50 rounded-full mr-2"></span>
+                    Red overlay indicates areas to be removed
+                  </p>
                 </div>
               </div>
-              <div className="mt-4 text-center">
-                <p className="text-sm text-muted-foreground">
-                  <span className="inline-block w-3 h-3 bg-red-500/50 rounded-full mr-2"></span>
-                  Red overlay indicates areas to be removed
-                </p>
-              </div>
-            </div>
             </WorkflowCard>
           </div>
 
