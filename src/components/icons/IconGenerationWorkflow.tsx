@@ -11,6 +11,8 @@ import { ImageUpload } from "@/components/shared/ImageUpload";
 import { ImageComparison } from "@/components/shared/ImageComparison";
 import { BackButton } from "@/components/shared/BackButton";
 import { StepIndicator } from "@/components/shared/StepIndicator";
+import { WorkflowHeader } from "@/components/shared/WorkflowHeader";
+import { WorkflowCard } from "@/components/shared/WorkflowCard";
 import { useIconGeneration } from "@/hooks/useIconGeneration";
 import { downloadImage, downloadImageInFormat } from "@/lib/utils";
 import { toast } from "sonner";
@@ -189,24 +191,37 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
   ];
 
   return (
-    <>
-      <BackButton onClick={onBack} variant="floating" />
+    <div className="space-y-6 animate-fade-in">
+      <WorkflowHeader
+        icon={Zap}
+        title="Icon Generator"
+        description="Generate custom icons for your projects. Create multiple variants in the same style instantly."
+        iconColor="text-purple-400"
+        iconBgColor="bg-purple-500/20"
+        backButton={<BackButton onClick={onBack} variant="floating" />}
+      />
       
       {/* Step Indicator */}
-      <div className="mb-4">
+      <div className="mb-6">
         <StepIndicator steps={steps} />
       </div>
 
       {/* Mode Selection */}
-      <div className="mb-4">
+      <div className="mb-6">
         <Tabs value={mode} onValueChange={(value) => handleModeChange(value as 'generate' | 'upgrade')}>
-          <TabsList className="grid w-full grid-cols-2 bg-background/40 backdrop-blur-sm border border-primary/20 p-0.5 rounded-lg h-9">
-            <TabsTrigger value="generate" className="gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
-              <Sparkles className="w-3 h-3" />
+          <TabsList className="grid w-full grid-cols-2 bg-card/60 backdrop-blur-xl border border-primary/30 p-1 rounded-xl h-12 shadow-lg shadow-primary/5">
+            <TabsTrigger 
+              value="generate" 
+              className="gap-2 text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 transition-all duration-300 rounded-lg"
+            >
+              <Sparkles className="w-4 h-4" />
               Generate
             </TabsTrigger>
-            <TabsTrigger value="upgrade" className="gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
-              <Zap className="w-3 h-3" />
+            <TabsTrigger 
+              value="upgrade" 
+              className="gap-2 text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 transition-all duration-300 rounded-lg"
+            >
+              <Zap className="w-4 h-4" />
               Upgrade
             </TabsTrigger>
           </TabsList>
@@ -216,17 +231,23 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
       {mode === 'generate' ? (
         <>
           {!settingsConfigured ? (
-            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="prompt" className="text-xs text-foreground/70">Description *</Label>
+            <WorkflowCard
+              title="Describe Your Icon"
+              description="Enter a description and customize the style and size"
+            >
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="prompt" className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    Description <span className="text-destructive">*</span>
+                  </Label>
                   <Textarea
                     id="prompt"
                     placeholder="A modern phone icon, minimalist home icon..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     rows={3}
-                    className="resize-none bg-background/30 border-primary/20 text-foreground placeholder:text-muted-foreground focus:border-primary/50 text-sm"
+                    className="resize-none bg-card/50 backdrop-blur-sm border-2 border-primary/30 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 text-sm rounded-xl transition-all duration-300"
                   />
                 </div>
 
@@ -286,11 +307,11 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="style" className="text-xs text-foreground/70">Style</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="style" className="text-sm font-semibold text-foreground">Style</Label>
                     <Select value={style} onValueChange={setStyle}>
-                      <SelectTrigger id="style" className="h-9 text-sm bg-background/30 border-primary/20">
+                      <SelectTrigger id="style" className="h-11 text-sm bg-card/50 backdrop-blur-sm border-2 border-primary/30 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -306,10 +327,10 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                     </Select>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="size" className="text-xs text-foreground/70">Size</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="size" className="text-sm font-semibold text-foreground">Size</Label>
                     <Select value={size} onValueChange={setSize}>
-                      <SelectTrigger id="size" className="h-9 text-sm bg-background/30 border-primary/20">
+                      <SelectTrigger id="size" className="h-11 text-sm bg-card/50 backdrop-blur-sm border-2 border-primary/30 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 rounded-xl transition-all duration-300">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -323,15 +344,19 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
 
                 <Button
                   onClick={handleSettingsReady}
-                  className="w-full h-9 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-sm font-semibold"
+                  className="w-full h-12 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 text-base font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={!prompt.trim() || isGenerating || (useVariants && variants.every(v => !v.trim()))}
                 >
+                  <Sparkles className="w-4 h-4 mr-2" />
                   Generate
                 </Button>
               </div>
-            </Card>
+            </WorkflowCard>
           ) : generatedIcons.length > 0 || isGenerating ? (
-            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
+            <WorkflowCard
+              title={isGenerating ? "Generating Icons..." : `${generatedIcons.length} Icons Generated`}
+              description={`${style} style • ${size}x${size} pixels`}
+            >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-foreground/70">
@@ -437,9 +462,12 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                     </div>
                   )}
                 </div>
-              </Card>
+            </WorkflowCard>
           ) : generatedIcon ? (
-            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
+            <WorkflowCard
+              title="Icon Generated"
+              description={`${style} style • ${size}x${size} pixels`}
+            >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-foreground/70">
@@ -503,13 +531,16 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   </Button>
                 </div>
               </div>
-            </Card>
+            </WorkflowCard>
           ) : null}
         </>
       ) : (
         <>
           {!settingsConfigured ? (
-            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
+            <WorkflowCard
+              title="Upload Icon to Upgrade"
+              description="Upload an existing icon to enhance its quality and style"
+            >
               <div className="space-y-3">
 
                 {!originalIcon ? (
@@ -582,9 +613,12 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   </div>
                 )}
               </div>
-            </Card>
+            </WorkflowCard>
           ) : !generatedIcon ? (
-            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
+            <WorkflowCard
+              title="Ready to Upgrade"
+              description={`${upgradeLevel} level • ${style} style`}
+            >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-foreground/70">
@@ -623,10 +657,13 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   </>
                 )}
               </div>
-            </Card>
+            </WorkflowCard>
           ) : (
             <>
-              <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
+              <WorkflowCard
+                title="Icon Upgraded"
+                description={`${upgradeLevel} level • ${style} style`}
+              >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-foreground/70">
@@ -679,12 +716,12 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                     Upgrade Another
                   </Button>
                 </div>
-              </Card>
+              </WorkflowCard>
             </>
           )}
         </>
       )}
-    </>
+    </div>
   );
 };
 

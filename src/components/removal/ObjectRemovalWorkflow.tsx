@@ -5,6 +5,8 @@ import { Slider } from "@/components/ui/slider";
 import { ImageUpload } from "@/components/shared/ImageUpload";
 import { BackButton } from "@/components/shared/BackButton";
 import { StepIndicator } from "@/components/shared/StepIndicator";
+import { WorkflowHeader } from "@/components/shared/WorkflowHeader";
+import { WorkflowCard } from "@/components/shared/WorkflowCard";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { removeObject } from "@/lib/api";
 import { toast } from "sonner";
@@ -246,55 +248,36 @@ export const ObjectRemovalWorkflow = ({ onBack }: ObjectRemovalWorkflowProps) =>
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <BackButton onClick={onBack} variant="floating" />
-      
-      {/* Header */}
-      <div className="text-center space-y-3 mb-8">
-        <div className="flex items-center justify-center gap-3">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-red-500/20 to-orange-500/20 backdrop-blur-sm border border-red-500/30 shadow-lg shadow-red-500/10">
-            <Eraser className="h-8 w-8 text-red-400" />
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-extrabold bg-gradient-to-r from-foreground via-red-400 to-orange-400 bg-clip-text text-transparent">
-            Object Remover
-          </h1>
-        </div>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Select objects or areas on your image and remove them with AI-powered precision
-        </p>
-      </div>
+      <WorkflowHeader
+        icon={Eraser}
+        title="Object Remover"
+        description="Remove unwanted objects from images with AI-powered precision. Select areas to clean and get professional results."
+        iconColor="text-red-400"
+        iconBgColor="bg-red-500/20"
+        backButton={<BackButton onClick={onBack} variant="floating" />}
+      />
 
       <StepIndicator steps={steps} />
 
       {!originalImage ? (
-        <Card className="border-2 border-primary/20 bg-card/60 backdrop-blur-xl shadow-2xl">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">Upload Your Image</CardTitle>
-            <CardDescription className="text-center">
-              Upload an image to start removing unwanted objects
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ImageUpload
-              onImageSelect={handleImageSelect}
-              label="Upload Image"
-              description="Select an image with objects you want to remove"
-            />
-          </CardContent>
-        </Card>
+        <WorkflowCard
+          title="Upload Your Image"
+          description="Upload an image to start removing unwanted objects"
+        >
+          <ImageUpload
+            onImageSelect={handleImageSelect}
+            label="Upload Image"
+            description="Select an image with objects you want to remove"
+          />
+        </WorkflowCard>
       ) : !cleanedImage ? (
         <div className="space-y-6">
           {/* Tools Panel */}
-          <Card className="border-2 border-primary/20 bg-card/60 backdrop-blur-xl shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold flex items-center gap-2">
-                <Paintbrush className="h-5 w-5 text-primary" />
-                Selection Tools
-              </CardTitle>
-              <CardDescription>
-                Draw on the image to mark areas you want to remove. Use the brush to mark, eraser to unmark.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <WorkflowCard
+            title="Selection Tools"
+            description="Draw on the image to mark areas you want to remove. Use the brush to mark, eraser to unmark."
+          >
+            <div className="space-y-6">
               {/* Tool Selection */}
               <div className="flex gap-4">
                 <Button
@@ -350,12 +333,12 @@ export const ObjectRemovalWorkflow = ({ onBack }: ObjectRemovalWorkflowProps) =>
                   Reset Image
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </WorkflowCard>
 
           {/* Canvas */}
-          <Card className="border-2 border-primary/20 bg-card/60 backdrop-blur-xl shadow-xl overflow-hidden">
-            <CardContent className="p-6">
+          <WorkflowCard>
+            <div className="p-6">
               <div 
                 ref={containerRef}
                 className="relative w-full flex justify-center items-center bg-slate-900/50 rounded-xl p-4 overflow-auto"
@@ -384,89 +367,81 @@ export const ObjectRemovalWorkflow = ({ onBack }: ObjectRemovalWorkflowProps) =>
                   Red overlay indicates areas to be removed
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </WorkflowCard>
 
           {/* Remove Button */}
-          <Card className="border-2 border-primary/20 bg-card/60 backdrop-blur-xl shadow-xl">
-            <CardContent className="p-6">
-              <Button
-                onClick={handleRemove}
-                disabled={isRemoving || !maskData}
-                size="lg"
-                className="w-full bg-gradient-to-r from-red-500 via-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 font-bold text-lg py-6 shadow-2xl shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300"
-              >
-                {isRemoving ? (
-                  <>
-                    <Wand2 className="h-5 w-5 mr-2 animate-spin" />
-                    Removing Object...
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="h-5 w-5 mr-2" />
-                    Remove Selected Areas
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+          <WorkflowCard>
+            <Button
+              onClick={handleRemove}
+              disabled={isRemoving || !maskData}
+              size="lg"
+              className="w-full bg-gradient-to-r from-red-500 via-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 font-bold text-lg py-6 shadow-2xl shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 rounded-xl"
+            >
+              {isRemoving ? (
+                <>
+                  <Wand2 className="h-5 w-5 mr-2 animate-spin" />
+                  Removing Object...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="h-5 w-5 mr-2" />
+                  Remove Selected Areas
+                </>
+              )}
+            </Button>
+          </WorkflowCard>
         </div>
       ) : (
-        <div className="space-y-6">
-          {/* Result */}
-          <Card className="border-2 border-primary/20 bg-card/60 backdrop-blur-xl shadow-2xl">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold text-center">Object Removed!</CardTitle>
-              <CardDescription className="text-center">
-                Your image has been cleaned. Download the result or try again.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground">Original</h3>
-                  <div className="relative rounded-xl overflow-hidden border-2 border-border/50 bg-slate-900/50">
-                    <img
-                      src={originalImage}
-                      alt="Original"
-                      className="w-full h-auto object-contain"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground">Cleaned</h3>
-                  <div className="relative rounded-xl overflow-hidden border-2 border-primary/50 bg-slate-900/50">
-                    <img
-                      src={cleanedImage}
-                      alt="Cleaned"
-                      className="w-full h-auto object-contain"
-                    />
-                  </div>
+        <WorkflowCard
+          title="Object Removed!"
+          description="Your image has been cleaned. Download the result or try again."
+        >
+          <div className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-muted-foreground">Original</h3>
+                <div className="relative rounded-xl overflow-hidden border-2 border-border/50 bg-slate-900/50">
+                  <img
+                    src={originalImage}
+                    alt="Original"
+                    className="w-full h-auto object-contain"
+                  />
                 </div>
               </div>
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-muted-foreground">Cleaned</h3>
+                <div className="relative rounded-xl overflow-hidden border-2 border-primary/50 bg-slate-900/50">
+                  <img
+                    src={cleanedImage}
+                    alt="Cleaned"
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
+              </div>
+            </div>
 
-              <div className="flex gap-3 pt-4">
-                <Button
-                  onClick={handleDownload}
-                  size="lg"
-                  className="flex-1 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 font-bold shadow-xl shadow-primary/30"
-                >
-                  <Download className="h-5 w-5 mr-2" />
-                  Download Result
-                </Button>
-                <Button
-                  onClick={reset}
-                  variant="outline"
-                  size="lg"
-                  className="flex-1"
-                >
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Start Over
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={handleDownload}
+                size="lg"
+                className="flex-1 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 font-bold shadow-xl shadow-primary/30 rounded-xl"
+              >
+                <Download className="h-5 w-5 mr-2" />
+                Download Result
+              </Button>
+              <Button
+                onClick={reset}
+                variant="outline"
+                size="lg"
+                className="flex-1 border-primary/30 hover:bg-primary/10 rounded-xl"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Start Over
+              </Button>
+            </div>
+          </div>
+        </WorkflowCard>
       )}
     </div>
   );

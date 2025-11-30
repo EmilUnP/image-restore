@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUpload } from "@/components/shared/ImageUpload";
 import { BackButton } from "@/components/shared/BackButton";
+import { WorkflowHeader } from "@/components/shared/WorkflowHeader";
+import { WorkflowCard } from "@/components/shared/WorkflowCard";
 import { downloadImage } from "@/lib/utils";
 import { toast } from "sonner";
 import { Share2, Sparkles, X, Copy, Check, Image as ImageIcon, Download } from "lucide-react";
@@ -180,23 +182,14 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Enhanced Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <BackButton onClick={onBack} variant="inline" />
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 border border-primary/20 backdrop-blur-sm shadow-lg shadow-primary/10">
-              <Share2 className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent animate-gradient">
-                Social Post Generator
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">Create stunning social media posts with AI-powered design</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <WorkflowHeader
+        icon={Share2}
+        title="Social Post Generator"
+        description="Create stunning social media posts. Generate from scratch, use reference images, or combine multiple inspirations."
+        iconColor="text-pink-400"
+        iconBgColor="bg-pink-500/20"
+        backButton={<BackButton onClick={onBack} variant="floating" />}
+      />
 
       {/* Enhanced Mode Selection */}
       <div className="mb-6">
@@ -228,7 +221,10 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
       </div>
 
       {!generatedPost ? (
-        <Card className="p-6 bg-card/60 backdrop-blur-xl border border-primary/30 shadow-xl shadow-primary/10 rounded-2xl transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20">
+        <WorkflowCard
+          title="Create Your Social Post"
+          description="Describe your post and customize the style and aspect ratio"
+        >
           <div className="space-y-5">
             {/* Reference Image Upload - Single */}
             {mode === 'single-reference' && (
@@ -399,9 +395,12 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
               )}
             </Button>
           </div>
-        </Card>
+        </WorkflowCard>
       ) : (
-        <Card className="p-6 bg-card/60 backdrop-blur-xl border border-primary/30 shadow-xl shadow-primary/10 rounded-2xl transition-all duration-300 animate-fade-in">
+        <WorkflowCard
+          title="Post Generated Successfully"
+          description={`${style} style • ${aspectRatio} ratio`}
+        >
           <div className="space-y-5">
             {/* Result Header */}
             <div className="flex items-center justify-between pb-3 border-b border-primary/20">
@@ -477,7 +476,7 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
               </Button>
             </div>
           </div>
-        </Card>
+        </WorkflowCard>
       )}
     </div>
   );

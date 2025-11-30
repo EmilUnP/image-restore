@@ -8,6 +8,8 @@ import { TextDetectionAndTranslation, DetectedText, TranslatedText } from "./Tex
 import { TranslationSettingsComponent, TranslationSettings as TranslationSettingsType } from "./TranslationSettings";
 import { BackButton } from "@/components/shared/BackButton";
 import { StepIndicator } from "@/components/shared/StepIndicator";
+import { WorkflowHeader } from "@/components/shared/WorkflowHeader";
+import { WorkflowCard } from "@/components/shared/WorkflowCard";
 import { useImageTranslation } from "@/hooks/useImageTranslation";
 import { downloadImage } from "@/lib/utils";
 import { toast } from "sonner";
@@ -141,8 +143,15 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
   ];
 
   return (
-    <>
-      <BackButton onClick={onBack} variant="floating" />
+    <div className="space-y-6 animate-fade-in">
+      <WorkflowHeader
+        icon={Languages}
+        title="Text Translation"
+        description="Translate text in images to any language while preserving the original design and formatting."
+        iconColor="text-green-400"
+        iconBgColor="bg-green-500/20"
+        backButton={<BackButton onClick={onBack} variant="floating" />}
+      />
       
       {/* Step Indicator */}
       <div className="mb-6">
@@ -150,74 +159,61 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
       </div>
 
       {!settingsConfigured ? (
-        <>
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
-              Configure Translation Settings
-            </h2>
-            <p className="text-sm text-slate-400">Select language and adjust translation quality options</p>
-          </div>
-          <LanguageSelector
-            language={selectedLanguage}
-            onLanguageChange={setSelectedLanguage}
-            disabled={isProcessing}
-          />
-          <div className="mt-4">
+        <WorkflowCard
+          title="Configure Translation Settings"
+          description="Select language and adjust translation quality options"
+        >
+          <div className="space-y-6">
+            <LanguageSelector
+              language={selectedLanguage}
+              onLanguageChange={setSelectedLanguage}
+              disabled={isProcessing}
+            />
             <TranslationSettingsComponent
               settings={translationSettings}
               onSettingsChange={setTranslationSettings}
               disabled={isProcessing}
             />
-          </div>
-          <div className="flex justify-center pt-6">
             <Button
               onClick={handleSettingsReady}
               size="lg"
-              className="gap-2 h-12 bg-gradient-to-r from-primary via-primary to-accent hover:opacity-90 font-bold shadow-lg shadow-primary/30 hover:shadow-primary/40 transition-all duration-300"
+              className="w-full h-12 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 font-bold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 rounded-xl"
             >
               Continue to Upload
-              <Languages className="w-4 h-4" />
+              <Languages className="w-4 h-4 ml-2" />
             </Button>
           </div>
-        </>
+        </WorkflowCard>
       ) : !originalImage ? (
-        <>
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
-              Upload Your Image
-            </h2>
-            <p className="text-sm text-slate-400 mb-4">
-              Target language: <span className="font-medium text-slate-300">{languageName}</span>
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="text-slate-300 hover:text-slate-100 hover:bg-slate-800/50">
+        <WorkflowCard
+          title="Upload Your Image"
+          description={`Target language: ${languageName}`}
+        >
+          <div className="space-y-6">
+            <div className="flex items-center justify-center">
+              <Button onClick={() => setSettingsConfigured(false)} variant="outline" size="sm" className="border-primary/30 hover:bg-primary/10">
                 Change Settings
               </Button>
             </div>
+            <ImageUpload
+              onImageSelect={handleImageUpload}
+              disabled={isProcessing || isDetecting}
+              label="Upload Image"
+              description="Drag and drop or click to select an image with text to translate"
+            />
+            {isDetecting && (
+              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Detecting text in image...</span>
+              </div>
+            )}
           </div>
-          <ImageUpload
-            onImageSelect={handleImageUpload}
-            disabled={isProcessing || isDetecting}
-            label="Upload Image"
-            description="Drag and drop or click to select an image with text to translate"
-          />
-          {isDetecting && (
-            <div className="flex items-center justify-center gap-2 text-muted-foreground mt-4">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm">Detecting text in image...</span>
-            </div>
-          )}
-        </>
+        </WorkflowCard>
       ) : showTextDetection && originalImage ? (
-        <>
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
-              Review & Translate Text
-            </h2>
-            <p className="text-sm text-slate-400">
-              Review detected text, edit if needed, then translate to <span className="font-medium text-slate-300">{languageName}</span>
-            </p>
-          </div>
+        <WorkflowCard
+          title="Review & Translate Text"
+          description={`Review detected text, edit if needed, then translate to ${languageName}`}
+        >
           <TextDetectionAndTranslation
             image={originalImage}
             detectedTexts={detectedTexts}
@@ -229,19 +225,12 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
             isTranslating={isTranslatingText}
             isApplying={isProcessing}
           />
-        </>
+        </WorkflowCard>
       ) : (
-        <>
-          <div className="mb-6">
-            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
-              Translation Results
-            </h2>
-            <p className="text-sm text-slate-400">
-              Language: <span className="font-medium text-slate-300">{languageName}</span> • 
-              Quality: <span className="font-medium capitalize text-slate-300">{translationSettings.quality}</span> • 
-              Style: <span className="font-medium capitalize text-slate-300">{translationSettings.textStyle}</span>
-            </p>
-          </div>
+        <WorkflowCard
+          title="Translation Results"
+          description={`Language: ${languageName} • Quality: ${translationSettings.quality} • Style: ${translationSettings.textStyle}`}
+        >
           <ImageComparison
             originalImage={originalImage || ''}
             enhancedImage={translatedImage}
@@ -250,9 +239,9 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
             originalLabel="Original"
             processedLabel="Translated"
           />
-        </>
+        </WorkflowCard>
       )}
-    </>
+    </div>
   );
 };
 

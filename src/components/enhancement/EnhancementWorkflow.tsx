@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, Layers } from "lucide-react";
+import { ImageIcon, Layers, Sparkles } from "lucide-react";
 import { EnhancementModeSelector } from "./EnhancementModeSelector";
 import { ImageUpload } from "@/components/shared/ImageUpload";
 import { ImageComparison } from "@/components/shared/ImageComparison";
@@ -8,6 +8,8 @@ import { BatchImageUpload } from "./BatchImageUpload";
 import { BatchResults } from "./BatchResults";
 import { BackButton } from "@/components/shared/BackButton";
 import { StepIndicator } from "@/components/shared/StepIndicator";
+import { WorkflowHeader } from "@/components/shared/WorkflowHeader";
+import { WorkflowCard } from "@/components/shared/WorkflowCard";
 import { useImageEnhancement } from "@/hooks/useImageEnhancement";
 import { downloadImage } from "@/lib/utils";
 import { toast } from "sonner";
@@ -147,8 +149,15 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
   ];
 
   return (
-    <>
-      <BackButton onClick={onBack} variant="floating" />
+    <div className="space-y-6 animate-fade-in">
+      <WorkflowHeader
+        icon={Sparkles}
+        title="Image Enhancement"
+        description="Enhance image quality with AI. Improve sharpness, reduce noise, enhance colors, and restore old photos."
+        iconColor="text-blue-400"
+        iconBgColor="bg-blue-500/20"
+        backButton={<BackButton onClick={onBack} variant="floating" />}
+      />
       
       {/* Step Indicator */}
       <div className="mb-6">
@@ -156,48 +165,38 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
       </div>
 
       {!settingsConfigured ? (
-        <>
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
-              Choose Enhancement Settings
-            </h2>
-            <p className="text-sm text-slate-400">Select your enhancement mode and intensity level</p>
-          </div>
-          <EnhancementModeSelector
-            mode={enhancementMode}
-            intensity={enhancementIntensity}
-            quality={enhancementQuality}
-            onModeChange={setEnhancementMode}
-            onIntensityChange={setEnhancementIntensity}
-            onQualityChange={setEnhancementQuality}
-            disabled={isProcessing}
-          />
-          <div className="flex justify-center pt-6">
+        <WorkflowCard
+          title="Choose Enhancement Settings"
+          description="Select your enhancement mode, intensity level, and quality settings"
+        >
+          <div className="space-y-6">
+            <EnhancementModeSelector
+              mode={enhancementMode}
+              intensity={enhancementIntensity}
+              quality={enhancementQuality}
+              onModeChange={setEnhancementMode}
+              onIntensityChange={setEnhancementIntensity}
+              onQualityChange={setEnhancementQuality}
+              disabled={isProcessing}
+            />
             <Button
               onClick={handleSettingsReady}
               size="lg"
-              className="gap-2 h-12 bg-gradient-to-r from-primary via-primary to-accent hover:opacity-90 font-bold shadow-lg shadow-primary/30 hover:shadow-primary/40 transition-all duration-300"
+              className="w-full h-12 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 font-bold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 rounded-xl"
             >
               Continue to Upload
-              <ImageIcon className="w-4 h-4" />
+              <ImageIcon className="w-4 h-4 ml-2" />
             </Button>
           </div>
-        </>
+        </WorkflowCard>
       ) : processingMode === 'single' && !originalImage ? (
-        <>
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
-              Upload Your Image
-            </h2>
-            <p className="text-sm text-slate-400 mb-4">
-              Mode: <span className="font-medium capitalize text-slate-300">{enhancementMode}</span> • 
-              Intensity: <span className="font-medium capitalize text-slate-300">{enhancementIntensity}</span>
-              {enhancementQuality !== 'original' && (
-                <> • Quality: <span className="font-medium uppercase text-slate-300">{enhancementQuality}</span></>
-              )}
-            </p>
+        <WorkflowCard
+          title="Upload Your Image"
+          description={`Mode: ${enhancementMode} • Intensity: ${enhancementIntensity}${enhancementQuality !== 'original' ? ` • Quality: ${enhancementQuality.toUpperCase()}` : ''}`}
+        >
+          <div className="space-y-6">
             <div className="flex items-center justify-center gap-3">
-              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="text-slate-300 hover:text-slate-100 hover:bg-slate-800/50">
+              <Button onClick={() => setSettingsConfigured(false)} variant="outline" size="sm" className="border-primary/30 hover:bg-primary/10">
                 Change Settings
               </Button>
               <Button
@@ -207,35 +206,28 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 }}
                 variant="outline"
                 size="sm"
-                className="gap-2 border-slate-700/70 text-slate-300 hover:text-slate-100 hover:bg-slate-800/50 hover:border-primary/50"
+                className="gap-2 border-primary/30 hover:bg-primary/10"
               >
                 <Layers className="w-4 h-4" />
                 Batch Mode
               </Button>
             </div>
+            <ImageUpload
+              onImageSelect={(file) => handleImageSelect(file, enhancementMode, enhancementIntensity, enhancementQuality)}
+              disabled={isProcessing}
+              label="Upload Image"
+              description="Drag and drop or click to select an image to enhance"
+            />
           </div>
-          <ImageUpload
-            onImageSelect={(file) => handleImageSelect(file, enhancementMode, enhancementIntensity, enhancementQuality)}
-            disabled={isProcessing}
-            label="Upload Image"
-            description="Drag and drop or click to select an image to enhance"
-          />
-        </>
+        </WorkflowCard>
       ) : processingMode === 'batch' && batchImages.length === 0 ? (
-        <>
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
-              Upload Multiple Images
-            </h2>
-            <p className="text-sm text-slate-400 mb-4">
-              Mode: <span className="font-medium capitalize text-slate-300">{enhancementMode}</span> • 
-              Intensity: <span className="font-medium capitalize text-slate-300">{enhancementIntensity}</span>
-              {enhancementQuality !== 'original' && (
-                <> • Quality: <span className="font-medium uppercase text-slate-300">{enhancementQuality}</span></>
-              )}
-            </p>
+        <WorkflowCard
+          title="Upload Multiple Images"
+          description={`Mode: ${enhancementMode} • Intensity: ${enhancementIntensity}${enhancementQuality !== 'original' ? ` • Quality: ${enhancementQuality.toUpperCase()}` : ''}`}
+        >
+          <div className="space-y-6">
             <div className="flex items-center justify-center gap-3">
-              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="text-slate-300 hover:text-slate-100 hover:bg-slate-800/50">
+              <Button onClick={() => setSettingsConfigured(false)} variant="outline" size="sm" className="border-primary/30 hover:bg-primary/10">
                 Change Settings
               </Button>
               <Button
@@ -245,72 +237,60 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 }}
                 variant="outline"
                 size="sm"
-                className="gap-2 border-slate-700/70 text-slate-300 hover:text-slate-100 hover:bg-slate-800/50 hover:border-primary/50"
+                className="gap-2 border-primary/30 hover:bg-primary/10"
               >
                 <ImageIcon className="w-4 h-4" />
                 Single Mode
               </Button>
             </div>
+            <BatchImageUpload
+              onImagesSelect={handleBatchImagesSelect}
+              disabled={isProcessing}
+              maxImages={10}
+            />
           </div>
-          <BatchImageUpload
-            onImagesSelect={handleBatchImagesSelect}
-            disabled={isProcessing}
-            maxImages={10}
-          />
-        </>
+        </WorkflowCard>
       ) : processingMode === 'batch' && batchImages.length > 0 ? (
-        <>
-          <div className="mb-6">
-            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
-              Batch Processing Results
-            </h2>
-            <p className="text-sm text-slate-400">
-              Mode: <span className="font-medium capitalize text-slate-300">{enhancementMode}</span> • 
-              Intensity: <span className="font-medium capitalize text-slate-300">{enhancementIntensity}</span>
-            </p>
-          </div>
+        <WorkflowCard
+          title="Batch Processing Results"
+          description={`Mode: ${enhancementMode} • Intensity: ${enhancementIntensity}`}
+        >
           <BatchResults
             images={batchImages}
             onDownload={handleBatchDownload}
             onDownloadAll={handleBatchDownloadAll}
             isProcessing={isProcessing}
           />
-        </>
+        </WorkflowCard>
       ) : (
-        <>
-          <div className="mb-6">
-            <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-slate-100 via-primary to-slate-100 bg-clip-text text-transparent">
-              Processing Results
-            </h2>
-            <p className="text-sm text-slate-400">
-              Mode: <span className="font-medium capitalize text-slate-300">{enhancementMode}</span> • 
-              Intensity: <span className="font-medium capitalize text-slate-300">{enhancementIntensity}</span>
-            </p>
-          </div>
-          <ImageComparison
-            originalImage={originalImage || ''}
-            enhancedImage={enhancedImage}
-            isProcessing={isProcessing}
-            onDownload={handleDownload}
-            originalLabel="Original"
-            processedLabel="Enhanced"
-          />
-          {enhancedImage && !isProcessing && (
-            <div className="flex justify-center pt-4">
+        <WorkflowCard
+          title="Processing Results"
+          description={`Mode: ${enhancementMode} • Intensity: ${enhancementIntensity}`}
+        >
+          <div className="space-y-6">
+            <ImageComparison
+              originalImage={originalImage || ''}
+              enhancedImage={enhancedImage}
+              isProcessing={isProcessing}
+              onDownload={handleDownload}
+              originalLabel="Original"
+              processedLabel="Enhanced"
+            />
+            {enhancedImage && !isProcessing && (
               <Button 
                 onClick={handleReEnhance} 
                 variant="outline" 
                 size="default" 
                 disabled={isProcessing}
-                className="gap-2 border-slate-700/70 text-slate-300 hover:text-slate-100 hover:bg-slate-800/50 hover:border-primary/50"
+                className="w-full border-primary/30 hover:bg-primary/10"
               >
                 Re-enhance with Current Settings
               </Button>
-            </div>
-          )}
-        </>
+            )}
+          </div>
+        </WorkflowCard>
       )}
-    </>
+    </div>
   );
 };
 

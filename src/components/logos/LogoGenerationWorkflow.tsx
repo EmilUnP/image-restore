@@ -10,6 +10,8 @@ import { ImageUpload } from "@/components/shared/ImageUpload";
 import { ImageComparison } from "@/components/shared/ImageComparison";
 import { BackButton } from "@/components/shared/BackButton";
 import { StepIndicator } from "@/components/shared/StepIndicator";
+import { WorkflowHeader } from "@/components/shared/WorkflowHeader";
+import { WorkflowCard } from "@/components/shared/WorkflowCard";
 import { useLogoGeneration } from "@/hooks/useLogoGeneration";
 import { downloadImage, downloadImageInFormat } from "@/lib/utils";
 import { toast } from "sonner";
@@ -121,20 +123,14 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <BackButton onClick={onBack} variant="floating" />
-      
-      {/* Enhanced Header */}
-      <div className="flex items-center gap-4 mb-2">
-        <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 border border-primary/20 backdrop-blur-sm shadow-lg shadow-primary/10">
-          <Palette className="w-6 h-6 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent animate-gradient">
-            Logo Generator
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">Create professional logos with AI-powered design</p>
-        </div>
-      </div>
+      <WorkflowHeader
+        icon={Palette}
+        title="Logo Generator"
+        description="Create professional logos for your brand. Generate unique designs with AI-powered creativity."
+        iconColor="text-orange-400"
+        iconBgColor="bg-orange-500/20"
+        backButton={<BackButton onClick={onBack} variant="floating" />}
+      />
       
       {/* Step Indicator */}
       <div className="mb-6">
@@ -166,8 +162,11 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
       {mode === 'generate' ? (
         <>
           {!settingsConfigured ? (
-            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
-              <div className="space-y-3">
+            <WorkflowCard
+              title="Describe Your Logo"
+              description="Enter company details and customize the style"
+            >
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="company-name" className="text-sm font-semibold text-foreground">Company Name <span className="text-muted-foreground font-normal">(Optional)</span></Label>
                   <Input
@@ -250,9 +249,12 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                   Continue to Generate
                 </Button>
               </div>
-            </Card>
+            </WorkflowCard>
           ) : !generatedLogo ? (
-            <Card className="p-6 bg-card/60 backdrop-blur-xl border border-primary/30 shadow-xl shadow-primary/10 rounded-2xl transition-all duration-300">
+            <WorkflowCard
+              title="Ready to Generate"
+              description={`${style} style • ${size}x${size} pixels`}
+            >
               <div className="space-y-5">
                 <div className="flex items-center justify-between pb-3 border-b border-primary/20">
                   <div className="flex items-center gap-3">
@@ -291,10 +293,13 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                   )}
                 </Button>
               </div>
-            </Card>
+            </WorkflowCard>
           ) : (
             <>
-              <Card className="p-6 bg-card/60 backdrop-blur-xl border border-primary/30 shadow-xl shadow-primary/10 rounded-2xl transition-all duration-300 animate-fade-in">
+              <WorkflowCard
+                title="Logo Generated"
+                description={`${style} style • ${size}x${size} pixels`}
+              >
                 <div className="space-y-5">
                   {/* Result Header */}
                   <div className="flex items-center justify-between pb-3 border-b border-primary/20">
@@ -387,14 +392,17 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                     </Button>
                   </div>
                 </div>
-              </Card>
+              </WorkflowCard>
             </>
           )}
         </>
       ) : (
         <>
           {!settingsConfigured ? (
-            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
+            <WorkflowCard
+              title="Upload Logo to Upgrade"
+              description="Upload an existing logo to enhance its quality and style"
+            >
               <div className="space-y-3">
 
                 {!originalLogo ? (
@@ -468,9 +476,12 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                   </div>
                 )}
               </div>
-            </Card>
+            </WorkflowCard>
           ) : !generatedLogo ? (
-            <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
+            <WorkflowCard
+              title="Ready to Upgrade"
+              description={`${upgradeLevel} level • ${style} style`}
+            >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-foreground/70">
@@ -509,10 +520,13 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                   </>
                 )}
               </div>
-            </Card>
+            </WorkflowCard>
           ) : (
             <>
-              <Card className="p-4 bg-background/40 backdrop-blur-sm border-primary/20">
+              <WorkflowCard
+                title="Logo Upgraded"
+                description={`${upgradeLevel} level • ${style} style`}
+              >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-foreground/70">
@@ -566,7 +580,7 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                     Upgrade Another
                   </Button>
                 </div>
-              </Card>
+              </WorkflowCard>
             </>
           )}
         </>
