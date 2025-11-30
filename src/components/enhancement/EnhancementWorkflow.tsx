@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, Layers } from "lucide-react";
+import { ImageIcon, Layers, Sparkles } from "lucide-react";
 import { EnhancementModeSelector } from "./EnhancementModeSelector";
 import { ImageUpload } from "@/components/shared/ImageUpload";
 import { ImageComparison } from "@/components/shared/ImageComparison";
@@ -8,7 +8,10 @@ import { BatchImageUpload } from "./BatchImageUpload";
 import { BatchResults } from "./BatchResults";
 import { BackButton } from "@/components/shared/BackButton";
 import { StepIndicator } from "@/components/shared/StepIndicator";
+import { WorkflowHeader } from "@/components/shared/WorkflowHeader";
+import { WorkflowCard } from "@/components/shared/WorkflowCard";
 import { useImageEnhancement } from "@/hooks/useImageEnhancement";
+import { useImageUpload } from "@/hooks/useImageUpload";
 import { downloadImage } from "@/lib/utils";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -20,8 +23,9 @@ interface EnhancementWorkflowProps {
 export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
   const [enhancementMode, setEnhancementMode] = useState<string>("photo");
   const [enhancementIntensity, setEnhancementIntensity] = useState<string>("medium");
-  const [settingsConfigured, setSettingsConfigured] = useState<boolean>(false);
+  const [enhancementQuality, setEnhancementQuality] = useState<string>("original");
   const [processingMode, setProcessingMode] = useState<'single' | 'batch'>('single');
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null); // Local state for uploaded image
   
   const {
     originalImage,
@@ -34,9 +38,34 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
     reset,
     setIsProcessing,
   } = useImageEnhancement();
+  
+  const { fileToBase64 } = useImageUpload();
 
-  const handleSettingsReady = () => {
-    setSettingsConfigured(true);
+  const handleImageUpload = async (file: File) => {
+    // Just upload and store image locally, don't process yet
+    const base64Image = await fileToBase64(file);
+    setUploadedImage(base64Image);
+    // Also set it in the hook for consistency, but don't process
+    // We'll need to modify the hook or use a different approach
+    // For now, let's use a workaround: set originalImage via the hook's reset and then manually set
+    reset();
+    // We'll store in local state and only set in hook when processing
+  };
+
+  const handleEnhance = async () => {
+    const imageToProcess = uploadedImage || originalImage;
+    if (!imageToProcess) {
+      toast.error("Please upload an image first");
+      return;
+    }
+    // Set the image in the hook and process
+    setIsProcessing(true);
+    // First set the original image in the hook
+    const result = await processImage(imageToProcess, enhancementMode, enhancementIntensity, enhancementQuality);
+    // Clear local uploaded image state since it's now in the hook
+    if (uploadedImage) {
+      setUploadedImage(null);
+    }
   };
 
   const handleDownload = () => {
@@ -48,7 +77,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
   const handleReEnhance = async () => {
     if (!originalImage) return;
     setIsProcessing(true);
-    await processImage(originalImage, enhancementMode, enhancementIntensity);
+    await processImage(originalImage, enhancementMode, enhancementIntensity, enhancementQuality);
   };
 
   const handleBatchImagesSelect = async (files: File[]) => {
@@ -92,7 +121,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
       );
 
       try {
-        const result = await processImage(image.original, enhancementMode, enhancementIntensity);
+        const result = await processImage(image.original, enhancementMode, enhancementIntensity, enhancementQuality);
         if (result) {
           setBatchImages(prev => 
             prev.map(img => 
@@ -132,64 +161,43 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
 
   // Determine current step for step indicator
   const getCurrentStep = () => {
-    if (!settingsConfigured) return 1;
-    if (!originalImage && processingMode === 'single') return 2;
-    if (batchImages.length === 0 && processingMode === 'batch') return 2;
-    return 3;
+    if ((!uploadedImage && !originalImage) && processingMode === 'single') return 1;
+    if (batchImages.length === 0 && processingMode === 'batch') return 1;
+    if ((uploadedImage || originalImage) && !enhancedImage && !isProcessing) return 2;
+    if (enhancedImage || (batchImages.length > 0 && batchImages.some(img => img.enhanced))) return 3;
+    return 2;
   };
 
   const currentStep = getCurrentStep();
-  const steps = [
-    { number: 1, label: "Settings", status: currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming" as const },
-    { number: 2, label: "Upload", status: currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming" as const },
-    { number: 3, label: "Results", status: currentStep >= 3 ? (enhancedImage || batchImages.length > 0 ? "current" : "upcoming") : "upcoming" as const },
+  const steps: Array<{ number: number; label: string; status: "completed" | "current" | "upcoming" }> = [
+    { number: 1, label: "Upload", status: currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming" },
+    { number: 2, label: "Configure", status: currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming" },
+    { number: 3, label: "Results", status: currentStep >= 3 ? "current" : "upcoming" },
   ];
 
   return (
-    <>
-      <BackButton onClick={onBack} variant="floating" />
+    <div className="space-y-6 animate-fade-in">
+      <WorkflowHeader
+        icon={Sparkles}
+        title="Image Enhancement"
+        description="Enhance image quality with AI. Improve sharpness, reduce noise, enhance colors, and restore old photos."
+        iconColor="text-blue-400"
+        iconBgColor="bg-blue-500/20"
+        backButton={<BackButton onClick={onBack} variant="floating" />}
+      />
       
       {/* Step Indicator */}
       <div className="mb-6">
         <StepIndicator steps={steps} />
       </div>
 
-      {!settingsConfigured ? (
-        <>
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold mb-2">Choose Enhancement Settings</h2>
-            <p className="text-sm text-muted-foreground">Select your enhancement mode and intensity level</p>
-          </div>
-          <EnhancementModeSelector
-            mode={enhancementMode}
-            intensity={enhancementIntensity}
-            onModeChange={setEnhancementMode}
-            onIntensityChange={setEnhancementIntensity}
-            disabled={isProcessing}
-          />
-          <div className="flex justify-center pt-4">
-            <Button
-              onClick={handleSettingsReady}
-              size="default"
-              className="gap-2"
-            >
-              Continue to Upload
-              <ImageIcon className="w-4 h-4" />
-            </Button>
-          </div>
-        </>
-      ) : processingMode === 'single' && !originalImage ? (
-        <>
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold mb-2">Upload Your Image</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Mode: <span className="font-medium capitalize">{enhancementMode}</span> • 
-              Intensity: <span className="font-medium capitalize">{enhancementIntensity}</span>
-            </p>
+      {processingMode === 'single' && !uploadedImage && !originalImage ? (
+        <WorkflowCard
+          title="Upload Your Image"
+          description="Start by uploading an image you want to enhance"
+        >
+          <div className="space-y-6">
             <div className="flex items-center justify-center gap-3">
-              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
-                Change Settings
-              </Button>
               <Button
                 onClick={() => {
                   setProcessingMode('batch');
@@ -197,32 +205,27 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 }}
                 variant="outline"
                 size="sm"
-                className="gap-2"
+                className="gap-2 border-primary/30 hover:bg-primary/10"
               >
                 <Layers className="w-4 h-4" />
                 Batch Mode
               </Button>
             </div>
+            <ImageUpload
+              onImageSelect={handleImageUpload}
+              disabled={isProcessing}
+              label="Upload Image"
+              description="Drag and drop or click to select an image to enhance"
+            />
           </div>
-          <ImageUpload
-            onImageSelect={(file) => handleImageSelect(file, enhancementMode, enhancementIntensity)}
-            disabled={isProcessing}
-            label="Upload Image"
-            description="Drag and drop or click to select an image to enhance"
-          />
-        </>
+        </WorkflowCard>
       ) : processingMode === 'batch' && batchImages.length === 0 ? (
-        <>
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold mb-2">Upload Multiple Images</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Mode: <span className="font-medium capitalize">{enhancementMode}</span> • 
-              Intensity: <span className="font-medium capitalize">{enhancementIntensity}</span>
-            </p>
+        <WorkflowCard
+          title="Upload Multiple Images"
+          description="Upload multiple images to process in batch"
+        >
+          <div className="space-y-6">
             <div className="flex items-center justify-center gap-3">
-              <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm">
-                Change Settings
-              </Button>
               <Button
                 onClick={() => {
                   setProcessingMode('single');
@@ -230,68 +233,137 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 }}
                 variant="outline"
                 size="sm"
-                className="gap-2"
+                className="gap-2 border-primary/30 hover:bg-primary/10"
               >
                 <ImageIcon className="w-4 h-4" />
                 Single Mode
               </Button>
             </div>
+            <BatchImageUpload
+              onImagesSelect={handleBatchImagesSelect}
+              disabled={isProcessing}
+              maxImages={10}
+            />
           </div>
-          <BatchImageUpload
-            onImagesSelect={handleBatchImagesSelect}
-            disabled={isProcessing}
-            maxImages={10}
-          />
-        </>
+        </WorkflowCard>
       ) : processingMode === 'batch' && batchImages.length > 0 ? (
-        <>
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">Batch Processing Results</h2>
-            <p className="text-sm text-muted-foreground">
-              Mode: <span className="font-medium capitalize">{enhancementMode}</span> • 
-              Intensity: <span className="font-medium capitalize">{enhancementIntensity}</span>
-            </p>
-          </div>
+        <WorkflowCard
+          title="Batch Processing Results"
+          description={`Mode: ${enhancementMode} • Intensity: ${enhancementIntensity}`}
+        >
           <BatchResults
             images={batchImages}
             onDownload={handleBatchDownload}
             onDownloadAll={handleBatchDownloadAll}
             isProcessing={isProcessing}
           />
-        </>
-      ) : (
-        <>
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">Processing Results</h2>
-            <p className="text-sm text-muted-foreground">
-              Mode: <span className="font-medium capitalize">{enhancementMode}</span> • 
-              Intensity: <span className="font-medium capitalize">{enhancementIntensity}</span>
-            </p>
-          </div>
-          <ImageComparison
-            originalImage={originalImage || ''}
-            enhancedImage={enhancedImage}
-            isProcessing={isProcessing}
-            onDownload={handleDownload}
-            originalLabel="Original"
-            processedLabel="Enhanced"
-          />
-          {enhancedImage && !isProcessing && (
-            <div className="flex justify-center pt-4">
+        </WorkflowCard>
+      ) : (uploadedImage || originalImage) && !enhancedImage ? (
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Image Preview - Left Side */}
+          <WorkflowCard title="Your Image" description="Preview your uploaded image">
+            <div className="space-y-4">
+              <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-primary/20 bg-slate-900/50">
+                <img
+                  src={uploadedImage || originalImage || ''}
+                  alt="Original"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div className="text-sm text-muted-foreground text-center">
+                <p>This is your original image. Adjust settings on the right, then click "Enhance" to process it.</p>
+              </div>
+            </div>
+          </WorkflowCard>
+
+          {/* Settings - Right Side */}
+          <WorkflowCard 
+            title="Enhancement Settings" 
+            description="Adjust settings and click Enhance to process your image"
+          >
+            <div className="space-y-6">
+              <EnhancementModeSelector
+                mode={enhancementMode}
+                intensity={enhancementIntensity}
+                quality={enhancementQuality}
+                onModeChange={setEnhancementMode}
+                onIntensityChange={setEnhancementIntensity}
+                onQualityChange={setEnhancementQuality}
+                disabled={isProcessing}
+              />
+              <Button
+                onClick={handleEnhance}
+                size="lg"
+                disabled={isProcessing}
+                className="w-full h-12 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 font-bold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 rounded-xl disabled:opacity-50"
+              >
+                {isProcessing ? (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Enhance Image
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={() => {
+                  reset();
+                  setUploadedImage(null);
+                  setProcessingMode('single');
+                }}
+                variant="outline"
+                size="sm"
+                className="w-full border-primary/30 hover:bg-primary/10"
+              >
+                Upload Different Image
+              </Button>
+            </div>
+          </WorkflowCard>
+        </div>
+      ) : enhancedImage ? (
+        <WorkflowCard
+          title="Enhancement Results"
+          description={`Mode: ${enhancementMode} • Intensity: ${enhancementIntensity}${enhancementQuality !== 'original' ? ` • Quality: ${enhancementQuality.toUpperCase()}` : ''}`}
+        >
+          <div className="space-y-6">
+            <ImageComparison
+              originalImage={originalImage || ''}
+              enhancedImage={enhancedImage}
+              isProcessing={isProcessing}
+              onDownload={handleDownload}
+              originalLabel="Original"
+              processedLabel="Enhanced"
+            />
+            <div className="flex gap-3">
               <Button 
                 onClick={handleReEnhance} 
                 variant="outline" 
                 size="default" 
                 disabled={isProcessing}
-                className="gap-2"
+                className="flex-1 border-primary/30 hover:bg-primary/10"
               >
-                Re-enhance with Current Settings
+                Try Again with Same Settings
+              </Button>
+              <Button
+                onClick={() => {
+                  reset();
+                  setProcessingMode('single');
+                }}
+                variant="outline"
+                size="default"
+                className="flex-1 border-primary/30 hover:bg-primary/10"
+              >
+                Enhance Another Image
               </Button>
             </div>
-          )}
-        </>
-      )}
-    </>
+          </div>
+        </WorkflowCard>
+      ) : null}
+    </div>
   );
 };
 

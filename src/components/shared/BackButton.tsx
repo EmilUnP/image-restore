@@ -29,15 +29,15 @@ export const BackButton = ({
             variant="outline"
             size="icon"
             className={cn(
-              "fixed top-4 left-4 z-50 h-12 w-12 rounded-full shadow-lg backdrop-blur-sm bg-background/80 border-2 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300 hover:scale-110",
+              "h-10 w-10 rounded-full shadow-lg backdrop-blur-sm bg-background/80 border-2 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300 hover:scale-110",
               className
             )}
             aria-label={label}
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="right">
+        <TooltipContent side="left">
           <p>{label}</p>
         </TooltipContent>
       </Tooltip>

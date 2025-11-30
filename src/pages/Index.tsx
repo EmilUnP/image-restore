@@ -1,111 +1,197 @@
 import { useState, useEffect } from "react";
-import { FunctionSelector } from "@/components/shared/FunctionSelector";
+import { useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Header } from "@/components/layout/Header";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { Footer } from "@/components/layout/Footer";
+import { LandingPage } from "@/components/layout/LandingPage";
+import { Dashboard } from "@/components/layout/Dashboard";
+import { ProfilePage } from "@/components/profile/ProfilePage";
 import { EnhancementWorkflow } from "@/components/enhancement/EnhancementWorkflow";
 import { TranslationWorkflow } from "@/components/translation/TranslationWorkflow";
-import { KeyboardShortcuts } from "@/components/shared/KeyboardShortcuts";
-import { Sparkles, Image as ImageIcon } from "lucide-react";
+import { IconGenerationWorkflow } from "@/components/icons/IconGenerationWorkflow";
+import { LogoGenerationWorkflow } from "@/components/logos/LogoGenerationWorkflow";
+import { SocialPostGenerationWorkflow } from "@/components/social/SocialPostGenerationWorkflow";
+import { ObjectRemovalWorkflow } from "@/components/removal/ObjectRemovalWorkflow";
+import { useAuthContext } from "@/contexts/AuthContext";
 
-type AppFunction = 'enhance' | 'translate' | null;
+type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | 'remove' | null;
+type ViewMode = 'landing' | 'profile' | 'function';
 
 const Index = () => {
   const [selectedFunction, setSelectedFunction] = useState<AppFunction>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarMinimal, setSidebarMinimal] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('landing');
+  const { isAuthenticated } = useAuthContext();
+  const location = useLocation();
+
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
   const handleFunctionSelect = (func: AppFunction) => {
+    if (!isAuthenticated) {
+      // If not logged in, show login dialog
+      setLoginDialogOpen(true);
+      return;
+    }
     setSelectedFunction(func);
+    setViewMode('function');
   };
 
   const handleBack = () => {
     setSelectedFunction(null);
+    setViewMode('landing');
+  };
+
+  const handleProfileClick = () => {
+    setViewMode('profile');
+    setSelectedFunction(null);
+  };
+
+  const handleLogoClick = () => {
+    setViewMode('landing');
+    setSelectedFunction(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Escape to go back
-      if (e.key === "Escape" && selectedFunction) {
-        handleBack();
-      }
-      // Ctrl/Cmd + K to go to function selector
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
+      if (e.key === "Escape") {
         if (selectedFunction) {
           handleBack();
+        } else if (viewMode === 'profile') {
+          setViewMode('landing');
         }
+      }
+      // Ctrl/Cmd + K to toggle sidebar (only when logged in)
+      if ((e.ctrlKey || e.metaKey) && e.key === "k" && isAuthenticated) {
+        e.preventDefault();
+        setSidebarOpen(!sidebarOpen);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedFunction, sidebarOpen, viewMode, isAuthenticated]);
+
+  // Close sidebar on mobile when function is selected
+  useEffect(() => {
+    if (selectedFunction) {
+      setSidebarOpen(false);
+    }
   }, [selectedFunction]);
 
-  return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Enhanced animated background gradient */}
-      <div className="fixed inset-0 bg-gradient-to-br from-background via-background/95 to-accent/5 animate-gradient pointer-events-none" />
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(217,91%,35%,0.03),transparent_50%)] pointer-events-none" />
-      
-      {/* Enhanced decorative elements */}
-      <div className="fixed top-0 left-0 w-[500px] h-[500px] bg-primary/8 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-float pointer-events-none" />
-      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-accent/8 rounded-full blur-3xl translate-x-1/2 translate-y-1/2 animate-float pointer-events-none" style={{ animationDelay: '1s' }} />
-      <div className="fixed top-1/2 left-1/2 w-[400px] h-[400px] bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-float pointer-events-none" style={{ animationDelay: '2s' }} />
-      
-      <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 lg:py-16">
-        {/* Enhanced Header */}
-        <header className="text-center mb-12 md:mb-20 space-y-6 animate-fade-in">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex-1 hidden md:block" />
-            <div className="flex items-center justify-center gap-5 md:gap-7 flex-1">
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-3xl blur-2xl opacity-70 group-hover:opacity-100 animate-pulse-slow transition-opacity duration-500" />
-                <div className="relative p-5 md:p-6 rounded-3xl bg-gradient-to-br from-primary via-primary/95 to-accent shadow-glow transform transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-glow-accent">
-                  <ImageIcon className="w-8 h-8 md:w-10 md:h-10 text-primary-foreground relative z-10" />
-                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                </div>
-              </div>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold gradient-text tracking-tight leading-tight">
-                AI Image Optimizer
-              </h1>
-            </div>
-            <div className="flex-1 flex justify-end hidden md:flex">
-              <KeyboardShortcuts />
-            </div>
-          </div>
-          <p className="text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-4xl mx-auto text-balance leading-relaxed px-4 font-light">
-            Enhance image quality or translate text in images with AI-powered technology. Perfect for photos, documents, and multilingual content.
-          </p>
-          <div className="flex items-center justify-center gap-3 text-sm md:text-base text-muted-foreground pt-4">
-            <div className="relative">
-              <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-accent animate-pulse-slow relative z-10" />
-              <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-primary absolute inset-0 opacity-60 animate-pulse-slow" style={{ animationDelay: '0.5s' }} />
-            </div>
-            <span className="font-semibold">Powered by Gemini AI</span>
-          </div>
-        </header>
+  // Auto-open sidebar on desktop when logged in
+  useEffect(() => {
+    if (isAuthenticated && !selectedFunction && viewMode === 'landing') {
+      setSidebarOpen(true);
+    }
+  }, [isAuthenticated, selectedFunction, viewMode]);
 
-        {/* Enhanced Main Content */}
-        <main className="max-w-7xl mx-auto">
-          <div className="relative">
-            {/* Enhanced glassmorphism card */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-accent/8 rounded-3xl blur-3xl animate-pulse-slow" />
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-primary/5 to-transparent rounded-3xl" />
-            <div className="relative glass-enhanced rounded-3xl shadow-glow p-8 md:p-12 lg:p-16 border border-border/40 space-y-8 transition-all duration-700 animate-scale-in hover:shadow-glow-accent hover:border-border/60 hover:scale-[1.01]">
-              {!selectedFunction ? (
-                <div className="animate-slide-up">
-                  <FunctionSelector onFunctionSelect={handleFunctionSelect} />
-                </div>
-              ) : selectedFunction === 'enhance' ? (
-                <div className="animate-slide-in">
-                  <EnhancementWorkflow onBack={handleBack} />
-                </div>
-              ) : (
-                <div className="animate-slide-in">
-                  <TranslationWorkflow onBack={handleBack} />
-                </div>
-              )}
+  // After successful login, close dialog
+  useEffect(() => {
+    if (isAuthenticated && loginDialogOpen) {
+      setLoginDialogOpen(false);
+    }
+  }, [isAuthenticated, loginDialogOpen]);
+
+  // Reset view state when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSelectedFunction(null);
+      setViewMode('landing');
+      setSidebarOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isAuthenticated]);
+
+  const showLandingPage = !isAuthenticated && !selectedFunction && viewMode !== 'profile';
+  const showDashboard = isAuthenticated && viewMode === 'landing' && !selectedFunction;
+
+  // Handle hash navigation - scroll to section when hash is present in URL
+  useEffect(() => {
+    if (location.hash && showLandingPage) {
+      // Wait a bit for the page to render, then scroll to the hash
+      const timer = setTimeout(() => {
+        const element = document.querySelector(location.hash);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [location.hash, showLandingPage]);
+  
+  return (
+    <div className={`min-h-screen flex flex-col ${showLandingPage ? 'bg-slate-950' : 'bg-gradient-to-br from-background via-background to-accent/5'}`}>
+      {/* Background Effects - Show for dashboard and function pages, but not landing page */}
+      {!showLandingPage && (
+        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl animate-pulse-slow" />
+          <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-primary/5 to-accent/5 rounded-full blur-3xl" />
+        </div>
+      )}
+
+      <Header 
+        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+        showMenuButton={isAuthenticated}
+        onProfileClick={handleProfileClick}
+        onLogoClick={handleLogoClick}
+        loginDialogOpen={loginDialogOpen}
+        onLoginDialogOpenChange={setLoginDialogOpen}
+      />
+      
+      <div className="flex flex-1 relative">
+        {/* Sidebar - Only show when logged in */}
+        {isAuthenticated && (
+          <Sidebar
+            selectedFunction={selectedFunction}
+            onFunctionSelect={handleFunctionSelect}
+            onClose={() => setSidebarOpen(false)}
+            isOpen={sidebarOpen}
+            isMinimal={sidebarMinimal}
+            onToggleMinimal={() => setSidebarMinimal(!sidebarMinimal)}
+          />
+        )}
+
+        {/* Main Content */}
+        <main className={cn(
+          "flex-1 transition-all duration-300 relative",
+          isAuthenticated && !sidebarMinimal ? 'lg:ml-72' : isAuthenticated && sidebarMinimal ? 'lg:ml-20' : '',
+          showLandingPage ? '' : 'z-10'
+        )}>
+          {showLandingPage ? (
+            <LandingPage onFunctionSelect={handleFunctionSelect} />
+          ) : showDashboard ? (
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+              <Dashboard onFunctionSelect={handleFunctionSelect} />
             </div>
-          </div>
+          ) : (
+            <div className={`container mx-auto px-4 sm:px-6 lg:px-8 ${!selectedFunction && !isAuthenticated ? 'py-4 lg:py-6' : 'py-8 lg:py-12'}`}>
+              {viewMode === 'profile' ? (
+                <ProfilePage onBack={() => setViewMode('landing')} />
+              ) : !selectedFunction ? null : selectedFunction === 'enhance' ? (
+                <EnhancementWorkflow onBack={handleBack} />
+              ) : selectedFunction === 'translate' ? (
+                <TranslationWorkflow onBack={handleBack} />
+              ) : selectedFunction === 'icons' ? (
+                <IconGenerationWorkflow onBack={handleBack} />
+              ) : selectedFunction === 'logos' ? (
+                <LogoGenerationWorkflow onBack={handleBack} />
+              ) : selectedFunction === 'social' ? (
+                <SocialPostGenerationWorkflow onBack={handleBack} />
+              ) : selectedFunction === 'remove' ? (
+                <ObjectRemovalWorkflow onBack={handleBack} />
+              ) : null}
+            </div>
+          )}
         </main>
       </div>
+
+      {!isAuthenticated && <Footer />}
     </div>
   );
 };

@@ -6,6 +6,7 @@ export interface EnhanceImageRequest {
   image: string;
   mode: string;
   intensity: string;
+  quality?: string;
 }
 
 export interface EnhanceImageResponse {
@@ -222,5 +223,345 @@ export const translateText = async (request: TranslateTextRequest): Promise<Tran
     }
     throw new Error(`Failed to translate text: ${String(error)}`);
   }
+};
+
+export interface GenerateIconRequest {
+  prompt: string;
+  style?: string;
+  size?: string;
+  referencePrompt?: string;
+  referenceImage?: string;
+  isVariant?: boolean;
+}
+
+export interface GenerateIconResponse {
+  generatedIcon?: string;
+  message?: string;
+  error?: string;
+  actualPrompt?: string;
+}
+
+export interface UpgradeIconRequest {
+  image: string;
+  upgradeLevel?: string;
+  style?: string;
+}
+
+export interface UpgradeIconResponse {
+  upgradedIcon?: string;
+  message?: string;
+  error?: string;
+  actualPrompt?: string;
+}
+
+export const generateIcon = async (request: GenerateIconRequest): Promise<GenerateIconResponse> => {
+  const API_URL = getApiUrl();
+  const url = `${API_URL}/api/generate-icon`;
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `Failed to generate icon. Status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        const errorText = await response.text();
+        errorMessage = errorText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      // Check if it's a network error
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error('Network error: Could not reach the server. Please check your connection and make sure the backend server is running.');
+      }
+      throw error;
+    }
+    throw new Error(`Failed to generate icon: ${String(error)}`);
+  }
+};
+
+export const upgradeIcon = async (request: UpgradeIconRequest): Promise<UpgradeIconResponse> => {
+  const API_URL = getApiUrl();
+  const url = `${API_URL}/api/upgrade-icon`;
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `Failed to upgrade icon. Status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        const errorText = await response.text();
+        errorMessage = errorText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      // Check if it's a network error
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error('Network error: Could not reach the server. Please check your connection and make sure the backend server is running.');
+      }
+      throw error;
+    }
+    throw new Error(`Failed to upgrade icon: ${String(error)}`);
+  }
+};
+
+export interface GenerateLogoRequest {
+  prompt: string;
+  style?: string;
+  size?: string;
+  companyName?: string;
+  tagline?: string;
+}
+
+export interface GenerateLogoResponse {
+  generatedLogo?: string;
+  message?: string;
+  error?: string;
+  actualPrompt?: string;
+}
+
+export interface UpgradeLogoRequest {
+  image: string;
+  upgradeLevel?: string;
+  style?: string;
+}
+
+export interface UpgradeLogoResponse {
+  upgradedLogo?: string;
+  message?: string;
+  error?: string;
+  actualPrompt?: string;
+}
+
+export const generateLogo = async (request: GenerateLogoRequest): Promise<GenerateLogoResponse> => {
+  const API_URL = getApiUrl();
+  const url = `${API_URL}/api/generate-logo`;
+  
+  console.log('[API] generateLogo - Calling URL:', url);
+  console.log('[API] generateLogo - Request:', { prompt: request.prompt, style: request.style, size: request.size });
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  console.log('[API] generateLogo - Response status:', response.status);
+  console.log('[API] generateLogo - Response headers:', Object.fromEntries(response.headers.entries()));
+
+  let responseData: GenerateLogoResponse;
+  try {
+    const responseText = await response.text();
+    console.log('[API] generateLogo - Raw response text (first 500 chars):', responseText.substring(0, 500));
+    responseData = JSON.parse(responseText);
+    console.log('[API] generateLogo - Parsed response keys:', Object.keys(responseData));
+    console.log('[API] generateLogo - actualPrompt in response:', !!responseData.actualPrompt, responseData.actualPrompt?.substring(0, 100));
+  } catch (e) {
+    console.error('[API] generateLogo - Failed to parse response:', e);
+    throw new Error(`Server responded with non-JSON: ${response.status}`);
+  }
+
+  if (!response.ok) {
+    // Even if there's an error, return the response data so we can extract actualPrompt
+    const errorMessage = responseData.error || `Failed to generate logo. Error: ${response.status}`;
+    // Return the data anyway so actualPrompt can be extracted
+    return {
+      ...responseData,
+      error: errorMessage,
+    };
+  }
+
+  return responseData;
+};
+
+export const upgradeLogo = async (request: UpgradeLogoRequest): Promise<UpgradeLogoResponse> => {
+  const API_URL = getApiUrl();
+  const response = await fetch(`${API_URL}/api/upgrade-logo`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || `Failed to upgrade logo. Error: ${response.status}`);
+  }
+
+  return await response.json();
+};
+
+export interface GenerateSocialPostRequest {
+  prompt: string;
+  aspectRatio?: string;
+  style?: string;
+  referenceImage?: string;
+  referenceImages?: string[];
+}
+
+export interface GenerateSocialPostResponse {
+  generatedPost?: string;
+  message?: string;
+  error?: string;
+  actualPrompt?: string;
+  style?: string;
+  aspectRatio?: string;
+}
+
+export const generateSocialPost = async (request: GenerateSocialPostRequest): Promise<GenerateSocialPostResponse> => {
+  const API_URL = getApiUrl();
+  const url = `${API_URL}/api/generate-social-post`;
+  
+  console.log('[API] generateSocialPost - Calling URL:', url);
+  console.log('[API] generateSocialPost - Request:', { 
+    prompt: request.prompt, 
+    style: request.style, 
+    aspectRatio: request.aspectRatio,
+    hasReferenceImage: !!request.referenceImage,
+    referenceImagesCount: request.referenceImages?.length || 0
+  });
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  console.log('[API] generateSocialPost - Response status:', response.status);
+  
+  let responseData: GenerateSocialPostResponse;
+  try {
+    const responseText = await response.text();
+    console.log('[API] generateSocialPost - Raw response text (first 500 chars):', responseText.substring(0, 500));
+    
+    if (!responseText || responseText.trim().length === 0) {
+      throw new Error('Server returned empty response');
+    }
+    
+    try {
+      responseData = JSON.parse(responseText);
+      console.log('[API] generateSocialPost - Parsed response keys:', Object.keys(responseData));
+    } catch (parseError) {
+      console.error('[API] generateSocialPost - JSON parse error:', parseError);
+      console.error('[API] generateSocialPost - Response text:', responseText);
+      throw new Error(`Server returned invalid JSON. Status: ${response.status}. Response: ${responseText.substring(0, 200)}`);
+    }
+  } catch (e) {
+    console.error('[API] generateSocialPost - Failed to parse response:', e);
+    if (e instanceof Error) {
+      throw e;
+    }
+    throw new Error(`Server responded with non-JSON: ${response.status}`);
+  }
+
+  if (!response.ok) {
+    const errorMessage = responseData.error || `Failed to generate social post. Error: ${response.status}`;
+    return {
+      ...responseData,
+      error: errorMessage,
+    };
+  }
+
+  return responseData;
+};
+
+export interface RemoveObjectRequest {
+  image: string;
+  mask: string;
+}
+
+export interface RemoveObjectResponse {
+  cleanedImage?: string;
+  message?: string;
+  error?: string;
+}
+
+export async function removeObject(
+  image: string,
+  mask: string
+): Promise<RemoveObjectResponse> {
+  const url = `${getApiUrl()}/api/remove-object`;
+  
+  const request: RemoveObjectRequest = {
+    image,
+    mask,
+  };
+
+  console.log('[API] removeObject - Sending request to:', url);
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  console.log('[API] removeObject - Response status:', response.status);
+  
+  let responseData: RemoveObjectResponse;
+  try {
+    const responseText = await response.text();
+    console.log('[API] removeObject - Raw response text (first 500 chars):', responseText.substring(0, 500));
+    
+    if (!responseText || responseText.trim().length === 0) {
+      throw new Error('Server returned empty response');
+    }
+    
+    try {
+      responseData = JSON.parse(responseText);
+      console.log('[API] removeObject - Parsed response keys:', Object.keys(responseData));
+    } catch (parseError) {
+      console.error('[API] removeObject - JSON parse error:', parseError);
+      console.error('[API] removeObject - Response text:', responseText);
+      throw new Error(`Server returned invalid JSON. Status: ${response.status}. Response: ${responseText.substring(0, 200)}`);
+    }
+  } catch (e) {
+    console.error('[API] removeObject - Failed to parse response:', e);
+    if (e instanceof Error) {
+      throw e;
+    }
+    throw new Error(`Server responded with non-JSON: ${response.status}`);
+  }
+
+  if (!response.ok) {
+    const errorMessage = responseData.error || `Failed to remove object. Error: ${response.status}`;
+    return {
+      ...responseData,
+      error: errorMessage,
+    };
+  }
+
+  return responseData;
 };
 

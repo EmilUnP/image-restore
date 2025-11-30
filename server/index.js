@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { put, list, del } from '@vercel/blob';
+import sharp from 'sharp';
 import {
   createTextTranslationService,
   TranslationServiceError,
@@ -47,6 +48,19 @@ const getUploadDirs = () => {
 };
 
 const UPLOAD_DIRS = getUploadDirs();
+
+// Icon processing logs storage (in-memory)
+const iconProcessingLogs = [];
+const MAX_LOGS = 1000; // Keep last 1000 logs
+
+// Function to add icon processing log
+function addIconProcessingLog(logEntry) {
+  iconProcessingLogs.unshift(logEntry); // Add to beginning
+  // Keep only last MAX_LOGS entries
+  if (iconProcessingLogs.length > MAX_LOGS) {
+    iconProcessingLogs.pop();
+  }
+}
 
 // Ensure upload directories exist
 Object.entries(UPLOAD_DIRS).forEach(([type, dir]) => {
@@ -401,6 +415,147 @@ app.get('/api/enhancement-modes', (req, res) => {
 });
 
 // Admin API endpoints for viewing uploaded images
+// Support query parameter (primary method)
+app.get('/api/admin/images', async (req, res) => {
+  try {
+    const folderType = req.query.folderType;
+    
+    if (!folderType) {
+      return res.status(400).json({ error: 'folderType query parameter is required' });
+    }
+    
+    if (folderType !== 'enhancement' && folderType !== 'translation') {
+      return res.status(400).json({ error: 'Invalid folder type. Must be "enhancement" or "translation"' });
+    }
+    
+    // On Vercel, fetch from Blob Storage
+    if (IS_VERCEL) {
+      try {
+        const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+        
+        if (!BLOB_TOKEN) {
+          return res.json({ 
+            images: [],
+            message: 'BLOB_READ_WRITE_TOKEN not set. Files cannot be retrieved.',
+            vercel: true
+          });
+        }
+        
+        // List all blobs in the folder
+        const { blobs } = await list({
+          prefix: `${folderType}/`,
+          limit: 1000,
+          token: BLOB_TOKEN,
+        });
+        
+        // Filter for image files and metadata files
+        const imageFiles = blobs.filter(blob => {
+          const ext = path.extname(blob.pathname).toLowerCase();
+          return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext);
+        });
+        
+        // Build images array with metadata
+        const images = await Promise.all(
+          imageFiles.map(async (blob) => {
+            // Try to find corresponding metadata file
+            const metadataFilename = blob.pathname.replace(/\.[^/.]+$/, '') + '.json';
+            const metadataBlob = blobs.find(b => b.pathname === metadataFilename);
+            
+            let metadata = {};
+            if (metadataBlob) {
+              try {
+                const metadataResponse = await fetch(metadataBlob.url);
+                metadata = await metadataResponse.json();
+              } catch (e) {
+                console.error('Error reading metadata from blob:', e);
+              }
+            }
+            
+            return {
+              filename: path.basename(blob.pathname),
+              url: blob.url,
+              size: blob.size,
+              created: new Date(blob.uploadedAt),
+              modified: new Date(blob.uploadedAt),
+              ...metadata
+            };
+          })
+        );
+        
+        // Sort by created date (newest first)
+        images.sort((a, b) => new Date(b.created) - new Date(a.created));
+        
+        console.log(`✅ Retrieved ${images.length} images from Blob Storage`);
+        return res.json({ images });
+      } catch (blobError) {
+        console.error('❌ Error fetching from Vercel Blob:', blobError);
+        console.error('   Error message:', blobError.message);
+        
+        // If on Vercel, return error. Otherwise fall back to filesystem
+        if (IS_VERCEL) {
+          return res.status(500).json({ 
+            error: 'Failed to fetch images from Blob Storage', 
+            details: blobError.message 
+          });
+        }
+        console.warn('   Falling back to filesystem...');
+      }
+    } else if (IS_VERCEL) {
+      // On Vercel without token, return empty
+      return res.json({ 
+        images: [],
+        message: 'BLOB_READ_WRITE_TOKEN not set. Files cannot be retrieved.',
+        vercel: true
+      });
+    }
+    
+    // Local development - read from filesystem (or fallback)
+    const folderPath = UPLOAD_DIRS[folderType];
+    
+    if (!fs.existsSync(folderPath)) {
+      return res.json({ images: [] });
+    }
+    
+    const files = fs.readdirSync(folderPath);
+    const images = files
+      .filter(file => {
+        const ext = path.extname(file).toLowerCase();
+        return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext);
+      })
+      .map(file => {
+        const filePath = path.join(folderPath, file);
+        const stats = fs.statSync(filePath);
+        const metadataFile = file.replace(/\.[^/.]+$/, '') + '.json';
+        const metadataPath = path.join(folderPath, metadataFile);
+        
+        let metadata = {};
+        if (fs.existsSync(metadataPath)) {
+          try {
+            metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+          } catch (e) {
+            console.error('Error reading metadata:', e);
+          }
+        }
+        
+        return {
+          filename: file,
+          url: `/uploads/${folderType}/${file}`,
+          size: stats.size,
+          created: stats.birthtime,
+          modified: stats.mtime,
+          ...metadata
+        };
+      })
+      .sort((a, b) => new Date(b.created) - new Date(a.created)); // Newest first
+    
+    res.json({ images });
+  } catch (error) {
+    console.error('Error listing images:', error);
+    res.status(500).json({ error: 'Failed to list images', details: error.message });
+  }
+});
+
+// Also support path parameter for backward compatibility
 app.get('/api/admin/images/:folderType', async (req, res) => {
   try {
     const { folderType } = req.params;
@@ -536,6 +691,50 @@ app.get('/api/admin/images/:folderType', async (req, res) => {
   }
 });
 
+// Admin endpoint to get icon processing logs
+app.get('/api/admin/icon-logs', async (req, res) => {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  try {
+    const { limit = 100, status, mode } = req.query;
+    
+    let logs = [...iconProcessingLogs];
+    
+    // Filter by status if provided
+    if (status) {
+      logs = logs.filter(log => log.status === status);
+    }
+    
+    // Filter by mode if provided
+    if (mode) {
+      logs = logs.filter(log => log.mode === mode);
+    }
+    
+    // Limit results
+    const limitNum = parseInt(limit, 10) || 100;
+    logs = logs.slice(0, limitNum);
+    
+    return res.json({
+      logs,
+      total: iconProcessingLogs.length,
+      filtered: logs.length
+    });
+  } catch (error) {
+    console.error('Error fetching icon logs:', error);
+    return res.status(500).json({
+      error: 'Failed to fetch icon logs',
+      details: error.message
+    });
+  }
+});
+
 // Delete image endpoint
 app.delete('/api/admin/images/:folderType/:filename', async (req, res) => {
   try {
@@ -617,10 +816,109 @@ app.delete('/api/admin/images/:folderType/:filename', async (req, res) => {
   }
 });
 
+// Helper function to resize/upscale image based on quality setting
+async function resizeImageByQuality(base64Image, quality, mimeType = 'image/jpeg') {
+  try {
+    // Extract base64 data
+    const base64Data = base64Image.includes(',') 
+      ? base64Image.split(',')[1] 
+      : base64Image;
+    
+    // Convert base64 to buffer
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+    
+    // Get current image dimensions
+    const metadata = await sharp(imageBuffer).metadata();
+    const { width, height } = metadata;
+    
+    // Determine target max dimension based on quality
+    let targetMaxDimension = null;
+    if (quality === '2k') {
+      targetMaxDimension = 2048;
+    } else if (quality === '4k') {
+      targetMaxDimension = 4096;
+    }
+    
+    // If no quality setting, return original
+    if (!targetMaxDimension) {
+      return base64Image.includes('data:') ? base64Image : `data:${mimeType};base64,${base64Data}`;
+    }
+    
+    // Calculate the maximum dimension of the current image
+    const maxDimension = Math.max(width, height);
+    
+    // Only resize if the image is smaller than the target
+    if (maxDimension < targetMaxDimension) {
+      // Calculate scale factor to upscale to target
+      const scaleFactor = targetMaxDimension / maxDimension;
+      const newWidth = Math.round(width * scaleFactor);
+      const newHeight = Math.round(height * scaleFactor);
+      
+      console.log(`Upscaling image from ${width}x${height} to ${newWidth}x${newHeight} (${quality})`);
+      
+      // Use high-quality upscaling with Lanczos3 kernel and sharpening
+      let sharpInstance = sharp(imageBuffer)
+        .resize(newWidth, newHeight, {
+          kernel: sharp.kernel.lanczos3, // Best quality upscaling kernel
+          fit: 'inside',
+          withoutEnlargement: false
+        })
+        .sharpen({
+          sigma: 1.5,
+          flat: 1.0,
+          jagged: 2.0
+        }); // Enhanced sharpening for upscaled images
+      
+      // Preserve format and apply quality settings
+      if (mimeType === 'image/png') {
+        sharpInstance = sharpInstance.png({ compressionLevel: 9 });
+      } else {
+        sharpInstance = sharpInstance.jpeg({ quality: 95, mozjpeg: true });
+      }
+      
+      const resizedBuffer = await sharpInstance.toBuffer();
+      
+      return `data:${mimeType};base64,${resizedBuffer.toString('base64')}`;
+    } else if (maxDimension > targetMaxDimension) {
+      // Downscale if image is larger than target
+      const scaleFactor = targetMaxDimension / maxDimension;
+      const newWidth = Math.round(width * scaleFactor);
+      const newHeight = Math.round(height * scaleFactor);
+      
+      console.log(`Downscaling image from ${width}x${height} to ${newWidth}x${newHeight} (${quality})`);
+      
+      let sharpInstance = sharp(imageBuffer)
+        .resize(newWidth, newHeight, {
+          kernel: sharp.kernel.lanczos3,
+          fit: 'inside',
+          withoutEnlargement: false
+        });
+      
+      // Preserve format and apply quality settings
+      if (mimeType === 'image/png') {
+        sharpInstance = sharpInstance.png({ compressionLevel: 9 });
+      } else {
+        sharpInstance = sharpInstance.jpeg({ quality: 95, mozjpeg: true });
+      }
+      
+      const resizedBuffer = await sharpInstance.toBuffer();
+      
+      return `data:${mimeType};base64,${resizedBuffer.toString('base64')}`;
+    }
+    
+    // Image is already at target size, return original
+    return base64Image.includes('data:') ? base64Image : `data:${mimeType};base64,${base64Data}`;
+  } catch (error) {
+    console.error('Error resizing image:', error);
+    // Return original image if resizing fails
+    return base64Image.includes('data:') ? base64Image : `data:${mimeType};base64,${base64Image}`;
+  }
+}
+
 // Image enhancement endpoint
 app.post('/api/enhance-image', async (req, res) => {
   try {
-    const { image, mode = 'photo', intensity = 'medium' } = req.body;
+    const { image, mode = 'photo', intensity = 'medium', quality = 'original' } = req.body;
     
     if (!image) {
       return res.status(400).json({ error: 'No image provided' });
@@ -656,11 +954,21 @@ app.post('/api/enhance-image', async (req, res) => {
       intensityModifier = ' Apply balanced, moderate enhancements.';
     }
 
-    const prompt = enhancementConfig.prompt + intensityModifier;
+    // Add quality/resolution requirements
+    let qualityModifier = '';
+    if (quality === '2k') {
+      qualityModifier = ' Output the enhanced image at 2K resolution (2048 pixels maximum dimension). Upscale the image while maintaining quality and sharpness.';
+    } else if (quality === '4k') {
+      qualityModifier = ' Output the enhanced image at 4K resolution (4096 pixels maximum dimension). Upscale the image to ultra-high quality with maximum sharpness and detail preservation.';
+    } else {
+      qualityModifier = ' Maintain the original image resolution.';
+    }
+
+    const prompt = enhancementConfig.prompt + intensityModifier + qualityModifier;
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
 
     try {
       // Determine MIME type from base64 string
@@ -693,12 +1001,25 @@ app.post('/api/enhance-image', async (req, res) => {
         }
       }
       
-      // If enhanced image is returned, use it
+      // If enhanced image is returned, process it
       if (enhancedImageBase64) {
+        // Apply quality-based resizing if quality is set
+        let finalImage = `data:${mimeType};base64,${enhancedImageBase64}`;
+        
+        if (quality === '2k' || quality === '4k') {
+          try {
+            finalImage = await resizeImageByQuality(enhancedImageBase64, quality, mimeType);
+          } catch (resizeError) {
+            console.error('Error resizing enhanced image:', resizeError);
+            // Continue with original enhanced image if resizing fails
+          }
+        }
+        
         return res.json({ 
-          enhancedImage: `data:${mimeType};base64,${enhancedImageBase64}`,
-          message: `Image enhanced successfully using ${validMode} mode.`,
-          mode: validMode
+          enhancedImage: finalImage,
+          message: `Image enhanced successfully using ${validMode} mode${quality !== 'original' ? ` at ${quality.toUpperCase()} quality` : ''}.`,
+          mode: validMode,
+          quality: quality
         });
       } else {
         // Return original image with analysis
@@ -740,6 +1061,1329 @@ app.post('/api/enhance-image', async (req, res) => {
   }
 });
 
+// Icon generation style prompts
+const iconStylePrompts = {
+  modern: {
+    prompt: 'Create a modern, sleek icon with clean lines, contemporary design, and professional appearance.',
+    description: "Contemporary design with smooth edges"
+  },
+  minimalist: {
+    prompt: 'Create a minimalist icon with simple shapes, minimal details, and clean aesthetics.',
+    description: "Simple, clean, and essential elements only"
+  },
+  bold: {
+    prompt: 'Create a bold, eye-catching icon with strong colors, thick strokes, and impactful design.',
+    description: "Strong visual presence with vibrant colors"
+  },
+  outline: {
+    prompt: 'Create an outlined icon with stroke-based design, no fills, and clear boundaries.',
+    description: "Line-based design without fills"
+  },
+  filled: {
+    prompt: 'Create a filled icon with solid colors, complete shapes, and rich visual presence.',
+    description: "Solid colors with complete shapes"
+  },
+  gradient: {
+    prompt: 'Create a gradient icon with smooth color transitions, depth, and modern gradient effects.',
+    description: "Smooth color transitions and depth"
+  },
+  '3d': {
+    prompt: 'Create a 3D icon with depth, shadows, highlights, and dimensional appearance.',
+    description: "Three-dimensional design with depth"
+  },
+  flat: {
+    prompt: 'Create a flat icon with 2D design, simple colors, and no shadows or gradients.',
+    description: "Simple 2D design without depth effects"
+  }
+};
+
+// Icon upgrade level prompts
+const iconUpgradeLevelPrompts = {
+  low: {
+    prompt: 'Apply subtle improvements: slightly enhance sharpness, improve contrast, and refine edges.',
+    description: "Minimal changes while preserving original design"
+  },
+  medium: {
+    prompt: 'Apply balanced improvements: enhance clarity, improve colors, refine details, and optimize for web use.',
+    description: "Moderate enhancements for better quality"
+  },
+  high: {
+    prompt: 'Apply maximum improvements: significantly enhance quality, optimize colors, perfect edges, add polish, and create professional-grade icon.',
+    description: "Comprehensive upgrade for maximum quality"
+  }
+};
+
+// Generate icon endpoint
+app.post('/api/generate-icon', async (req, res) => {
+  const startTime = Date.now();
+  const requestId = `icon-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  
+  try {
+    const { prompt, style = 'modern', size = '512', referencePrompt, referenceImage, isVariant = false } = req.body;
+    
+    // Log request
+    const logEntry = {
+      id: requestId,
+      timestamp: new Date().toISOString(),
+      type: 'generate-icon',
+      mode: isVariant ? 'variant' : 'standard',
+      request: {
+        prompt: prompt?.substring(0, 100), // Truncate for storage
+        style,
+        size,
+        isVariant,
+        hasReferenceImage: !!referenceImage,
+        referencePrompt: referencePrompt?.substring(0, 100)
+      },
+      status: 'processing',
+      duration: null,
+      response: null,
+      error: null
+    };
+    addIconProcessingLog(logEntry);
+    
+    if (!prompt || !prompt.trim()) {
+      logEntry.status = 'error';
+      logEntry.error = 'No prompt provided';
+      logEntry.duration = Date.now() - startTime;
+      return res.status(400).json({ error: 'No prompt provided' });
+    }
+
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
+      return res.status(500).json({ 
+        error: 'AI service not configured. Please set GEMINI_API_KEY in server/.env file',
+        instructions: 'Get your API key from https://aistudio.google.com/app/apikey and add it to server/.env'
+      });
+    }
+
+    // Validate style
+    const validStyle = iconStylePrompts[style] ? style : 'modern';
+    const styleConfig = iconStylePrompts[validStyle];
+
+    // Build the icon generation prompt
+    let iconPrompt;
+    if (isVariant && referenceImage) {
+      // For variants with image reference, instruct to match the visual style exactly
+      iconPrompt = `You are an expert icon designer creating consistent icon sets. You will receive a reference icon image - analyze it FIRST before generating anything.
+
+TASK: Create a new icon that represents "${prompt}" while maintaining PERFECT visual consistency with the reference icon image you see.
+
+IMPORTANT: The reference icon image is shown to you. Study it carefully before proceeding.
+
+STEP 1 - DEEP VISUAL ANALYSIS (REQUIRED - DO THIS FIRST):
+Before generating anything, carefully examine the reference icon image and document these visual elements:
+
+COLORS & PALETTE:
+- Identify all primary colors used (RGB/hex values if possible)
+- Note any gradients: direction, colors involved, gradient type (linear, radial, etc.)
+- Document the exact color palette (e.g., "blue #0066FF, white #FFFFFF, shadow #000000 at 30% opacity")
+- Note any color overlays, tints, or filters applied
+
+STROKES & LINES:
+- Measure/identify the exact stroke width/thickness in pixels or relative units
+- Note stroke style: solid, dashed, dotted, or other patterns
+- Document stroke color and opacity
+- Note if strokes have rounded or square end caps
+
+SHAPES & GEOMETRY:
+- Measure corner radius: sharp (0px), slightly rounded, or heavily rounded
+- Note edge treatment: beveled, embossed, flat, or 3D
+- Identify shape complexity: simple geometric or detailed
+- Document proportions: aspect ratio, width to height relationships
+
+EFFECTS & LAYERING:
+- Shadow: depth (distance), blur amount, direction (e.g., "bottom-right"), color, opacity
+- Highlight: position (e.g., "top-left corner"), intensity, color, size
+- Lighting: direction source, style (diffuse, specular, ambient), intensity
+- Gloss/reflection: amount of gloss, reflection style
+- Depth/3D: amount of dimensional effect, perspective type
+
+FILL & TEXTURE:
+- Fill type: solid color, gradient, pattern, or transparent
+- Gradient specifics: if gradient, note exact colors and positions
+- Texture: smooth, textured, or pattern overlay
+- Transparency: areas of transparency or opacity variations
+
+DESIGN LANGUAGE:
+- Overall style: flat design, skeuomorphic, material design, neumorphic, etc.
+- Visual weight: light/thin, medium, or heavy/bold
+- Detail level: minimal, moderate, or highly detailed
+- Complexity: simple (single shape) or complex (multiple elements)
+
+STEP 2 - VISUAL REPLICATION (CRITICAL - COPY EXACTLY FROM REFERENCE):
+Now create the new icon representing "${prompt}" by applying ALL the visual elements you analyzed from the reference:
+
+🔴 MANDATORY EXACT SPECIFICATIONS (NO DEVIATIONS):
+
+1. COLORS → Copy IDENTICAL color values, hex codes, RGB values from reference. Use EXACT same colors, gradients, gradient directions, color stops, and opacity levels.
+
+2. STROKES → Replicate EXACT stroke width (measure precisely), stroke style (solid/dashed/dotted), stroke cap style (round/square/butt), stroke alignment, and stroke color/opacity.
+
+3. CORNERS → Match EXACT corner radius value (in pixels or percentage). If reference has sharp corners (0px radius), use 0px. If rounded, measure and copy exact radius.
+
+4. SHADOWS → Copy EXACT shadow offset (X and Y distance), blur radius, spread amount, shadow direction, shadow color (including opacity), and shadow type (drop shadow, inner shadow, etc.).
+
+5. HIGHLIGHTS/GLOWS → Apply EXACT highlight position (top-left, bottom-right, etc.), highlight size, intensity, color, opacity, and glow effect if present.
+
+6. LIGHTING → Match EXACT light source direction, lighting angle, shadow intensity, highlight intensity, and overall lighting style (diffuse/specular/ambient).
+
+7. FILL → Use EXACT fill type (solid/gradient/pattern/none), gradient angles/positions if gradient, transparency values, and any fill overlays.
+
+8. PROPORTIONS → Maintain EXACT visual weight (thickness), size ratios, spacing between elements, and overall dimensions relative to canvas.
+
+9. DETAIL LEVEL → Keep EXACT same amount of detail - do NOT simplify or add complexity. Match the precise level of intricacy.
+
+10. DESIGN SYSTEM → Preserve EXACT design language, aesthetic approach, visual style category, and overall "feel".
+
+🚫 STRICT PROHIBITIONS:
+   • DO NOT use different colors even if they seem similar
+   • DO NOT change stroke thickness by even 1px
+   • DO NOT modify corner radius values
+   • DO NOT alter shadow properties in any way
+   • DO NOT add visual effects not in reference
+   • DO NOT change the visual weight or thickness
+   • DO NOT simplify or complicate the design
+   • DO NOT introduce new design elements or styles
+
+✅ ONLY ALLOWED CHANGE:
+   • The iconography/content (what the icon represents: "${prompt}")
+
+CRITICAL RULE: Imagine the reference icon as a template. You are ONLY changing what it represents, NOT how it looks. Every visual property must be pixel-perfect identical.
+
+STEP 3 - CONSISTENCY VERIFICATION (MANDATORY CHECK):
+Before finalizing your generation, verify:
+✓ Colors are EXACTLY the same (compare side-by-side)
+✓ Stroke thickness matches EXACTLY
+✓ Corner radius matches EXACTLY
+✓ Shadows are EXACTLY the same (direction, blur, color, opacity)
+✓ Visual weight matches EXACTLY
+✓ Detail level matches EXACTLY
+✓ Overall style matches EXACTLY
+✓ If someone saw both icons, they'd say "same designer, same style"
+✓ Only the iconography/content differs - everything else is identical
+
+${styleConfig.prompt}
+
+TECHNICAL SPECIFICATIONS:
+- Size: ${size}x${size} pixels
+- Format: High-quality, scalable vector-style icon
+- Use: Modern web applications
+- Background: MUST have 100% TRANSPARENT background (no solid color, no white, no colored background)
+- Quality: Professional, production-ready
+
+CRITICAL BACKGROUND REQUIREMENT:
+- The background MUST be completely transparent/clear
+- NO solid backgrounds (no white, no gray, no colors)
+- NO background shapes, patterns, or fills
+- Only the icon itself should be visible - everything around it must be transparent
+- The icon should be isolated on a transparent canvas
+
+OUTPUT: Generate ONLY the new icon matching the reference icon's visual style exactly while representing "${prompt}" with a completely transparent background.`;
+    } else if (isVariant && referencePrompt) {
+      // Fallback: variant with only text reference
+      iconPrompt = `Generate a high-quality icon variant for web use. ${styleConfig.prompt} 
+
+This icon is part of a set. The main icon represents: "${referencePrompt}". 
+
+Create a related icon that represents: "${prompt}". 
+
+CRITICAL CONSISTENCY REQUIREMENTS:
+- Use the EXACT SAME design style, color palette, and visual language as the main icon
+- Maintain the same line weight, corner radius, and overall aesthetic
+- Use identical or very similar colors, shadows, and effects
+- Ensure this variant looks like it belongs to the same icon family/set
+- Keep the same level of detail and complexity
+- Match the overall proportions and visual weight
+
+CRITICAL: The icon MUST have a completely TRANSPARENT background (no solid color, no white, no background at all). 
+
+TECHNICAL REQUIREMENTS:
+- Size: ${size}x${size} pixels
+- Background: 100% TRANSPARENT - no solid backgrounds, no white, no colored backgrounds
+- Format: High-quality icon with clear visual communication
+- Use: Modern web applications, scalable design
+- Quality: Professional, production-ready
+
+The icon should be professional, recognizable, and isolated on a transparent canvas. Only the icon elements should be visible - everything around the icon must be completely transparent.`;
+    } else {
+      // Standard generation without variant context
+      iconPrompt = `Generate a high-quality icon for web use. ${styleConfig.prompt} The icon should represent: "${prompt}".
+
+CRITICAL: The icon MUST have a completely TRANSPARENT background (no solid color, no white, no background at all).
+
+TECHNICAL REQUIREMENTS:
+- Size: ${size}x${size} pixels
+- Background: 100% TRANSPARENT - no solid backgrounds, no white, no colored backgrounds, no background shapes or patterns
+- Format: High-quality icon with clear visual communication
+- Use: Modern web applications, scalable design
+- Quality: Professional, production-ready
+
+The icon should be professional, recognizable, and isolated on a transparent canvas. Only the icon elements should be visible - everything around the icon must be completely transparent. The transparent background allows the icon to work on any colored background.`;
+    }
+
+    // Initialize Google Generative AI
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-3-pro-image-preview",
+      generationConfig: isVariant && referenceImage ? {
+        temperature: 0.3, // Lower temperature for more consistent/less random results
+        topP: 0.95,
+        topK: 40,
+      } : undefined
+    });
+
+    try {
+      // If we have a reference image, send both prompt and image
+      let result;
+      if (isVariant && referenceImage) {
+        // Extract MIME type and base64 data from reference image
+        let mimeType = "image/png";
+        let base64Data = referenceImage;
+        
+        if (referenceImage.includes('data:image/')) {
+          const mimeMatch = referenceImage.match(/data:image\/([^;]+)/);
+          if (mimeMatch) {
+            mimeType = `image/${mimeMatch[1]}`;
+          }
+          base64Data = referenceImage.split(',')[1] || referenceImage;
+        }
+        
+        // For variants: Put the reference image FIRST, then the prompt
+        // This helps Gemini analyze the image before generating
+        result = await model.generateContent([
+          { inlineData: { data: base64Data, mimeType } },
+          iconPrompt
+        ]);
+      } else {
+        // Standard generation without image reference
+        result = await model.generateContent([iconPrompt]);
+      }
+      const response = await result.response;
+      
+      // Try to get image from response
+      let generatedImageBase64 = null;
+      let mimeType = "image/png";
+      
+      if (response.candidates && response.candidates[0]) {
+        const parts = response.candidates[0].content?.parts || [];
+        for (const part of parts) {
+          if (part.inlineData?.data) {
+            generatedImageBase64 = part.inlineData.data;
+            if (part.inlineData.mimeType) {
+              mimeType = part.inlineData.mimeType;
+            }
+            break;
+          }
+        }
+      }
+      
+      // If icon is generated, return it
+      const duration = Date.now() - startTime;
+      if (generatedImageBase64) {
+        logEntry.status = 'success';
+        logEntry.duration = duration;
+        logEntry.response = {
+          success: true,
+          style: validStyle,
+          imageSize: generatedImageBase64.length,
+          message: `Icon generated successfully using ${validStyle} style.`
+        };
+        return res.json({ 
+          generatedIcon: `data:${mimeType};base64,${generatedImageBase64}`,
+          message: `Icon generated successfully using ${validStyle} style.`,
+          style: validStyle,
+          actualPrompt: iconPrompt
+        });
+      } else {
+        // Return error if no image generated
+        const text = response.text();
+        logEntry.status = 'warning';
+        logEntry.duration = duration;
+        logEntry.response = {
+          success: false,
+          message: `Icon generation attempted. Note: Gemini may provide text descriptions.`,
+          analysis: text?.substring(0, 200)
+        };
+        return res.json({ 
+          generatedIcon: null,
+          analysis: text,
+          message: `Icon generation attempted. Note: Gemini may provide text descriptions. Please refine your prompt.`,
+          style: validStyle,
+          actualPrompt: iconPrompt
+        });
+      }
+
+    } catch (error) {
+      console.error('Gemini API error:', error);
+      const duration = Date.now() - startTime;
+      logEntry.status = 'error';
+      logEntry.duration = duration;
+      logEntry.error = error.message || 'Unknown error';
+      
+      if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('401')) {
+        logEntry.error = 'Invalid API key';
+        return res.status(401).json({ error: 'Invalid API key. Please check your GEMINI_API_KEY.' });
+      }
+      
+      if (error.message?.includes('QUOTA_EXCEEDED') || error.message?.includes('429') || error.message?.includes('quota')) {
+        logEntry.error = 'API quota exceeded';
+        return res.status(429).json({ 
+          error: 'API quota exceeded. You have used up your free tier limit.',
+          message: 'Please wait a few minutes and try again, or upgrade your API plan.',
+          retryAfter: '42 seconds'
+        });
+      }
+
+      return res.status(500).json({ 
+        error: 'Failed to generate icon', 
+        details: error.message || 'Unknown error'
+      });
+    }
+
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    const logEntry = iconProcessingLogs.find(log => log.id === requestId);
+    if (logEntry) {
+      logEntry.status = 'error';
+      logEntry.duration = duration;
+      logEntry.error = error.message || 'Unknown error';
+    }
+    return res.status(500).json({ 
+      error: 'An unexpected error occurred', 
+      details: error.message || 'Unknown error'
+    });
+  }
+});
+
+// Upgrade icon endpoint
+app.post('/api/upgrade-icon', async (req, res) => {
+  const startTime = Date.now();
+  const requestId = `upgrade-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  
+  try {
+    const { image, upgradeLevel = 'medium', style = 'modern' } = req.body;
+    
+    // Log request
+    const logEntry = {
+      id: requestId,
+      timestamp: new Date().toISOString(),
+      type: 'upgrade-icon',
+      mode: 'upgrade',
+      request: {
+        prompt: 'Icon upgrade',
+        style,
+        upgradeLevel,
+        hasImage: !!image
+      },
+      status: 'processing',
+      duration: null,
+      response: null,
+      error: null
+    };
+    addIconProcessingLog(logEntry);
+    
+    if (!image) {
+      logEntry.status = 'error';
+      logEntry.error = 'No image provided';
+      logEntry.duration = Date.now() - startTime;
+      return res.status(400).json({ error: 'No image provided' });
+    }
+
+    // Save uploaded image for analysis
+    await saveUploadedImage(image, 'enhancement', {
+      upgradeLevel,
+      style,
+      type: 'icon-upgrade',
+      endpoint: '/api/upgrade-icon'
+    });
+
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
+      return res.status(500).json({ 
+        error: 'AI service not configured. Please set GEMINI_API_KEY in server/.env file',
+        instructions: 'Get your API key from https://aistudio.google.com/app/apikey and add it to server/.env'
+      });
+    }
+
+    // Validate upgrade level and style
+    const validUpgradeLevel = iconUpgradeLevelPrompts[upgradeLevel] ? upgradeLevel : 'medium';
+    const validStyle = iconStylePrompts[style] ? style : 'modern';
+    const upgradeConfig = iconUpgradeLevelPrompts[validUpgradeLevel];
+    const styleConfig = iconStylePrompts[validStyle];
+
+    // Build the upgrade prompt
+    const upgradePrompt = `Upgrade and enhance this icon for professional web use. ${upgradeConfig.prompt} ${styleConfig.prompt} Maintain the core design and meaning while improving quality, clarity, and visual appeal. 
+
+CRITICAL BACKGROUND REQUIREMENT:
+- The upgraded icon MUST have a completely TRANSPARENT background (no solid color, no white, no background at all)
+- Preserve or create a transparent background - remove any existing solid backgrounds
+- NO solid backgrounds (no white, no gray, no colors)
+- NO background shapes, patterns, or fills
+- Only the icon itself should be visible - everything around it must be transparent
+- The icon should be isolated on a transparent canvas
+
+Make it suitable for modern web applications with scalable design. The transparent background allows the icon to work on any colored background.`;
+
+    // Initialize Google Generative AI
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
+
+    try {
+      // Determine MIME type from base64 string
+      let mimeType = "image/png";
+      if (image.includes('data:image/')) {
+        const mimeMatch = image.match(/data:image\/([^;]+)/);
+        if (mimeMatch) {
+          mimeType = `image/${mimeMatch[1]}`;
+        }
+      }
+      
+      const base64Data = image.split(',')[1] || image;
+      const result = await model.generateContent([
+        upgradePrompt,
+        { inlineData: { data: base64Data, mimeType } }
+      ]);
+
+      const response = await result.response;
+      
+      // Try to get image from response
+      let upgradedImageBase64 = null;
+      
+      if (response.candidates && response.candidates[0]) {
+        const parts = response.candidates[0].content?.parts || [];
+        for (const part of parts) {
+          if (part.inlineData?.data) {
+            upgradedImageBase64 = part.inlineData.data;
+            if (part.inlineData.mimeType) {
+              mimeType = part.inlineData.mimeType;
+            }
+            break;
+          }
+        }
+      }
+      
+      // If upgraded icon is returned, use it
+      const duration = Date.now() - startTime;
+      if (upgradedImageBase64) {
+        logEntry.status = 'success';
+        logEntry.duration = duration;
+        logEntry.response = {
+          success: true,
+          upgradeLevel: validUpgradeLevel,
+          style: validStyle,
+          imageSize: upgradedImageBase64.length,
+          message: `Icon upgraded successfully using ${validUpgradeLevel} level and ${validStyle} style.`
+        };
+        return res.json({ 
+          upgradedIcon: `data:${mimeType};base64,${upgradedImageBase64}`,
+          message: `Icon upgraded successfully using ${validUpgradeLevel} level and ${validStyle} style.`,
+          upgradeLevel: validUpgradeLevel,
+          style: validStyle,
+          actualPrompt: upgradePrompt
+        });
+      } else {
+        // Return original image with analysis
+        const text = response.text();
+        logEntry.status = 'warning';
+        logEntry.duration = duration;
+        logEntry.response = {
+          success: false,
+          message: `Icon processing attempted. Note: Gemini provides analysis.`,
+          analysis: text?.substring(0, 200)
+        };
+        return res.json({ 
+          upgradedIcon: image,
+          analysis: text,
+          message: `Icon processing attempted. Note: Gemini provides analysis. Original icon returned.`,
+          upgradeLevel: validUpgradeLevel,
+          style: validStyle,
+          actualPrompt: upgradePrompt
+        });
+      }
+
+    } catch (error) {
+      console.error('Gemini API error:', error);
+      const duration = Date.now() - startTime;
+      logEntry.status = 'error';
+      logEntry.duration = duration;
+      logEntry.error = error.message || 'Unknown error';
+      
+      if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('401')) {
+        return res.status(401).json({ error: 'Invalid API key. Please check your GEMINI_API_KEY.' });
+      }
+      
+      if (error.message?.includes('QUOTA_EXCEEDED') || error.message?.includes('429') || error.message?.includes('quota')) {
+        return res.status(429).json({ 
+          error: 'API quota exceeded. You have used up your free tier limit.',
+          message: 'Please wait a few minutes and try again, or upgrade your API plan.',
+          retryAfter: '42 seconds'
+        });
+      }
+
+      return res.status(500).json({ 
+        error: 'Failed to upgrade icon', 
+        details: error.message || 'Unknown error'
+      });
+    }
+
+  } catch (error) {
+    return res.status(500).json({ 
+      error: 'An unexpected error occurred', 
+      details: error.message || 'Unknown error'
+    });
+  }
+});
+
+// Logo generation style prompts
+const logoStylePrompts = {
+  modern: {
+    prompt: 'Create a modern, professional logo with sleek design, contemporary aesthetics, and clean typography.',
+    description: "Contemporary design with clean lines"
+  },
+  classic: {
+    prompt: 'Create a classic, timeless logo with traditional design elements, elegant typography, and enduring appeal.',
+    description: "Traditional design with timeless elegance"
+  },
+  minimalist: {
+    prompt: 'Create a minimalist logo with simple shapes, minimal details, clean typography, and essential elements only.',
+    description: "Simple, clean, and essential elements"
+  },
+  bold: {
+    prompt: 'Create a bold, impactful logo with strong colors, thick strokes, powerful typography, and eye-catching design.',
+    description: "Strong visual presence with vibrant colors"
+  },
+  elegant: {
+    prompt: 'Create an elegant, sophisticated logo with refined design, graceful typography, and premium aesthetic.',
+    description: "Sophisticated and refined design"
+  },
+  playful: {
+    prompt: 'Create a playful, fun logo with whimsical elements, vibrant colors, and friendly typography.',
+    description: "Fun and engaging design"
+  },
+  corporate: {
+    prompt: 'Create a corporate, professional logo with business-oriented design, formal typography, and trustworthy appearance.',
+    description: "Professional business design"
+  },
+  creative: {
+    prompt: 'Create a creative, artistic logo with unique design elements, innovative typography, and expressive aesthetics.',
+    description: "Innovative and artistic design"
+  },
+  vintage: {
+    prompt: 'Create a vintage, retro logo with classic design elements, nostalgic typography, and old-school charm.',
+    description: "Retro and nostalgic design"
+  }
+};
+
+// Logo upgrade level prompts
+const logoUpgradeLevelPrompts = {
+  low: {
+    prompt: 'Apply subtle improvements: slightly enhance clarity, improve contrast, refine typography, and polish edges.',
+    description: "Minimal changes while preserving original design"
+  },
+  medium: {
+    prompt: 'Apply balanced improvements: enhance clarity and sharpness, improve colors and contrast, refine typography and details, optimize for professional use.',
+    description: "Moderate enhancements for better quality"
+  },
+  high: {
+    prompt: 'Apply maximum improvements: significantly enhance quality, optimize colors and contrast, perfect typography and edges, add professional polish, and create premium-grade logo.',
+    description: "Comprehensive upgrade for maximum quality"
+  }
+};
+
+// Generate logo endpoint
+app.post('/api/generate-logo', async (req, res) => {
+  try {
+    const { prompt, style = 'modern', size = '1024', companyName, tagline } = req.body;
+    
+    if (!prompt || !prompt.trim()) {
+      return res.status(400).json({ error: 'No prompt provided' });
+    }
+
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
+      return res.status(500).json({ 
+        error: 'AI service not configured. Please set GEMINI_API_KEY in server/.env file',
+        instructions: 'Get your API key from https://aistudio.google.com/app/apikey and add it to server/.env'
+      });
+    }
+
+    // Validate style
+    const validStyle = logoStylePrompts[style] ? style : 'modern';
+    const styleConfig = logoStylePrompts[validStyle];
+
+    // Build the logo generation prompt
+    let logoPrompt = `Generate a high-quality professional logo for web and print use. ${styleConfig.prompt} The logo should represent: "${prompt}".`;
+    
+    if (companyName && companyName.trim()) {
+      logoPrompt += ` Include the company name "${companyName}" as part of the logo design.`;
+    }
+    
+    if (tagline && tagline.trim()) {
+      logoPrompt += ` Include the tagline "${tagline}" below the company name or logo symbol.`;
+    }
+    
+    logoPrompt += ` 
+
+CRITICAL BACKGROUND REQUIREMENT:
+- The logo MUST have a completely TRANSPARENT background (no solid color, no white, no background at all)
+- NO solid backgrounds (no white, no gray, no colors)
+- NO background shapes, patterns, or fills
+- Only the logo itself should be visible - everything around it must be transparent
+- The logo should be isolated on a transparent canvas
+
+TECHNICAL SPECIFICATIONS:
+- Size: ${size}x${size} pixels
+- Background: 100% TRANSPARENT - no solid backgrounds, no white, no colored backgrounds
+- Format: High-quality professional logo
+- Use: Modern branding, business cards, websites, and marketing materials
+- Quality: Professional, recognizable, scalable, production-ready
+
+The transparent background allows the logo to work on any colored background. The logo should be professional and recognizable when placed on any background color.`;
+
+    // Initialize Google Generative AI
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
+
+    try {
+      const result = await model.generateContent([logoPrompt]);
+      const response = await result.response;
+      
+      // Try to get image from response
+      let generatedImageBase64 = null;
+      let mimeType = "image/png";
+      
+      if (response.candidates && response.candidates[0]) {
+        const parts = response.candidates[0].content?.parts || [];
+        for (const part of parts) {
+          if (part.inlineData?.data) {
+            generatedImageBase64 = part.inlineData.data;
+            if (part.inlineData.mimeType) {
+              mimeType = part.inlineData.mimeType;
+            }
+            break;
+          }
+        }
+      }
+      
+      // If logo is generated, return it
+      if (generatedImageBase64) {
+        console.log('[Server] Returning logo with actualPrompt:', logoPrompt.substring(0, 100) + '...');
+        return res.json({ 
+          generatedLogo: `data:${mimeType};base64,${generatedImageBase64}`,
+          message: `Logo generated successfully using ${validStyle} style.`,
+          style: validStyle,
+          actualPrompt: logoPrompt
+        });
+      } else {
+        // Return error if no image generated
+        const text = response.text();
+        return res.json({ 
+          generatedLogo: null,
+          analysis: text,
+          message: `Logo generation attempted. Note: Gemini may provide text descriptions. Please refine your prompt.`,
+          style: validStyle,
+          actualPrompt: logoPrompt
+        });
+      }
+
+    } catch (error) {
+      console.error('Gemini API error:', error);
+      
+      if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('401')) {
+        return res.status(401).json({ 
+          error: 'Invalid API key. Please check your GEMINI_API_KEY.',
+          actualPrompt: logoPrompt
+        });
+      }
+      
+      if (error.message?.includes('QUOTA_EXCEEDED') || error.message?.includes('429') || error.message?.includes('quota')) {
+        return res.status(429).json({ 
+          error: 'API quota exceeded. You have used up your free tier limit.',
+          message: 'Please wait a few minutes and try again, or upgrade your API plan.',
+          retryAfter: '42 seconds',
+          actualPrompt: logoPrompt
+        });
+      }
+
+      return res.status(500).json({ 
+        error: 'Failed to generate logo', 
+        details: error.message || 'Unknown error',
+        actualPrompt: logoPrompt
+      });
+    }
+
+  } catch (error) {
+    // Try to get the prompt if it was created before the error
+    let promptToReturn = null;
+    try {
+      const { prompt, style = 'modern', size = '1024', companyName, tagline } = req.body;
+      if (prompt) {
+        const validStyle = logoStylePrompts[style] ? style : 'modern';
+        const styleConfig = logoStylePrompts[validStyle];
+        let logoPrompt = `Generate a high-quality professional logo for web and print use. ${styleConfig.prompt} The logo should represent: "${prompt}".`;
+        if (companyName && companyName.trim()) {
+          logoPrompt += ` Include the company name "${companyName}" as part of the logo design.`;
+        }
+        if (tagline && tagline.trim()) {
+          logoPrompt += ` Include the tagline "${tagline}" below the company name or logo symbol.`;
+        }
+        logoPrompt += ` 
+
+CRITICAL BACKGROUND REQUIREMENT:
+- The logo MUST have a completely TRANSPARENT background (no solid color, no white, no background at all)
+- NO solid backgrounds (no white, no gray, no colors)
+- NO background shapes, patterns, or fills
+- Only the logo itself should be visible - everything around it must be transparent
+- The logo should be isolated on a transparent canvas
+
+TECHNICAL SPECIFICATIONS:
+- Size: ${size}x${size} pixels
+- Background: 100% TRANSPARENT - no solid backgrounds, no white, no colored backgrounds
+- Format: High-quality professional logo
+- Use: Modern branding, business cards, websites, and marketing materials
+- Quality: Professional, recognizable, scalable, production-ready
+
+The transparent background allows the logo to work on any colored background. The logo should be professional and recognizable when placed on any background color.`;
+        promptToReturn = logoPrompt;
+      }
+    } catch (e) {
+      // Ignore errors in prompt reconstruction
+    }
+    
+    return res.status(500).json({ 
+      error: 'An unexpected error occurred', 
+      details: error.message || 'Unknown error',
+      actualPrompt: promptToReturn
+    });
+  }
+});
+
+// Upgrade logo endpoint
+app.post('/api/upgrade-logo', async (req, res) => {
+  try {
+    const { image, upgradeLevel = 'medium', style = 'modern' } = req.body;
+    
+    if (!image) {
+      return res.status(400).json({ error: 'No image provided' });
+    }
+
+    // Save uploaded image for analysis
+    await saveUploadedImage(image, 'enhancement', {
+      upgradeLevel,
+      style,
+      type: 'logo-upgrade',
+      endpoint: '/api/upgrade-logo'
+    });
+
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
+      return res.status(500).json({ 
+        error: 'AI service not configured. Please set GEMINI_API_KEY in server/.env file',
+        instructions: 'Get your API key from https://aistudio.google.com/app/apikey and add it to server/.env'
+      });
+    }
+
+    // Validate upgrade level and style
+    const validUpgradeLevel = logoUpgradeLevelPrompts[upgradeLevel] ? upgradeLevel : 'medium';
+    const validStyle = logoStylePrompts[style] ? style : 'modern';
+    const upgradeConfig = logoUpgradeLevelPrompts[validUpgradeLevel];
+    const styleConfig = logoStylePrompts[validStyle];
+
+    // Build the upgrade prompt
+    const upgradePrompt = `Upgrade and enhance this logo for professional branding use. ${upgradeConfig.prompt} ${styleConfig.prompt} Maintain the core design, brand identity, and meaning while improving quality, clarity, typography, and visual appeal. 
+
+CRITICAL BACKGROUND REQUIREMENT:
+- The upgraded logo MUST have a completely TRANSPARENT background (no solid color, no white, no background at all)
+- Preserve or create a transparent background - remove any existing solid backgrounds
+- NO solid backgrounds (no white, no gray, no colors)
+- NO background shapes, patterns, or fills
+- Only the logo itself should be visible - everything around it must be transparent
+- The logo should be isolated on a transparent canvas
+
+Make it suitable for modern branding, business cards, websites, and marketing materials with scalable design. The transparent background allows the logo to work on any colored background.`;
+
+    // Initialize Google Generative AI
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
+
+    try {
+      // Determine MIME type from base64 string
+      let mimeType = "image/png";
+      if (image.includes('data:image/')) {
+        const mimeMatch = image.match(/data:image\/([^;]+)/);
+        if (mimeMatch) {
+          mimeType = `image/${mimeMatch[1]}`;
+        }
+      }
+      
+      const base64Data = image.split(',')[1] || image;
+      const result = await model.generateContent([
+        upgradePrompt,
+        { inlineData: { data: base64Data, mimeType } }
+      ]);
+
+      const response = await result.response;
+      
+      // Try to get image from response
+      let upgradedImageBase64 = null;
+      
+      if (response.candidates && response.candidates[0]) {
+        const parts = response.candidates[0].content?.parts || [];
+        for (const part of parts) {
+          if (part.inlineData?.data) {
+            upgradedImageBase64 = part.inlineData.data;
+            if (part.inlineData.mimeType) {
+              mimeType = part.inlineData.mimeType;
+            }
+            break;
+          }
+        }
+      }
+      
+      // If upgraded logo is returned, use it
+      if (upgradedImageBase64) {
+        return res.json({ 
+          upgradedLogo: `data:${mimeType};base64,${upgradedImageBase64}`,
+          message: `Logo upgraded successfully using ${validUpgradeLevel} level and ${validStyle} style.`,
+          upgradeLevel: validUpgradeLevel,
+          style: validStyle,
+          actualPrompt: upgradePrompt
+        });
+      } else {
+        // Return original image with analysis
+        const text = response.text();
+        return res.json({ 
+          upgradedLogo: image,
+          analysis: text,
+          message: `Logo processing attempted. Note: Gemini provides analysis. Original logo returned.`,
+          upgradeLevel: validUpgradeLevel,
+          style: validStyle,
+          actualPrompt: upgradePrompt
+        });
+      }
+
+    } catch (error) {
+      console.error('Gemini API error:', error);
+      
+      if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('401')) {
+        return res.status(401).json({ error: 'Invalid API key. Please check your GEMINI_API_KEY.' });
+      }
+      
+      if (error.message?.includes('QUOTA_EXCEEDED') || error.message?.includes('429') || error.message?.includes('quota')) {
+        return res.status(429).json({ 
+          error: 'API quota exceeded. You have used up your free tier limit.',
+          message: 'Please wait a few minutes and try again, or upgrade your API plan.',
+          retryAfter: '42 seconds'
+        });
+      }
+
+      return res.status(500).json({ 
+        error: 'Failed to upgrade logo', 
+        details: error.message || 'Unknown error'
+      });
+    }
+
+  } catch (error) {
+    return res.status(500).json({ 
+      error: 'An unexpected error occurred', 
+      details: error.message || 'Unknown error'
+    });
+  }
+});
+
+// Social post style prompts
+const socialPostStylePrompts = {
+  modern: {
+    prompt: 'Create a modern, contemporary social media post with sleek design, vibrant colors, and clean typography.',
+    description: "Contemporary design with clean lines"
+  },
+  minimalist: {
+    prompt: 'Create a minimalist social media post with simple design, ample white space, and essential elements only.',
+    description: "Simple, clean, and essential elements"
+  },
+  bold: {
+    prompt: 'Create a bold, impactful social media post with strong colors, thick typography, and eye-catching design.',
+    description: "Strong visual presence with vibrant colors"
+  },
+  elegant: {
+    prompt: 'Create an elegant, sophisticated social media post with refined design, graceful typography, and premium aesthetic.',
+    description: "Sophisticated and refined design"
+  },
+  playful: {
+    prompt: 'Create a playful, fun social media post with whimsical elements, vibrant colors, and friendly typography.',
+    description: "Fun and engaging design"
+  },
+  corporate: {
+    prompt: 'Create a corporate, professional social media post with business-oriented design, formal typography, and trustworthy appearance.',
+    description: "Professional business design"
+  },
+  creative: {
+    prompt: 'Create a creative, artistic social media post with unique design elements, innovative typography, and expressive aesthetics.',
+    description: "Innovative and artistic design"
+  },
+  vintage: {
+    prompt: 'Create a vintage, retro social media post with classic design elements, nostalgic typography, and old-school charm.',
+    description: "Retro and nostalgic design"
+  }
+};
+
+// Aspect ratio dimensions
+const aspectRatioDimensions = {
+  '1:1': { width: 1080, height: 1080 },
+  '16:9': { width: 1920, height: 1080 },
+  '9:16': { width: 1080, height: 1920 },
+  '4:5': { width: 1080, height: 1350 },
+  '1.91:1': { width: 1200, height: 628 },
+};
+
+// Generate social post endpoint
+app.post('/api/generate-social-post', async (req, res) => {
+  try {
+    const { prompt, style = 'modern', aspectRatio = '1:1', referenceImage, referenceImages } = req.body;
+    
+    if (!prompt || !prompt.trim()) {
+      return res.status(400).json({ error: 'No prompt provided' });
+    }
+
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
+      return res.status(500).json({ 
+        error: 'AI service not configured. Please set GEMINI_API_KEY in server/.env file',
+        instructions: 'Get your API key from https://aistudio.google.com/app/apikey and add it to server/.env'
+      });
+    }
+
+    // Validate style
+    const validStyle = socialPostStylePrompts[style] ? style : 'modern';
+    const styleConfig = socialPostStylePrompts[validStyle];
+
+    // Get dimensions for aspect ratio
+    const dimensions = aspectRatioDimensions[aspectRatio] || aspectRatioDimensions['1:1'];
+
+    // Build the social post generation prompt
+    let socialPostPrompt = `Generate a high-quality social media post for ${dimensions.width}x${dimensions.height} pixels. ${styleConfig.prompt} The post should represent: "${prompt}".`;
+    
+    // Add reference image context if provided
+    if (referenceImage) {
+      socialPostPrompt += ` Use the provided reference image as inspiration and create a similar style social media post.`;
+    }
+    
+    if (referenceImages && referenceImages.length > 0) {
+      socialPostPrompt += ` Use the provided ${referenceImages.length} reference image(s) as inspiration. Combine elements, styles, and aesthetics from these references to create a unique social media post.`;
+    }
+
+    socialPostPrompt += ` 
+
+TECHNICAL SPECIFICATIONS:
+- Size: ${dimensions.width}x${dimensions.height} pixels
+- Aspect Ratio: ${aspectRatio}
+- Format: High-quality social media post
+- Use: Instagram, Facebook, Twitter, LinkedIn, and other social platforms
+- Quality: Professional, eye-catching, shareable, production-ready
+- Design: Optimized for social media engagement with clear visual hierarchy
+
+The social media post should be visually appealing, professional, and ready to use on any social media platform. Include engaging visuals, appropriate text placement, and modern design elements.`;
+
+    // Initialize Google Generative AI
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
+
+    try {
+      // Prepare content array with images if provided
+      const contentParts = [];
+      
+      // Add reference images if provided
+      if (referenceImage) {
+        // Extract base64 from data URL
+        const base64Data = referenceImage.includes(',') 
+          ? referenceImage.split(',')[1] 
+          : referenceImage;
+        // Determine MIME type
+        let mimeType = 'image/png';
+        if (referenceImage.includes('data:image/')) {
+          const mimeMatch = referenceImage.match(/data:image\/([^;]+)/);
+          if (mimeMatch) {
+            mimeType = `image/${mimeMatch[1]}`;
+          }
+        }
+        contentParts.push({
+          inlineData: {
+            data: base64Data,
+            mimeType: mimeType
+          }
+        });
+      }
+      
+      if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
+        for (const refImg of referenceImages) {
+          // Validate that refImg is a string
+          if (!refImg || typeof refImg !== 'string') {
+            console.warn('[Server] Skipping invalid reference image:', typeof refImg);
+            continue;
+          }
+          
+          const base64Data = refImg.includes(',') 
+            ? refImg.split(',')[1] 
+            : refImg;
+          
+          // Determine MIME type
+          let mimeType = 'image/png';
+          if (refImg.includes('data:image/')) {
+            const mimeMatch = refImg.match(/data:image\/([^;]+)/);
+            if (mimeMatch) {
+              mimeType = `image/${mimeMatch[1]}`;
+            }
+          }
+          
+          contentParts.push({
+            inlineData: {
+              data: base64Data,
+              mimeType: mimeType
+            }
+          });
+        }
+      }
+      
+      // Add text prompt
+      contentParts.push(socialPostPrompt);
+
+      const result = await model.generateContent(contentParts);
+      const response = await result.response;
+      
+      // Try to get image from response
+      let generatedImageBase64 = null;
+      let mimeType = "image/png";
+      
+      if (response.candidates && response.candidates[0]) {
+        const parts = response.candidates[0].content?.parts || [];
+        for (const part of parts) {
+          if (part.inlineData?.data) {
+            generatedImageBase64 = part.inlineData.data;
+            if (part.inlineData.mimeType) {
+              mimeType = part.inlineData.mimeType;
+            }
+            break;
+          }
+        }
+      }
+      
+      // If post is generated, return it
+      if (generatedImageBase64) {
+        console.log('[Server] Social post generated successfully');
+        const responseData = { 
+          generatedPost: `data:${mimeType};base64,${generatedImageBase64}`,
+          message: `Social post generated successfully using ${validStyle} style.`,
+          style: validStyle,
+          aspectRatio: aspectRatio,
+          actualPrompt: socialPostPrompt
+        };
+        return res.status(200).json(responseData);
+      } else {
+        console.error('[Server] No image in response');
+        // Try to get text response
+        const text = response.text();
+        return res.status(200).json({ 
+          generatedPost: null,
+          analysis: text,
+          message: `Social post generation attempted. Note: Gemini may provide text descriptions. Please refine your prompt.`,
+          style: validStyle,
+          aspectRatio: aspectRatio,
+          actualPrompt: socialPostPrompt
+        });
+      }
+    } catch (aiError) {
+      console.error('[Server] AI generation error:', aiError);
+      
+      if (aiError.message?.includes('API_KEY_INVALID') || aiError.message?.includes('401')) {
+        return res.status(401).json({ error: 'Invalid API key. Please check your GEMINI_API_KEY.' });
+      }
+      
+      if (aiError.message?.includes('QUOTA_EXCEEDED') || aiError.message?.includes('429') || aiError.message?.includes('quota')) {
+        return res.status(429).json({ 
+          error: 'API quota exceeded. You have used up your free tier limit.',
+          message: 'Please wait a few minutes and try again, or upgrade your API plan.',
+          retryAfter: '42 seconds'
+        });
+      }
+
+      return res.status(500).json({ 
+        error: `AI generation failed: ${aiError.message || 'Unknown error'}`,
+        actualPrompt: socialPostPrompt
+      });
+    }
+  } catch (error) {
+    console.error('[Server] Handler error:', error);
+    return res.status(500).json({ 
+      error: error.message || 'Internal server error',
+      details: error.stack
+    });
+  }
+});
+
+// Object removal endpoint
+app.post('/api/remove-object', async (req, res) => {
+  try {
+    const { image, mask } = req.body;
+
+    if (!image || !mask) {
+      return res.status(400).json({ error: 'Image and mask are required' });
+    }
+
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
+      return res.status(500).json({ 
+        error: 'AI service not configured. Please set GEMINI_API_KEY in server/.env file',
+        instructions: 'Get your API key from https://aistudio.google.com/app/apikey and add it to server/.env'
+      });
+    }
+
+    console.log('🎨 Starting object removal process...');
+    console.log(`   Image size: ${image.length} characters`);
+    console.log(`   Mask size: ${mask.length} characters`);
+
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-pro-image-preview' });
+
+    // Construct the prompt for inpainting/object removal
+    const prompt = `You are a professional image inpainting specialist. Your task is to remove ONLY the areas marked in white in the mask image from the original image.
+
+CRITICAL INSTRUCTIONS - FOLLOW EXACTLY:
+
+1. MASK INTERPRETATION:
+   - WHITE pixels in the mask = areas to REMOVE and fill with background
+   - BLACK pixels in the mask = areas to KEEP EXACTLY AS THEY ARE
+   - Do NOT modify anything outside the white mask areas
+
+2. REMOVAL PROCESS:
+   - Remove ONLY the objects/areas shown in white in the mask
+   - Fill removed areas by extending and blending the surrounding background
+   - Use context-aware inpainting that matches the immediate surrounding pixels
+   - The filled area should look like the background naturally continues
+
+3. STRICT PROHIBITIONS:
+   - DO NOT add any new objects, elements, or details
+   - DO NOT modify colors, lighting, or style outside the mask area
+   - DO NOT change any part of the image that is NOT marked in white
+   - DO NOT add text, shapes, or any visual elements
+   - DO NOT enhance or improve anything - only remove what's marked
+
+4. QUALITY REQUIREMENTS:
+   - The result should look like the object was never there
+   - Seamless blending with surrounding background
+   - Maintain exact same resolution, colors, and quality
+   - No visible artifacts, blur, or distortion
+   - Natural continuation of background patterns/textures
+
+5. OUTPUT:
+   - Return ONLY the inpainted image
+   - The image should be identical to the original EXCEPT for the removed white mask areas
+   - All other areas must remain pixel-perfect unchanged
+
+Remember: Your ONLY job is to remove what's marked in white and fill it with background. Do NOT add anything new. Do NOT modify anything else.`;
+
+    // Extract base64 data from images
+    const imageBase64 = image.includes('data:image') ? image.split(',')[1] : image;
+    const maskBase64 = mask.includes('data:image') ? mask.split(',')[1] : mask;
+
+    const imageParts = [
+      {
+        inlineData: {
+          mimeType: 'image/png',
+          data: imageBase64,
+        },
+      },
+      {
+        inlineData: {
+          mimeType: 'image/png',
+          data: maskBase64,
+        },
+      },
+    ];
+
+    console.log('🤖 Calling Gemini API for object removal...');
+    const result = await model.generateContent([prompt, ...imageParts]);
+    const response = await result.response;
+    
+    // Try to get image from response structure first
+    let cleanedImageBase64 = null;
+    let mimeType = "image/png";
+    
+    if (response.candidates && response.candidates[0]) {
+      const parts = response.candidates[0].content?.parts || [];
+      for (const part of parts) {
+        if (part.inlineData?.data) {
+          cleanedImageBase64 = part.inlineData.data;
+          if (part.inlineData.mimeType) {
+            mimeType = part.inlineData.mimeType;
+          }
+          break;
+        }
+      }
+    }
+    
+    // If image found in response structure, return it
+    if (cleanedImageBase64) {
+      console.log('✅ Successfully extracted cleaned image from response structure');
+      console.log(`   Cleaned image size: ${cleanedImageBase64.length} characters`);
+      
+      return res.status(200).json({
+        cleanedImage: `data:${mimeType};base64,${cleanedImageBase64}`,
+        message: 'Object removed successfully',
+      });
+    }
+    
+    // Fallback: Try to extract from text response
+    console.log('⚠️ No image in response structure, trying text extraction...');
+    const responseText = response.text();
+    console.log(`   Response text length: ${responseText.length} characters`);
+    
+    let cleanedImage = responseText.trim();
+
+    // Try to extract base64 from markdown code blocks or direct base64
+    const base64Match = cleanedImage.match(/data:image\/[^;]+;base64,([A-Za-z0-9+/=]+)/);
+    if (base64Match) {
+      cleanedImage = base64Match[0];
+      console.log('✅ Successfully extracted cleaned image from text response');
+      return res.status(200).json({
+        cleanedImage,
+        message: 'Object removed successfully',
+      });
+    }
+    
+    // If no data URI, try to find plain base64
+    const plainBase64Match = cleanedImage.match(/([A-Za-z0-9+/=]{100,})/);
+    if (plainBase64Match) {
+      cleanedImage = `data:image/png;base64,${plainBase64Match[1]}`;
+      console.log('✅ Successfully extracted cleaned image from plain base64');
+      return res.status(200).json({
+        cleanedImage,
+        message: 'Object removed successfully',
+      });
+    }
+    
+    // If all extraction methods fail
+    console.error('❌ Could not extract image from AI response');
+    console.error('   Response text preview:', responseText.substring(0, 500));
+    throw new Error('Could not extract image from AI response. The model may have returned text instead of an image.');
+  } catch (error) {
+    console.error('❌ Error in remove-object:', error);
+    
+    // Handle quota or API key errors
+    if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('API key')) {
+      return res.status(401).json({ error: 'Invalid API key. Please check your GEMINI_API_KEY.' });
+    }
+    
+    if (error.message?.includes('quota') || error.message?.includes('QUOTA')) {
+      return res.status(429).json({ error: 'API quota exceeded. Please try again later.' });
+    }
+
+    return res.status(500).json({
+      error: error.message || 'AI generation failed. Please try again.',
+    });
+  }
+});
+
 // Text detection endpoint
 app.post('/api/detect-text', async (req, res) => {
   try {
@@ -768,7 +2412,7 @@ app.post('/api/detect-text', async (req, res) => {
     // Model selection: Use requested model or default to best text detection model
      const availableModels = [
       'gemini-2.0-flash-exp',      // Best for text detection (experimental)
-      'gemini-3-pro-image', // Current default
+      'gemini-3-pro-image-preview', // Current default
     ];
     
     // Default to flash which is more stable and available
@@ -1206,7 +2850,7 @@ app.post('/api/translate-image', async (req, res) => {
 
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
 
     try {
       // Determine MIME type from base64 string

@@ -21,16 +21,20 @@ interface EnhancementMode {
 interface EnhancementModeSelectorProps {
   mode: string;
   intensity: string;
+  quality?: string;
   onModeChange: (mode: string) => void;
   onIntensityChange: (intensity: string) => void;
+  onQualityChange?: (quality: string) => void;
   disabled?: boolean;
 }
 
 export const EnhancementModeSelector = ({
   mode,
   intensity,
+  quality = 'original',
   onModeChange,
   onIntensityChange,
+  onQualityChange,
   disabled = false,
 }: EnhancementModeSelectorProps) => {
   const [modes, setModes] = useState<EnhancementMode[]>([]);
@@ -213,6 +217,120 @@ export const EnhancementModeSelector = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Output Quality Selection */}
+      {onQualityChange && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Zap className="w-4 h-4 text-primary" />
+              Output Quality
+              <HelpTooltip content="Select the output resolution. Higher resolutions provide better quality but may take longer to process." />
+            </CardTitle>
+            <CardDescription className="text-sm">
+              Choose the resolution for enhanced image
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <RadioGroup
+              value={quality}
+              onValueChange={onQualityChange}
+              disabled={disabled}
+              className="grid grid-cols-2 md:grid-cols-4 gap-3"
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <RadioGroupItem
+                      value="original"
+                      id="quality-original"
+                      className="peer sr-only"
+                    />
+                    <Label
+                      htmlFor="quality-original"
+                      className="flex flex-col items-center justify-between rounded-lg border-2 border-border bg-card p-3 hover:bg-accent hover:text-accent-foreground hover:border-primary peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all duration-200"
+                    >
+                      <div className="text-2xl mb-1.5">📐</div>
+                      <div className="text-center">
+                        <div className="font-semibold text-xs mb-1">Original</div>
+                        <div className="text-[10px] text-muted-foreground">Keep original size</div>
+                      </div>
+                      {quality === 'original' && (
+                        <Badge className="mt-1.5 bg-primary text-xs" variant="default">
+                          Selected
+                        </Badge>
+                      )}
+                    </Label>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-sm">Keep the original image resolution</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <RadioGroupItem
+                      value="2k"
+                      id="quality-2k"
+                      className="peer sr-only"
+                    />
+                    <Label
+                      htmlFor="quality-2k"
+                      className="flex flex-col items-center justify-between rounded-lg border-2 border-border bg-card p-3 hover:bg-accent hover:text-accent-foreground hover:border-primary peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all duration-200"
+                    >
+                      <div className="text-2xl mb-1.5">✨</div>
+                      <div className="text-center">
+                        <div className="font-semibold text-xs mb-1">2K Quality</div>
+                        <div className="text-[10px] text-muted-foreground">2048px max</div>
+                      </div>
+                      {quality === '2k' && (
+                        <Badge className="mt-1.5 bg-primary text-xs" variant="default">
+                          Selected
+                        </Badge>
+                      )}
+                    </Label>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-sm">Enhance and upscale to 2K resolution (2048px maximum dimension)</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <RadioGroupItem
+                      value="4k"
+                      id="quality-4k"
+                      className="peer sr-only"
+                    />
+                    <Label
+                      htmlFor="quality-4k"
+                      className="flex flex-col items-center justify-between rounded-lg border-2 border-border bg-card p-3 hover:bg-accent hover:text-accent-foreground hover:border-primary peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all duration-200"
+                    >
+                      <div className="text-2xl mb-1.5">🌟</div>
+                      <div className="text-center">
+                        <div className="font-semibold text-xs mb-1">4K Quality</div>
+                        <div className="text-[10px] text-muted-foreground">4096px max</div>
+                      </div>
+                      {quality === '4k' && (
+                        <Badge className="mt-1.5 bg-primary text-xs" variant="default">
+                          Selected
+                        </Badge>
+                      )}
+                    </Label>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-sm">Enhance and upscale to 4K resolution (4096px maximum dimension)</p>
+                </TooltipContent>
+              </Tooltip>
+            </RadioGroup>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
