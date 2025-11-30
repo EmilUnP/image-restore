@@ -6,13 +6,14 @@ import {
   Zap, 
   Palette,
   Share2,
+  Eraser,
   X,
   Image as ImageIcon,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
 
-type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | null;
+type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | 'remove' | null;
 
 interface SidebarProps {
   selectedFunction: AppFunction;
@@ -63,6 +64,14 @@ const functions = [
     icon: Share2,
     color: 'text-pink-400',
     bgColor: 'bg-pink-500/10',
+  },
+  {
+    id: 'remove' as AppFunction,
+    name: 'Object Remover',
+    description: 'Remove unwanted objects',
+    icon: Eraser,
+    color: 'text-red-400',
+    bgColor: 'bg-red-500/10',
   },
 ];
 

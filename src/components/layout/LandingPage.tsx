@@ -6,6 +6,7 @@ import {
   Zap,
   Palette,
   Share2,
+  Eraser,
   ArrowRight,
   Check,
   Rocket,
@@ -17,7 +18,7 @@ import {
 import MagicBento from "./MagicBento";
 import LightRays from "./LightRays";
 
-type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | null;
+type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | 'remove' | null;
 
 interface LandingPageProps {
   onFunctionSelect: (func: AppFunction) => void;
@@ -63,6 +64,14 @@ const features = [
     color: "text-pink-400",
     bgColor: "bg-pink-500/10",
     function: 'social' as AppFunction,
+  },
+  {
+    icon: Eraser,
+    title: "Object Remover",
+    description: "Remove unwanted objects from images with AI-powered precision. Select areas to clean and get professional results.",
+    color: "text-red-400",
+    bgColor: "bg-red-500/10",
+    function: 'remove' as AppFunction,
   },
 ];
 

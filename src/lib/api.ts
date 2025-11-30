@@ -495,3 +495,73 @@ export const generateSocialPost = async (request: GenerateSocialPostRequest): Pr
   return responseData;
 };
 
+export interface RemoveObjectRequest {
+  image: string;
+  mask: string;
+}
+
+export interface RemoveObjectResponse {
+  cleanedImage?: string;
+  message?: string;
+  error?: string;
+}
+
+export async function removeObject(
+  image: string,
+  mask: string
+): Promise<RemoveObjectResponse> {
+  const url = `${getApiUrl()}/api/remove-object`;
+  
+  const request: RemoveObjectRequest = {
+    image,
+    mask,
+  };
+
+  console.log('[API] removeObject - Sending request to:', url);
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  console.log('[API] removeObject - Response status:', response.status);
+  
+  let responseData: RemoveObjectResponse;
+  try {
+    const responseText = await response.text();
+    console.log('[API] removeObject - Raw response text (first 500 chars):', responseText.substring(0, 500));
+    
+    if (!responseText || responseText.trim().length === 0) {
+      throw new Error('Server returned empty response');
+    }
+    
+    try {
+      responseData = JSON.parse(responseText);
+      console.log('[API] removeObject - Parsed response keys:', Object.keys(responseData));
+    } catch (parseError) {
+      console.error('[API] removeObject - JSON parse error:', parseError);
+      console.error('[API] removeObject - Response text:', responseText);
+      throw new Error(`Server returned invalid JSON. Status: ${response.status}. Response: ${responseText.substring(0, 200)}`);
+    }
+  } catch (e) {
+    console.error('[API] removeObject - Failed to parse response:', e);
+    if (e instanceof Error) {
+      throw e;
+    }
+    throw new Error(`Server responded with non-JSON: ${response.status}`);
+  }
+
+  if (!response.ok) {
+    const errorMessage = responseData.error || `Failed to remove object. Error: ${response.status}`;
+    return {
+      ...responseData,
+      error: errorMessage,
+    };
+  }
+
+  return responseData;
+};
+

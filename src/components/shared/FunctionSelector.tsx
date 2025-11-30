@@ -1,8 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Languages, Zap, Palette, Share2 } from "lucide-react";
+import { Sparkles, Languages, Zap, Palette, Share2, Eraser } from "lucide-react";
 
-type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | null;
+type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | 'remove' | null;
 
 interface FunctionSelectorProps {
   onFunctionSelect: (func: AppFunction) => void;
@@ -213,6 +213,106 @@ export const FunctionSelector = ({ onFunctionSelect }: FunctionSelectorProps) =>
               onClick={() => onFunctionSelect('logos')}
             >
               Use Logo Generator
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Social Post Generation */}
+        <Card 
+          className="border hover:border-primary/60 transition-all duration-300 cursor-pointer group relative overflow-hidden hover:shadow-md"
+          onClick={() => onFunctionSelect('social')}
+        >
+          <CardHeader className="pb-4">
+            <div className="flex items-start gap-4">
+              <div className="relative flex-shrink-0">
+                <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <Share2 className="w-6 h-6 text-primary" />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0 pt-1">
+                <CardTitle className="text-xl font-bold mb-2">Social Post Generator</CardTitle>
+                <CardDescription className="text-sm">
+                  Create stunning social media posts. Generate from scratch, use reference images, or combine multiple inspirations.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="text-primary text-xs font-bold">✓</span>
+                </div>
+                <span className="text-muted-foreground">Generate posts from text descriptions</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="text-primary text-xs font-bold">✓</span>
+                </div>
+                <span className="text-muted-foreground">Use reference images for inspiration</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="text-primary text-xs font-bold">✓</span>
+                </div>
+                <span className="text-muted-foreground">Multiple aspect ratios and styles</span>
+              </li>
+            </ul>
+            <Button 
+              className="w-full"
+              onClick={() => onFunctionSelect('social')}
+            >
+              Use Social Post Generator
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Object Remover */}
+        <Card 
+          className="border hover:border-accent/60 transition-all duration-300 cursor-pointer group relative overflow-hidden hover:shadow-md"
+          onClick={() => onFunctionSelect('remove')}
+        >
+          <CardHeader className="pb-4">
+            <div className="flex items-start gap-4">
+              <div className="relative flex-shrink-0">
+                <div className="p-3 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
+                  <Eraser className="w-6 h-6 text-accent" />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0 pt-1">
+                <CardTitle className="text-xl font-bold mb-2">Object Remover</CardTitle>
+                <CardDescription className="text-sm">
+                  Remove unwanted objects from images with AI-powered precision. Select areas to clean and get professional results.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
+                  <span className="text-accent text-xs font-bold">✓</span>
+                </div>
+                <span className="text-muted-foreground">Interactive selection tool</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
+                  <span className="text-accent text-xs font-bold">✓</span>
+                </div>
+                <span className="text-muted-foreground">AI-powered inpainting</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
+                  <span className="text-accent text-xs font-bold">✓</span>
+                </div>
+                <span className="text-muted-foreground">Seamless object removal</span>
+              </li>
+            </ul>
+            <Button 
+              className="w-full"
+              onClick={() => onFunctionSelect('remove')}
+            >
+              Use Object Remover
             </Button>
           </CardContent>
         </Card>
