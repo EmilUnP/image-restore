@@ -242,7 +242,7 @@ export const ObjectRemovalWorkflow = ({ onBack }: ObjectRemovalWorkflowProps) =>
   const currentStep = !originalImage ? 1 : cleanedImage ? 3 : 2;
   const steps = [
     { number: 1, label: "Upload", status: (currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming") as "current" | "completed" | "upcoming" },
-    { number: 2, label: "Select", status: (currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming") as "current" | "completed" | "upcoming" },
+    { number: 2, label: "Select & Remove", status: (currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming") as "current" | "completed" | "upcoming" },
     { number: 3, label: "Result", status: (currentStep >= 3 ? (cleanedImage ? "current" : "upcoming") : "upcoming") as "current" | "completed" | "upcoming" },
   ];
 
@@ -262,7 +262,7 @@ export const ObjectRemovalWorkflow = ({ onBack }: ObjectRemovalWorkflowProps) =>
       {!originalImage ? (
         <WorkflowCard
           title="Upload Your Image"
-          description="Upload an image to start removing unwanted objects"
+          description="Start by uploading an image with objects you want to remove"
         >
           <ImageUpload
             onImageSelect={handleImageSelect}
@@ -271,11 +271,50 @@ export const ObjectRemovalWorkflow = ({ onBack }: ObjectRemovalWorkflowProps) =>
           />
         </WorkflowCard>
       ) : !cleanedImage ? (
-        <div className="space-y-6">
-          {/* Tools Panel */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Image Canvas - Left Side (2 columns) */}
+          <div className="lg:col-span-2">
+            <WorkflowCard
+              title="Select Areas to Remove"
+              description="Draw on the image to mark areas you want to remove"
+            >
+              <div className="p-6">
+              <div 
+                ref={containerRef}
+                className="relative w-full flex justify-center items-center bg-slate-900/50 rounded-xl p-4 overflow-auto"
+                style={{ maxHeight: '70vh' }}
+              >
+                <div className="relative inline-block">
+                  <canvas
+                    ref={canvasRef}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                    className="cursor-crosshair max-w-full h-auto rounded-lg shadow-2xl"
+                    style={{ imageRendering: 'auto' }}
+                  />
+                  {!maskData && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 rounded-lg">
+                      <p className="text-muted-foreground">Loading image...</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="mt-4 text-center">
+                <p className="text-sm text-muted-foreground">
+                  <span className="inline-block w-3 h-3 bg-red-500/50 rounded-full mr-2"></span>
+                  Red overlay indicates areas to be removed
+                </p>
+              </div>
+            </div>
+            </WorkflowCard>
+          </div>
+
+          {/* Tools Panel - Right Side (1 column) */}
           <WorkflowCard
-            title="Selection Tools"
-            description="Draw on the image to mark areas you want to remove. Use the brush to mark, eraser to unmark."
+            title="Tools & Settings"
+            description="Select tool and adjust brush size"
           >
             <div className="space-y-6">
               {/* Tool Selection */}
@@ -322,7 +361,7 @@ export const ObjectRemovalWorkflow = ({ onBack }: ObjectRemovalWorkflowProps) =>
                   className="flex-1"
                 >
                   <RotateCcw className="h-4 w-4 mr-2" />
-                  Clear Selection
+                  Clear
                 </Button>
                 <Button
                   variant="outline"
@@ -330,66 +369,30 @@ export const ObjectRemovalWorkflow = ({ onBack }: ObjectRemovalWorkflowProps) =>
                   className="flex-1"
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Reset Image
+                  Reset
                 </Button>
               </div>
-            </div>
-          </WorkflowCard>
 
-          {/* Canvas */}
-          <WorkflowCard>
-            <div className="p-6">
-              <div 
-                ref={containerRef}
-                className="relative w-full flex justify-center items-center bg-slate-900/50 rounded-xl p-4 overflow-auto"
-                style={{ maxHeight: '70vh' }}
+              {/* Remove Button */}
+              <Button
+                onClick={handleRemove}
+                disabled={isRemoving || !maskData}
+                size="lg"
+                className="w-full bg-gradient-to-r from-red-500 via-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 font-bold text-base py-6 shadow-2xl shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 rounded-xl disabled:opacity-50"
               >
-                <div className="relative inline-block">
-                  <canvas
-                    ref={canvasRef}
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
-                    className="cursor-crosshair max-w-full h-auto rounded-lg shadow-2xl"
-                    style={{ imageRendering: 'auto' }}
-                  />
-                  {!maskData && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 rounded-lg">
-                      <p className="text-muted-foreground">Loading image...</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="mt-4 text-center">
-                <p className="text-sm text-muted-foreground">
-                  <span className="inline-block w-3 h-3 bg-red-500/50 rounded-full mr-2"></span>
-                  Red overlay indicates areas to be removed
-                </p>
-              </div>
+                {isRemoving ? (
+                  <>
+                    <Wand2 className="h-5 w-5 mr-2 animate-spin" />
+                    Removing...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="h-5 w-5 mr-2" />
+                    Remove Selected Areas
+                  </>
+                )}
+              </Button>
             </div>
-          </WorkflowCard>
-
-          {/* Remove Button */}
-          <WorkflowCard>
-            <Button
-              onClick={handleRemove}
-              disabled={isRemoving || !maskData}
-              size="lg"
-              className="w-full bg-gradient-to-r from-red-500 via-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 font-bold text-lg py-6 shadow-2xl shadow-red-500/30 hover:shadow-red-500/50 transition-all duration-300 rounded-xl"
-            >
-              {isRemoving ? (
-                <>
-                  <Wand2 className="h-5 w-5 mr-2 animate-spin" />
-                  Removing Object...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="h-5 w-5 mr-2" />
-                  Remove Selected Areas
-                </>
-              )}
-            </Button>
           </WorkflowCard>
         </div>
       ) : (

@@ -11,6 +11,7 @@ import { StepIndicator } from "@/components/shared/StepIndicator";
 import { WorkflowHeader } from "@/components/shared/WorkflowHeader";
 import { WorkflowCard } from "@/components/shared/WorkflowCard";
 import { useImageTranslation } from "@/hooks/useImageTranslation";
+import { useImageUpload } from "@/hooks/useImageUpload";
 import { downloadImage } from "@/lib/utils";
 import { toast } from "sonner";
 import { LANGUAGES } from "@/lib/constants";
@@ -21,8 +22,8 @@ interface TranslationWorkflowProps {
 
 export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
   const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
-  const [settingsConfigured, setSettingsConfigured] = useState<boolean>(false);
-  const [showTextDetection, setShowTextDetection] = useState<boolean>(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [isDetectingText, setIsDetectingText] = useState<boolean>(false);
   const [isTranslatingText, setIsTranslatingText] = useState<boolean>(false);
   const [translationSettings, setTranslationSettings] = useState<TranslationSettingsType>({
     quality: "premium",
@@ -45,23 +46,28 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
     setDetectedTexts,
     reset,
   } = useImageTranslation();
-
-  const handleSettingsReady = () => {
-    setSettingsConfigured(true);
-  };
+  
+  const { fileToBase64 } = useImageUpload();
 
   const handleImageUpload = async (file: File) => {
-    // Set image in hook and get base64
-    const base64Image = await handleImageSelect(file, selectedLanguage);
+    // Just upload and store image, then auto-detect text
+    const base64Image = await fileToBase64(file);
+    setUploadedImage(base64Image);
+    setIsDetectingText(true);
     
-    if (base64Image) {
-      // Auto-detect text after image is set
+    // Auto-detect text
+    try {
       const texts = await detectTextInImage(base64Image);
       if (texts.length > 0) {
-        setShowTextDetection(true);
+        // Set image in hook for processing later
+        await handleImageSelect(file, selectedLanguage);
       } else {
         toast.error("No text detected in the image");
       }
+    } catch (error) {
+      toast.error("Failed to detect text in image");
+    } finally {
+      setIsDetectingText(false);
     }
   };
 
@@ -110,10 +116,18 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
     }
   };
 
-  const handleApplyTranslation = async (finalTranslatedTexts: TranslatedText[]) => {
-    setShowTextDetection(false);
+  const handleTranslate = async (finalTranslatedTexts: TranslatedText[]) => {
+    const imageToProcess = uploadedImage || originalImage;
+    if (!imageToProcess) {
+      toast.error("Please upload an image first");
+      return;
+    }
     
-    if (originalImage) {
+    // Make sure image is set in hook
+    if (!originalImage && uploadedImage) {
+      // Image is already detected, just process
+      await processTranslation(uploadedImage, selectedLanguage, finalTranslatedTexts, translationSettings);
+    } else if (originalImage) {
       await processTranslation(originalImage, selectedLanguage, finalTranslatedTexts, translationSettings);
     }
   };
@@ -128,18 +142,17 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
 
   // Determine current step for step indicator
   const getCurrentStep = () => {
-    if (!settingsConfigured) return 1;
-    if (!originalImage) return 2;
-    if (showTextDetection && originalImage) return 3;
-    return 4;
+    if (!uploadedImage && !originalImage) return 1;
+    if ((uploadedImage || originalImage) && !translatedImage && !isProcessing) return 2;
+    if (translatedImage) return 3;
+    return 2;
   };
 
   const currentStep = getCurrentStep();
   const steps: Array<{ number: number; label: string; status: "completed" | "current" | "upcoming" }> = [
-    { number: 1, label: "Settings", status: currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming" },
-    { number: 2, label: "Upload", status: currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming" },
-    { number: 3, label: "Review", status: currentStep > 3 ? "completed" : currentStep === 3 ? "current" : "upcoming" },
-    { number: 4, label: "Results", status: currentStep >= 4 ? (translatedImage ? "current" : "upcoming") : "upcoming" },
+    { number: 1, label: "Upload", status: currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming" },
+    { number: 2, label: "Configure", status: currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming" },
+    { number: 3, label: "Results", status: currentStep >= 3 ? "current" : "upcoming" },
   ];
 
   return (
@@ -158,89 +171,126 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
         <StepIndicator steps={steps} />
       </div>
 
-      {!settingsConfigured ? (
-        <WorkflowCard
-          title="Configure Translation Settings"
-          description="Select language and adjust translation quality options"
-        >
-          <div className="space-y-6">
-            <LanguageSelector
-              language={selectedLanguage}
-              onLanguageChange={setSelectedLanguage}
-              disabled={isProcessing}
-            />
-            <TranslationSettingsComponent
-              settings={translationSettings}
-              onSettingsChange={setTranslationSettings}
-              disabled={isProcessing}
-            />
-            <Button
-              onClick={handleSettingsReady}
-              size="lg"
-              className="w-full h-12 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 font-bold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 rounded-xl"
-            >
-              Continue to Upload
-              <Languages className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
-        </WorkflowCard>
-      ) : !originalImage ? (
+      {!uploadedImage && !originalImage ? (
         <WorkflowCard
           title="Upload Your Image"
-          description={`Target language: ${languageName}`}
+          description="Start by uploading an image with text you want to translate"
         >
-          <div className="space-y-6">
-            <div className="flex items-center justify-center">
-              <Button onClick={() => setSettingsConfigured(false)} variant="outline" size="sm" className="border-primary/30 hover:bg-primary/10">
-                Change Settings
+          <ImageUpload
+            onImageSelect={handleImageUpload}
+            disabled={isProcessing || isDetecting || isDetectingText}
+            label="Upload Image"
+            description="Drag and drop or click to select an image with text to translate"
+          />
+          {(isDetecting || isDetectingText) && (
+            <div className="flex items-center justify-center gap-2 text-muted-foreground mt-4">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Detecting text in image...</span>
+            </div>
+          )}
+        </WorkflowCard>
+      ) : (uploadedImage || originalImage) && !translatedImage ? (
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Image Preview - Left Side */}
+          <WorkflowCard title="Your Image" description="Preview your uploaded image with detected text">
+            <div className="space-y-4">
+              <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-primary/20 bg-slate-900/50">
+                <img
+                  src={uploadedImage || originalImage || ''}
+                  alt="Original"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              {detectedTexts.length > 0 && (
+                <div className="text-sm text-muted-foreground text-center">
+                  <p><span className="font-semibold text-foreground">{detectedTexts.length}</span> text elements detected</p>
+                </div>
+              )}
+            </div>
+          </WorkflowCard>
+
+          {/* Settings & Translation - Right Side */}
+          <WorkflowCard 
+            title="Translation Settings" 
+            description="Select language, review detected text, and adjust translation options"
+          >
+            <div className="space-y-6">
+              <LanguageSelector
+                language={selectedLanguage}
+                onLanguageChange={setSelectedLanguage}
+                disabled={isProcessing}
+              />
+              
+              {detectedTexts.length > 0 ? (
+                <div className="space-y-4">
+                  <TextDetectionAndTranslation
+                    image={uploadedImage || originalImage || ''}
+                    detectedTexts={detectedTexts}
+                    targetLanguage={selectedLanguage}
+                    targetLanguageName={languageName}
+                    onTextsUpdate={setDetectedTexts}
+                    onTranslate={handleTranslateTexts}
+                    onApply={handleTranslate}
+                    isTranslating={isTranslatingText}
+                    isApplying={isProcessing}
+                  />
+                </div>
+              ) : (
+                <div className="p-4 bg-muted/50 rounded-lg text-center">
+                  <p className="text-sm text-muted-foreground">No text detected. Try uploading a different image.</p>
+                </div>
+              )}
+              
+              <TranslationSettingsComponent
+                settings={translationSettings}
+                onSettingsChange={setTranslationSettings}
+                disabled={isProcessing}
+              />
+              
+              <Button
+                onClick={() => {
+                  reset();
+                  setUploadedImage(null);
+                }}
+                variant="outline"
+                size="sm"
+                className="w-full border-primary/30 hover:bg-primary/10"
+              >
+                Upload Different Image
               </Button>
             </div>
-            <ImageUpload
-              onImageSelect={handleImageUpload}
-              disabled={isProcessing || isDetecting}
-              label="Upload Image"
-              description="Drag and drop or click to select an image with text to translate"
-            />
-            {isDetecting && (
-              <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Detecting text in image...</span>
-              </div>
-            )}
-          </div>
-        </WorkflowCard>
-      ) : showTextDetection && originalImage ? (
-        <WorkflowCard
-          title="Review & Translate Text"
-          description={`Review detected text, edit if needed, then translate to ${languageName}`}
-        >
-          <TextDetectionAndTranslation
-            image={originalImage}
-            detectedTexts={detectedTexts}
-            targetLanguage={selectedLanguage}
-            targetLanguageName={languageName}
-            onTextsUpdate={setDetectedTexts}
-            onTranslate={handleTranslateTexts}
-            onApply={handleApplyTranslation}
-            isTranslating={isTranslatingText}
-            isApplying={isProcessing}
-          />
-        </WorkflowCard>
-      ) : (
+          </WorkflowCard>
+        </div>
+      ) : translatedImage ? (
         <WorkflowCard
           title="Translation Results"
           description={`Language: ${languageName} • Quality: ${translationSettings.quality} • Style: ${translationSettings.textStyle}`}
         >
-          <ImageComparison
-            originalImage={originalImage || ''}
-            enhancedImage={translatedImage}
-            isProcessing={isProcessing}
-            onDownload={handleDownload}
-            originalLabel="Original"
-            processedLabel="Translated"
-          />
+          <div className="space-y-6">
+            <ImageComparison
+              originalImage={originalImage || uploadedImage || ''}
+              enhancedImage={translatedImage}
+              isProcessing={isProcessing}
+              onDownload={handleDownload}
+              originalLabel="Original"
+              processedLabel="Translated"
+            />
+            <div className="flex gap-3">
+              <Button
+                onClick={() => {
+                  reset();
+                  setUploadedImage(null);
+                }}
+                variant="outline"
+                size="default"
+                className="flex-1 border-primary/30 hover:bg-primary/10"
+              >
+                Translate Another Image
+              </Button>
+            </div>
+          </div>
         </WorkflowCard>
-      )}
+      ) : null}
     </div>
   );
 };

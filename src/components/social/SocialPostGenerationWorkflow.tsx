@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUpload } from "@/components/shared/ImageUpload";
 import { BackButton } from "@/components/shared/BackButton";
+import { StepIndicator } from "@/components/shared/StepIndicator";
 import { WorkflowHeader } from "@/components/shared/WorkflowHeader";
 import { WorkflowCard } from "@/components/shared/WorkflowCard";
 import { downloadImage } from "@/lib/utils";
@@ -190,6 +191,14 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
         iconBgColor="bg-pink-500/20"
         backButton={<BackButton onClick={onBack} variant="floating" />}
       />
+
+      {/* Step Indicator */}
+      <div className="mb-6">
+        <StepIndicator steps={[
+          { number: 1, label: "Configure", status: !generatedPost ? "current" : "completed" },
+          { number: 2, label: "Result", status: generatedPost ? "current" : "upcoming" },
+        ]} />
+      </div>
 
       {/* Enhanced Mode Selection */}
       <div className="mb-6">

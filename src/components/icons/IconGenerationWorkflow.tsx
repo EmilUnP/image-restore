@@ -30,7 +30,6 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
   const [style, setStyle] = useState('modern');
   const [size, setSize] = useState('512');
   const [upgradeLevel, setUpgradeLevel] = useState('medium');
-  const [settingsConfigured, setSettingsConfigured] = useState(false);
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<'png' | 'svg'>('png');
 
@@ -150,44 +149,28 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
     setMode(newMode);
     setGenerationMode(newMode);
     reset();
-    setSettingsConfigured(false);
   };
 
-  const handleSettingsReady = async () => {
-    if (mode === 'generate' && !prompt.trim()) {
-      toast.error('Please enter a description for the icon');
-      return;
-    }
-    if (mode === 'generate' && useVariants && variants.every(v => !v.trim())) {
-      toast.error('Please add at least one variant description');
-      return;
-    }
-    if (mode === 'upgrade' && !originalIcon) {
-      toast.error('Please upload an icon first');
-      return;
-    }
-    setSettingsConfigured(true);
-    
-    // Trigger generation for generate mode
-    if (mode === 'generate') {
-      await handleGenerate();
-    }
-  };
+  // Removed handleSettingsReady - now we just call handleGenerate directly
 
   // Determine current step for step indicator
   const getCurrentStep = () => {
-    if (!settingsConfigured) return 1;
-    if (mode === 'generate' && !prompt.trim()) return 2;
-    if (mode === 'upgrade' && !originalIcon) return 2;
-    return 3;
+    if (mode === 'generate') {
+      if (!prompt.trim() && !generatedIcon && !generatedIcons.length) return 1;
+      if (isGenerating || generatedIcon || generatedIcons.length > 0) return 2;
+      return 1;
+    } else {
+      if (!originalIcon) return 1;
+      if (generatedIcon) return 2;
+      return 1;
+    }
   };
 
   const currentStep = getCurrentStep();
   const hasResults = generatedIcon || generatedIcons.length > 0;
   const steps: Array<{ number: number; label: string; status: "completed" | "current" | "upcoming" }> = [
-    { number: 1, label: mode === 'generate' ? "Describe" : "Upload", status: (currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming") as "completed" | "current" | "upcoming" },
-    { number: 2, label: mode === 'generate' ? "Generate" : "Upgrade", status: (currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming") as "completed" | "current" | "upcoming" },
-    { number: 3, label: "Result", status: (currentStep >= 3 ? (hasResults ? "current" : "upcoming") : "upcoming") as "completed" | "current" | "upcoming" },
+    { number: 1, label: mode === 'generate' ? "Configure" : "Upload", status: (currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming") as "completed" | "current" | "upcoming" },
+    { number: 2, label: "Result", status: (currentStep >= 2 ? (hasResults ? "current" : "upcoming") : "upcoming") as "completed" | "current" | "upcoming" },
   ];
 
   return (
@@ -230,12 +213,12 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
 
       {mode === 'generate' ? (
         <>
-          {!settingsConfigured ? (
+          {!generatedIcon && !generatedIcons.length && !isGenerating ? (
             <WorkflowCard
-              title="Describe Your Icon"
-              description="Enter a description and customize the style and size"
+              title="Create Your Icon"
+              description="Describe what you want and customize the settings, then click Generate"
             >
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="prompt" className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-primary" />
@@ -343,12 +326,21 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                 </div>
 
                 <Button
-                  onClick={handleSettingsReady}
+                  onClick={handleGenerate}
                   className="w-full h-12 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 text-base font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={!prompt.trim() || isGenerating || (useVariants && variants.every(v => !v.trim()))}
                 >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Generate
+                  {isGenerating ? (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate Icon
+                    </>
+                  )}
                 </Button>
               </div>
             </WorkflowCard>
@@ -446,13 +438,12 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                           All
                         </Button>
                         <Button
-                          onClick={() => {
-                            reset();
-                            setSettingsConfigured(false);
-                            setPrompt('');
-                            setVariants(['']);
-                            setUseVariants(false);
-                          }}
+                        onClick={() => {
+                          reset();
+                          setPrompt('');
+                          setVariants(['']);
+                          setUseVariants(false);
+                        }}
                           variant="outline"
                           className="h-7 px-3 text-xs border-primary/20 text-foreground/90 hover:text-foreground"
                         >
@@ -517,13 +508,12 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                     Download
                   </Button>
                   <Button
-                    onClick={() => {
-                      reset();
-                      setSettingsConfigured(false);
-                      setPrompt('');
-                      setVariants(['']);
-                      setUseVariants(false);
-                    }}
+                        onClick={() => {
+                          reset();
+                          setPrompt('');
+                          setVariants(['']);
+                          setUseVariants(false);
+                        }}
                     variant="outline"
                     className="h-8 text-xs border-primary/20 text-foreground/90 hover:text-foreground"
                   >
@@ -536,7 +526,7 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
         </>
       ) : (
         <>
-          {!settingsConfigured ? (
+          {!originalIcon ? (
             <WorkflowCard
               title="Upload Icon to Upgrade"
               description="Upload an existing icon to enhance its quality and style"
@@ -604,10 +594,21 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                         Change
                       </Button>
                       <Button
-                        onClick={handleSettingsReady}
+                        onClick={handleUpgrade}
                         className="flex-1 h-9 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-sm font-semibold"
+                        disabled={isGenerating}
                       >
-                        Upgrade
+                        {isGenerating ? (
+                          <>
+                            <Zap className="w-3 h-3 mr-1.5 animate-spin" />
+                            Upgrading...
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-3 h-3 mr-1.5" />
+                            Upgrade
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -615,49 +616,87 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
               </div>
             </WorkflowCard>
           ) : !generatedIcon ? (
-            <WorkflowCard
-              title="Ready to Upgrade"
-              description={`${upgradeLevel} level • ${style} style`}
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-foreground/70">
-                    <span className="capitalize">{upgradeLevel}</span> • <span className="capitalize">{style}</span>
+            <div className="grid lg:grid-cols-2 gap-6">
+              <WorkflowCard title="Your Icon" description="Preview the icon you want to upgrade">
+                <div className="space-y-4">
+                  <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-primary/20 bg-slate-900/50 flex items-center justify-center">
+                    <img
+                      src={originalIcon}
+                      alt="Original icon"
+                      className="w-full h-full object-contain p-4"
+                    />
                   </div>
-                  <Button onClick={() => setSettingsConfigured(false)} variant="ghost" size="sm" className="h-7 text-xs text-foreground/70 hover:text-foreground">
-                    Edit
+                </div>
+              </WorkflowCard>
+
+              <WorkflowCard 
+                title="Upgrade Settings" 
+                description="Adjust upgrade level and style, then click Upgrade"
+              >
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="upgrade-level" className="text-sm font-semibold text-foreground">Level</Label>
+                      <Select value={upgradeLevel} onValueChange={setUpgradeLevel}>
+                        <SelectTrigger id="upgrade-level" className="h-11 text-sm bg-card/50 backdrop-blur-sm border-2 border-primary/30 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="upgrade-style" className="text-sm font-semibold text-foreground">Style</Label>
+                      <Select value={style} onValueChange={setStyle}>
+                        <SelectTrigger id="upgrade-style" className="h-11 text-sm bg-card/50 backdrop-blur-sm border-2 border-primary/30 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="modern">Modern</SelectItem>
+                          <SelectItem value="minimalist">Minimalist</SelectItem>
+                          <SelectItem value="bold">Bold</SelectItem>
+                          <SelectItem value="outline">Outline</SelectItem>
+                          <SelectItem value="filled">Filled</SelectItem>
+                          <SelectItem value="gradient">Gradient</SelectItem>
+                          <SelectItem value="3d">3D</SelectItem>
+                          <SelectItem value="flat">Flat</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={handleUpgrade}
+                    className="w-full h-12 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 text-base font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 rounded-xl disabled:opacity-50"
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Zap className="w-4 h-4 mr-2 animate-spin" />
+                        Upgrading...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-4 h-4 mr-2" />
+                        Upgrade Icon
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    onClick={() => reset()}
+                    variant="outline"
+                    className="w-full border-primary/30 hover:bg-primary/10"
+                  >
+                    Upload Different Icon
                   </Button>
                 </div>
-                {originalIcon && (
-                  <>
-                    <div className="p-3 bg-background/30 rounded-lg border border-primary/20">
-                      <img
-                        src={originalIcon}
-                        alt="Original icon"
-                        className="w-24 h-24 mx-auto object-contain rounded"
-                      />
-                    </div>
-                    <Button
-                      onClick={handleUpgrade}
-                      className="w-full h-9 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-sm font-semibold"
-                      disabled={isGenerating}
-                    >
-                      {isGenerating ? (
-                        <>
-                          <Zap className="w-3 h-3 mr-1.5 animate-spin" />
-                          Upgrading...
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="w-3 h-3 mr-1.5" />
-                          Upgrade
-                        </>
-                      )}
-                    </Button>
-                  </>
-                )}
-              </div>
-            </WorkflowCard>
+              </WorkflowCard>
+            </div>
           ) : (
             <>
               <WorkflowCard
@@ -708,7 +747,6 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                   <Button
                     onClick={() => {
                       reset();
-                      setSettingsConfigured(false);
                     }}
                     variant="outline"
                     className="w-full h-8 text-xs border-primary/20 text-foreground/90 hover:text-foreground"
