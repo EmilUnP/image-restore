@@ -15,7 +15,7 @@ import { WorkflowCard } from "@/components/shared/WorkflowCard";
 import { useLogoGeneration } from "@/hooks/useLogoGeneration";
 import { downloadImage, downloadImageInFormat } from "@/lib/utils";
 import { toast } from "sonner";
-import { Palette, Sparkles, Copy, Check, Download } from "lucide-react";
+import { Palette, Sparkles, Copy, Check, Download, X } from "lucide-react";
 
 interface LogoGenerationWorkflowProps {
   onBack: () => void;
