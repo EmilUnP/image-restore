@@ -495,6 +495,82 @@ export const generateSocialPost = async (request: GenerateSocialPostRequest): Pr
   return responseData;
 };
 
+export interface GenerateSuperSocialPostRequest {
+  aspectRatio: string;
+  style: string;
+  description?: string;
+  placedImages: Array<{
+    image: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>;
+  placedTexts: Array<{
+    text: string;
+    x: number;
+    y: number;
+    fontSize: number;
+    color: string;
+  }>;
+  canvasWidth: number;
+  canvasHeight: number;
+}
+
+export interface GenerateSuperSocialPostResponse {
+  generatedPost?: string;
+  message?: string;
+  error?: string;
+  actualPrompt?: string;
+}
+
+export const generateSuperSocialPost = async (request: GenerateSuperSocialPostRequest): Promise<GenerateSuperSocialPostResponse> => {
+  const API_URL = getApiUrl();
+  const url = `${API_URL}/api/generate-super-social-post`;
+  
+  console.log('[API] generateSuperSocialPost - Calling URL:', url);
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  let responseData: GenerateSuperSocialPostResponse;
+  try {
+    const responseText = await response.text();
+    
+    if (!responseText || responseText.trim().length === 0) {
+      throw new Error('Server returned empty response');
+    }
+    
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('[API] generateSuperSocialPost - JSON parse error:', parseError);
+      throw new Error(`Server returned invalid JSON. Status: ${response.status}`);
+    }
+  } catch (e) {
+    console.error('[API] generateSuperSocialPost - Failed to parse response:', e);
+    if (e instanceof Error) {
+      throw e;
+    }
+    throw new Error(`Server responded with non-JSON: ${response.status}`);
+  }
+
+  if (!response.ok) {
+    const errorMessage = responseData.error || `Failed to generate super post. Error: ${response.status}`;
+    return {
+      ...responseData,
+      error: errorMessage,
+    };
+  }
+
+  return responseData;
+};
+
 export interface RemoveObjectRequest {
   image: string;
   mask: string;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, Layers, Sparkles } from "lucide-react";
+import { ImageIcon, Layers, Sparkles, X } from "lucide-react";
 import { EnhancementModeSelector } from "./EnhancementModeSelector";
 import { ImageUpload } from "@/components/shared/ImageUpload";
 import { ImageComparison } from "@/components/shared/ImageComparison";
@@ -263,12 +263,25 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
           {/* Image Preview - Left Side */}
           <WorkflowCard title="Your Image" description="Preview your uploaded image">
             <div className="space-y-4">
-              <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-primary/20 bg-slate-900/50">
+              <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-primary/20 bg-slate-900/50 group">
                 <img
                   src={uploadedImage || originalImage || ''}
                   alt="Original"
                   className="w-full h-full object-contain"
                 />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-3 right-3 h-9 w-9 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground border-2 border-destructive-foreground/20 shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl opacity-0 group-hover:opacity-100"
+                  onClick={() => {
+                    reset();
+                    setUploadedImage(null);
+                    setProcessingMode('single');
+                  }}
+                  title="Remove image"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
               <div className="text-sm text-muted-foreground text-center">
                 <p>This is your original image. Adjust settings on the right, then click "Enhance" to process it.</p>
@@ -309,18 +322,6 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                   </>
                 )}
               </Button>
-              <Button
-                onClick={() => {
-                  reset();
-                  setUploadedImage(null);
-                  setProcessingMode('single');
-                }}
-                variant="outline"
-                size="sm"
-                className="w-full border-primary/30 hover:bg-primary/10"
-              >
-                Upload Different Image
-              </Button>
             </div>
           </WorkflowCard>
         </div>
@@ -357,7 +358,8 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
                 size="default"
                 className="flex-1 border-primary/30 hover:bg-primary/10"
               >
-                Enhance Another Image
+                <X className="h-4 w-4 mr-2" />
+                Remove Image
               </Button>
             </div>
           </div>

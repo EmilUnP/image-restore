@@ -415,13 +415,6 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
 
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => reset()}
-                        variant="outline"
-                        className="flex-1 h-9 text-sm border-primary/20 text-foreground/70 hover:text-foreground hover:border-primary/40"
-                      >
-                        Change
-                      </Button>
-                      <Button
                         onClick={handleSettingsReady}
                         className="flex-1 h-9 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-sm font-semibold"
                       >
@@ -436,12 +429,21 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
             <div className="grid lg:grid-cols-2 gap-6">
               <WorkflowCard title="Your Logo" description="Preview the logo you want to upgrade">
                 <div className="space-y-4">
-                  <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-primary/20 bg-slate-900/50 flex items-center justify-center">
+                  <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-primary/20 bg-slate-900/50 flex items-center justify-center group">
                     <img
                       src={originalLogo}
                       alt="Original logo"
                       className="w-full h-full object-contain p-4"
                     />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-3 right-3 h-9 w-9 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground border-2 border-destructive-foreground/20 shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl opacity-0 group-hover:opacity-100"
+                      onClick={() => reset()}
+                      title="Remove logo"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </WorkflowCard>
@@ -505,13 +507,6 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                     )}
                   </Button>
 
-                  <Button
-                    onClick={() => reset()}
-                    variant="outline"
-                    className="w-full border-primary/30 hover:bg-primary/10"
-                  >
-                    Upload Different Logo
-                  </Button>
                 </div>
               </WorkflowCard>
             </div>
@@ -570,7 +565,8 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
                     variant="outline"
                     className="w-full h-8 text-xs border-primary/20 text-foreground/70 hover:text-foreground hover:border-primary/40"
                   >
-                    Upgrade Another
+                    <X className="h-3 w-3 mr-2" />
+                    Remove Logo
                   </Button>
                 </div>
               </WorkflowCard>

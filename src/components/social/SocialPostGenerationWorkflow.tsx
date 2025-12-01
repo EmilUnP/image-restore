@@ -13,15 +13,16 @@ import { WorkflowHeader } from "@/components/shared/WorkflowHeader";
 import { WorkflowCard } from "@/components/shared/WorkflowCard";
 import { downloadImage } from "@/lib/utils";
 import { toast } from "sonner";
-import { Share2, Sparkles, X, Copy, Check, Image as ImageIcon, Download } from "lucide-react";
+import { Share2, Sparkles, X, Copy, Check, Image as ImageIcon, Download, Wand2 } from "lucide-react";
 import { generateSocialPost } from "@/lib/api";
 import { useImageUpload } from "@/hooks/useImageUpload";
+import { SuperPostGenerationWorkflow } from "./SuperPostGenerationWorkflow";
 
 interface SocialPostGenerationWorkflowProps {
   onBack: () => void;
 }
 
-type GenerationMode = 'from-scratch' | 'single-reference' | 'multi-reference';
+type GenerationMode = 'from-scratch' | 'single-reference' | 'multi-reference' | 'super';
 
 export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWorkflowProps) => {
   const { fileToBase64 } = useImageUpload();
@@ -203,7 +204,7 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
       {/* Enhanced Mode Selection */}
       <div className="mb-6">
         <Tabs value={mode} onValueChange={handleModeChange}>
-          <TabsList className="grid w-full grid-cols-3 bg-card/60 backdrop-blur-xl border border-primary/30 p-1 rounded-xl h-12 shadow-lg shadow-primary/5">
+          <TabsList className="grid w-full grid-cols-4 bg-card/60 backdrop-blur-xl border border-primary/30 p-1 rounded-xl h-12 shadow-lg shadow-primary/5">
             <TabsTrigger 
               value="from-scratch" 
               className="gap-2 text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 transition-all duration-300 rounded-lg"
@@ -225,10 +226,21 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
               <Share2 className="w-4 h-4" />
               Multi Ref
             </TabsTrigger>
+            <TabsTrigger 
+              value="super" 
+              className="gap-2 text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 transition-all duration-300 rounded-lg"
+            >
+              <Wand2 className="w-4 h-4" />
+              Super
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
+      {mode === 'super' ? (
+        <SuperPostGenerationWorkflow onBack={onBack} />
+      ) : (
+        <>
       {!generatedPost ? (
         <WorkflowCard
           title="Create Your Social Post"
@@ -486,6 +498,8 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
             </div>
           </div>
         </WorkflowCard>
+      )}
+        </>
       )}
     </div>
   );

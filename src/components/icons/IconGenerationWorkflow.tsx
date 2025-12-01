@@ -587,13 +587,6 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
 
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => reset()}
-                        variant="outline"
-                        className="flex-1 h-9 text-sm border-primary/20 text-foreground/90 hover:text-foreground"
-                      >
-                        Change
-                      </Button>
-                      <Button
                         onClick={handleUpgrade}
                         className="flex-1 h-9 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-sm font-semibold"
                         disabled={isGenerating}
@@ -619,12 +612,21 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
             <div className="grid lg:grid-cols-2 gap-6">
               <WorkflowCard title="Your Icon" description="Preview the icon you want to upgrade">
                 <div className="space-y-4">
-                  <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-primary/20 bg-slate-900/50 flex items-center justify-center">
+                  <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-primary/20 bg-slate-900/50 flex items-center justify-center group">
                     <img
                       src={originalIcon}
                       alt="Original icon"
                       className="w-full h-full object-contain p-4"
                     />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-3 right-3 h-9 w-9 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground border-2 border-destructive-foreground/20 shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl opacity-0 group-hover:opacity-100"
+                      onClick={() => reset()}
+                      title="Remove icon"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </WorkflowCard>
@@ -687,13 +689,6 @@ export const IconGenerationWorkflow = ({ onBack }: IconGenerationWorkflowProps) 
                     )}
                   </Button>
 
-                  <Button
-                    onClick={() => reset()}
-                    variant="outline"
-                    className="w-full border-primary/30 hover:bg-primary/10"
-                  >
-                    Upload Different Icon
-                  </Button>
                 </div>
               </WorkflowCard>
             </div>

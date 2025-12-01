@@ -508,8 +508,8 @@ export const ObjectRemovalWorkflow = ({ onBack }: ObjectRemovalWorkflowProps) =>
                 size="lg"
                 className="flex-1 border-primary/30 hover:bg-primary/10 rounded-xl"
               >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Start Over
+                <X className="h-4 w-4 mr-2" />
+                Remove Image
               </Button>
             </div>
           </div>
