@@ -21,20 +21,20 @@ export const WorkflowCard = ({
 }: WorkflowCardProps) => {
   return (
     <Card className={cn(
-      "p-6 bg-card/60 backdrop-blur-xl border border-primary/30 shadow-xl shadow-primary/10 rounded-2xl transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20",
+      "p-4 bg-card/60 backdrop-blur-xl border border-primary/30 shadow-xl shadow-primary/10 rounded-xl transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20",
       className
     )}>
       {(title || description) && (
-        <CardHeader className={cn("pb-3 border-b border-primary/20", headerClassName)}>
+        <CardHeader className={cn("pb-2 border-b border-primary/20 px-0 pt-0", headerClassName)}>
           {title && (
-            <CardTitle className="text-lg font-semibold text-foreground">{title}</CardTitle>
+            <CardTitle className="text-sm font-semibold text-foreground">{title}</CardTitle>
           )}
           {description && (
-            <CardDescription className="text-sm mt-1">{description}</CardDescription>
+            <CardDescription className="text-xs mt-0.5">{description}</CardDescription>
           )}
         </CardHeader>
       )}
-      <CardContent className={cn("pt-6", contentClassName)}>
+      <CardContent className={cn("pt-3 px-0", contentClassName)}>
         {children}
       </CardContent>
     </Card>

@@ -49,9 +49,18 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
-  const [resizeHandle, setResizeHandle] = useState<'se' | 'sw' | 'ne' | 'nw' | null>(null);
+  const [resizeInfo, setResizeInfo] = useState<{
+    elementId: string;
+    elementType: 'image' | 'text';
+    handle: 'se' | 'sw' | 'ne' | 'nw';
+    startX: number;
+    startY: number;
+    startWidth: number;
+    startHeight: number;
+    startXPercent: number;
+    startYPercent: number;
+  } | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [resizeStartData, setResizeStartData] = useState<{ width: number; height: number; mouseX: number; mouseY: number } | null>(null);
   const [newText, setNewText] = useState('');
   const [newTextFontSize, setNewTextFontSize] = useState(24);
   const [newTextColor, setNewTextColor] = useState('#000000');
@@ -124,7 +133,13 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
 
   const handleElementMouseDown = (e: React.MouseEvent, id: string, type: 'image' | 'text') => {
     // Don't start dragging if clicking on a resize handle
-    if ((e.target as HTMLElement).closest('[class*="cursor-se-resize"], [class*="cursor-sw-resize"], [class*="cursor-ne-resize"], [class*="cursor-nw-resize"]')) {
+    const target = e.target as HTMLElement;
+    if (target.closest('.resize-handle') || target.hasAttribute('data-resize-handle')) {
+      return;
+    }
+    
+    // Don't start dragging if we're already resizing
+    if (isResizing) {
       return;
     }
     
@@ -132,6 +147,7 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
     setSelectedElement(id);
     setIsDragging(true);
     setIsResizing(false);
+    setResizeInfo(null);
     
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -154,10 +170,12 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
   const handleResizeStart = (e: React.MouseEvent, id: string, type: 'image' | 'text', handle: 'se' | 'sw' | 'ne' | 'nw') => {
     e.stopPropagation();
     e.preventDefault();
-    setSelectedElement(id);
+    e.nativeEvent.stopImmediatePropagation();
+    
+    // Immediately set resizing state to prevent dragging
     setIsResizing(true);
-    setResizeHandle(handle);
     setIsDragging(false);
+    setSelectedElement(id);
     
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -167,133 +185,177 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
       ? placedImages.find(img => img.id === id)
       : placedTexts.find(txt => txt.id === id);
     
-    if (element) {
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      
-      if (type === 'image') {
-        const img = element as PlacedImage;
-        setResizeStartData({
-          width: img.width,
-          height: img.height,
-          mouseX,
-          mouseY,
-        });
-      } else {
-        const txt = element as PlacedText;
-        setResizeStartData({
-          width: txt.fontSize,
-          height: txt.fontSize,
-          mouseX,
-          mouseY,
-        });
-      }
+    if (!element) return;
+    
+    const startX = e.clientX;
+    const startY = e.clientY;
+    
+    if (type === 'image') {
+      const img = element as PlacedImage;
+      setResizeInfo({
+        elementId: id,
+        elementType: 'image',
+        handle,
+        startX,
+        startY,
+        startWidth: img.width,
+        startHeight: img.height,
+        startXPercent: img.x,
+        startYPercent: img.y,
+      });
+    } else {
+      const txt = element as PlacedText;
+      setResizeInfo({
+        elementId: id,
+        elementType: 'text',
+        handle,
+        startX,
+        startY,
+        startWidth: txt.fontSize,
+        startHeight: txt.fontSize,
+        startXPercent: txt.x,
+        startYPercent: txt.y,
+      });
     }
   };
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!canvasRef.current || !selectedElement) return;
+    if (!canvasRef.current) return;
     
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     
-    if (isResizing && resizeHandle && resizeStartData) {
-      // Handle resizing
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      const deltaX = mouseX - resizeStartData.mouseX;
-      const deltaY = mouseY - resizeStartData.mouseY;
-      
-      const imageIndex = placedImages.findIndex(img => img.id === selectedElement);
-      if (imageIndex !== -1) {
-        const img = placedImages[imageIndex];
+    // Handle resizing with requestAnimationFrame for better performance
+    if (isResizing && resizeInfo) {
+      requestAnimationFrame(() => {
+        const deltaX = e.clientX - resizeInfo.startX;
+        const deltaY = e.clientY - resizeInfo.startY;
         
-        // Calculate size change based on mouse movement
-        const widthChange = (deltaX / rect.width) * 100;
-        const heightChange = (deltaY / rect.height) * 100;
+        // Convert pixel movement to percentage
+        const deltaXPercent = (deltaX / rect.width) * 100;
+        const deltaYPercent = (deltaY / rect.height) * 100;
         
-        let newWidth = resizeStartData.width;
-        let newHeight = resizeStartData.height;
-        
-        // Adjust based on which corner is being dragged
-        if (resizeHandle === 'se') {
-          // Southeast - both increase
-          newWidth = resizeStartData.width + widthChange;
-          newHeight = resizeStartData.height + heightChange;
-        } else if (resizeHandle === 'sw') {
-          // Southwest - width decreases, height increases
-          newWidth = resizeStartData.width - widthChange;
-          newHeight = resizeStartData.height + heightChange;
-        } else if (resizeHandle === 'ne') {
-          // Northeast - width increases, height decreases
-          newWidth = resizeStartData.width + widthChange;
-          newHeight = resizeStartData.height - heightChange;
-        } else if (resizeHandle === 'nw') {
-          // Northwest - both decrease
-          newWidth = resizeStartData.width - widthChange;
-          newHeight = resizeStartData.height - heightChange;
+        if (resizeInfo.elementType === 'image') {
+          setPlacedImages(prev => {
+            const imageIndex = prev.findIndex(img => img.id === resizeInfo.elementId);
+            if (imageIndex === -1) return prev;
+            
+            let newWidth = resizeInfo.startWidth;
+            let newHeight = resizeInfo.startHeight;
+            let newX = resizeInfo.startXPercent;
+            let newY = resizeInfo.startYPercent;
+            
+            // Calculate new size and position based on handle
+            switch (resizeInfo.handle) {
+              case 'se': // Southeast - drag right and down
+                newWidth = resizeInfo.startWidth + deltaXPercent;
+                newHeight = resizeInfo.startHeight + deltaYPercent;
+                break;
+              case 'sw': // Southwest - drag left and down
+                newWidth = resizeInfo.startWidth - deltaXPercent;
+                newHeight = resizeInfo.startHeight + deltaYPercent;
+                newX = resizeInfo.startXPercent - (deltaXPercent / 2);
+                break;
+              case 'ne': // Northeast - drag right and up
+                newWidth = resizeInfo.startWidth + deltaXPercent;
+                newHeight = resizeInfo.startHeight - deltaYPercent;
+                newY = resizeInfo.startYPercent - (deltaYPercent / 2);
+                break;
+              case 'nw': // Northwest - drag left and up
+                newWidth = resizeInfo.startWidth - deltaXPercent;
+                newHeight = resizeInfo.startHeight - deltaYPercent;
+                newX = resizeInfo.startXPercent - (deltaXPercent / 2);
+                newY = resizeInfo.startYPercent - (deltaYPercent / 2);
+                break;
+            }
+            
+            // Clamp values
+            newWidth = Math.max(5, Math.min(80, newWidth));
+            newHeight = Math.max(5, Math.min(80, newHeight));
+            newX = Math.max(0, Math.min(100, newX));
+            newY = Math.max(0, Math.min(100, newY));
+            
+            const updated = [...prev];
+            updated[imageIndex] = { 
+              ...updated[imageIndex], 
+              width: newWidth, 
+              height: newHeight,
+              x: newX,
+              y: newY,
+            };
+            return updated;
+          });
+        } else {
+          // Text resizing - only change font size
+          setPlacedTexts(prev => {
+            const textIndex = prev.findIndex(txt => txt.id === resizeInfo.elementId);
+            if (textIndex === -1) return prev;
+            
+            // Use diagonal distance for font size
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const fontSizeChange = (distance / rect.width) * 100;
+            
+            let newFontSize = resizeInfo.startWidth;
+            if (resizeInfo.handle === 'se' || resizeInfo.handle === 'ne') {
+              newFontSize = resizeInfo.startWidth + fontSizeChange;
+            } else {
+              newFontSize = resizeInfo.startWidth - fontSizeChange;
+            }
+            
+            newFontSize = Math.max(12, Math.min(72, newFontSize));
+            
+            const updated = [...prev];
+            updated[textIndex] = { ...updated[textIndex], fontSize: newFontSize };
+            return updated;
+          });
         }
-        
-        // Clamp values
-        newWidth = Math.max(5, Math.min(80, newWidth));
-        newHeight = Math.max(5, Math.min(80, newHeight));
-        
-        const updated = [...placedImages];
-        updated[imageIndex] = { ...updated[imageIndex], width: newWidth, height: newHeight };
-        setPlacedImages(updated);
-        return;
-      }
-      
-      const textIndex = placedTexts.findIndex(txt => txt.id === selectedElement);
-      if (textIndex !== -1) {
-        // For text, resize based on horizontal movement
-        const fontSizeChange = (deltaX / rect.width) * 100;
-        let newFontSize = resizeStartData.width + fontSizeChange;
-        newFontSize = Math.max(12, Math.min(72, newFontSize));
-        
-        const updated = [...placedTexts];
-        updated[textIndex] = { ...updated[textIndex], fontSize: newFontSize };
-        setPlacedTexts(updated);
-      }
+      });
       return;
     }
     
-    if (isDragging && !isResizing) {
-      const x = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
-      const y = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
-      
-      // Clamp to canvas bounds
-      const clampedX = Math.max(0, Math.min(100, x));
-      const clampedY = Math.max(0, Math.min(100, y));
-      
-      // Update position
-      const imageIndex = placedImages.findIndex(img => img.id === selectedElement);
-      if (imageIndex !== -1) {
-        const updated = [...placedImages];
-        updated[imageIndex] = { ...updated[imageIndex], x: clampedX, y: clampedY };
-        setPlacedImages(updated);
-        return;
-      }
-      
-      const textIndex = placedTexts.findIndex(txt => txt.id === selectedElement);
-      if (textIndex !== -1) {
-        const updated = [...placedTexts];
-        updated[textIndex] = { ...updated[textIndex], x: clampedX, y: clampedY };
-        setPlacedTexts(updated);
-      }
+    // Handle dragging - only if not resizing
+    if (isDragging && selectedElement && !isResizing && !resizeInfo) {
+      requestAnimationFrame(() => {
+        const x = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
+        const y = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
+        
+        // Clamp to canvas bounds
+        const clampedX = Math.max(0, Math.min(100, x));
+        const clampedY = Math.max(0, Math.min(100, y));
+        
+        // Update position
+        setPlacedImages(prev => {
+          const imageIndex = prev.findIndex(img => img.id === selectedElement);
+          if (imageIndex !== -1) {
+            const updated = [...prev];
+            updated[imageIndex] = { ...updated[imageIndex], x: clampedX, y: clampedY };
+            return updated;
+          }
+          return prev;
+        });
+        
+        setPlacedTexts(prev => {
+          const textIndex = prev.findIndex(txt => txt.id === selectedElement);
+          if (textIndex !== -1) {
+            const updated = [...prev];
+            updated[textIndex] = { ...updated[textIndex], x: clampedX, y: clampedY };
+            return updated;
+          }
+          return prev;
+        });
+      });
     }
-  }, [isDragging, isResizing, resizeHandle, selectedElement, dragOffset, placedImages, placedTexts]);
+  }, [isDragging, isResizing, resizeInfo, selectedElement, dragOffset]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
     setIsResizing(false);
-    setResizeHandle(null);
-    setResizeStartData(null);
+    setResizeInfo(null);
     // Keep selectedElement so user can see selection
   }, []);
 
   useEffect(() => {
-    if (isDragging) {
+    if (isDragging || isResizing) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -301,7 +363,7 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
         window.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isDragging, isResizing, handleMouseMove, handleMouseUp]);
 
   const handleDeleteElement = (id: string, type: 'image' | 'text') => {
     if (type === 'image') {
@@ -424,8 +486,8 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                   {placedImages.map((img) => (
                     <div
                       key={img.id}
-                      className={`absolute cursor-move transition-all ${
-                        selectedElement === img.id ? 'ring-2 ring-primary ring-offset-2 z-10' : ''
+                      className={`absolute transition-all ${
+                        selectedElement === img.id ? 'ring-2 ring-primary ring-offset-2 z-20' : 'z-10'
                       }`}
                       style={{
                         left: `${img.x}%`,
@@ -433,45 +495,116 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                         width: `${img.width}%`,
                         height: `${img.height}%`,
                         transform: 'translate(-50%, -50%)',
+                        pointerEvents: selectedElement === img.id ? 'auto' : 'auto',
                       }}
-                      onMouseDown={(e) => handleElementMouseDown(e, img.id, 'image')}
                     >
                       <div className="relative w-full h-full group">
-                        <img
-                          src={img.image}
-                          alt="Placed"
-                          className="w-full h-full object-contain rounded-lg border-2 border-primary/50 shadow-lg"
-                          draggable={false}
-                        />
+                        <div
+                          className="w-full h-full cursor-move"
+                          onMouseDown={(e) => {
+                            // Only start dragging if not clicking on a handle
+                            const target = e.target as HTMLElement;
+                            if (!target.closest('.resize-handle') && !target.hasAttribute('data-resize-handle')) {
+                              handleElementMouseDown(e, img.id, 'image');
+                            }
+                          }}
+                        >
+                          <img
+                            src={img.image}
+                            alt="Placed"
+                            className="w-full h-full object-contain rounded-lg border-2 border-primary/50 shadow-lg pointer-events-none"
+                            draggable={false}
+                          />
+                        </div>
                         {selectedElement === img.id && (
                           <>
-                            {/* Resize handles - larger and easier to grab */}
+                            {/* Resize handles - positioned outside element */}
                             <div
-                              className="absolute -bottom-2 -right-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-se-resize z-30 hover:scale-125 hover:bg-primary/90 transition-transform shadow-lg"
-                              onMouseDown={(e) => handleResizeStart(e, img.id, 'image', 'se')}
-                              style={{ touchAction: 'none' }}
+                              data-resize-handle="true"
+                              className="resize-handle absolute -bottom-2 -right-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-se-resize z-[100] hover:scale-125 hover:bg-primary/90 transition-transform shadow-lg"
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                e.nativeEvent.stopImmediatePropagation();
+                                handleResizeStart(e, img.id, 'image', 'se');
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                              }}
+                              style={{ 
+                                touchAction: 'none',
+                                pointerEvents: 'auto',
+                                userSelect: 'none',
+                              }}
+                              title="Resize (SE)"
                             />
                             <div
-                              className="absolute -bottom-2 -left-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-sw-resize z-30 hover:scale-125 hover:bg-primary/90 transition-transform shadow-lg"
-                              onMouseDown={(e) => handleResizeStart(e, img.id, 'image', 'sw')}
-                              style={{ touchAction: 'none' }}
+                              data-resize-handle="true"
+                              className="resize-handle absolute -bottom-2 -left-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-sw-resize z-[100] hover:scale-125 hover:bg-primary/90 transition-transform shadow-lg"
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                e.nativeEvent.stopImmediatePropagation();
+                                handleResizeStart(e, img.id, 'image', 'sw');
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                              }}
+                              style={{ 
+                                touchAction: 'none',
+                                pointerEvents: 'auto',
+                                userSelect: 'none',
+                              }}
+                              title="Resize (SW)"
                             />
                             <div
-                              className="absolute -top-2 -right-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-ne-resize z-30 hover:scale-125 hover:bg-primary/90 transition-transform shadow-lg"
-                              onMouseDown={(e) => handleResizeStart(e, img.id, 'image', 'ne')}
-                              style={{ touchAction: 'none' }}
+                              data-resize-handle="true"
+                              className="resize-handle absolute -top-2 -right-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-ne-resize z-[100] hover:scale-125 hover:bg-primary/90 transition-transform shadow-lg"
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                e.nativeEvent.stopImmediatePropagation();
+                                handleResizeStart(e, img.id, 'image', 'ne');
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                              }}
+                              style={{ 
+                                touchAction: 'none',
+                                pointerEvents: 'auto',
+                                userSelect: 'none',
+                              }}
+                              title="Resize (NE)"
                             />
                             <div
-                              className="absolute -top-2 -left-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-nw-resize z-30 hover:scale-125 hover:bg-primary/90 transition-transform shadow-lg"
-                              onMouseDown={(e) => handleResizeStart(e, img.id, 'image', 'nw')}
-                              style={{ touchAction: 'none' }}
+                              data-resize-handle="true"
+                              className="resize-handle absolute -top-2 -left-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-nw-resize z-[100] hover:scale-125 hover:bg-primary/90 transition-transform shadow-lg"
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                e.nativeEvent.stopImmediatePropagation();
+                                handleResizeStart(e, img.id, 'image', 'nw');
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                              }}
+                              style={{ 
+                                touchAction: 'none',
+                                pointerEvents: 'auto',
+                                userSelect: 'none',
+                              }}
+                              title="Resize (NW)"
                             />
                           </>
                         )}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="absolute top-1 right-1 h-6 w-6 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                          className="absolute top-1 right-1 h-6 w-6 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-40"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteElement(img.id, 'image');
@@ -487,46 +620,88 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                   {placedTexts.map((txt) => (
                     <div
                       key={txt.id}
-                      className={`absolute cursor-move transition-all ${
-                        selectedElement === txt.id ? 'ring-2 ring-primary ring-offset-2 z-10' : ''
+                      className={`absolute transition-all ${
+                        selectedElement === txt.id ? 'ring-2 ring-primary ring-offset-2 z-20' : 'z-10'
                       }`}
                       style={{
                         left: `${txt.x}%`,
                         top: `${txt.y}%`,
                         transform: 'translate(-50%, -50%)',
+                        pointerEvents: 'auto',
                       }}
-                      onMouseDown={(e) => handleElementMouseDown(e, txt.id, 'text')}
                     >
                       <div className="relative group px-2 py-1 bg-white/90 rounded border-2 border-primary/50 shadow-lg">
-                        <p
-                          style={{
-                            fontSize: `${txt.fontSize}px`,
-                            color: txt.color,
-                            fontWeight: 'bold',
-                            whiteSpace: 'nowrap',
+                        <div
+                          className="cursor-move"
+                          onMouseDown={(e) => {
+                            // Only start dragging if not clicking on a handle
+                            const target = e.target as HTMLElement;
+                            if (!target.closest('.resize-handle') && !target.hasAttribute('data-resize-handle')) {
+                              handleElementMouseDown(e, txt.id, 'text');
+                            }
                           }}
                         >
-                          {txt.text}
-                        </p>
+                          <p
+                            style={{
+                              fontSize: `${txt.fontSize}px`,
+                              color: txt.color,
+                              fontWeight: 'bold',
+                              whiteSpace: 'nowrap',
+                              pointerEvents: 'none',
+                            }}
+                          >
+                            {txt.text}
+                          </p>
+                        </div>
                         {selectedElement === txt.id && (
                           <>
-                            {/* Resize handles for text (font size) - larger */}
+                            {/* Resize handles for text (font size) */}
                             <div
-                              className="absolute -bottom-2 -right-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-se-resize z-30 hover:scale-125 hover:bg-primary/90 transition-transform shadow-lg"
-                              onMouseDown={(e) => handleResizeStart(e, txt.id, 'text', 'se')}
-                              style={{ touchAction: 'none' }}
+                              data-resize-handle="true"
+                              className="resize-handle absolute -bottom-2 -right-2 w-4 h-4 bg-primary border-2 border-white rounded-full cursor-se-resize z-[100] hover:scale-125 hover:bg-primary/90 transition-transform shadow-lg"
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                e.nativeEvent.stopImmediatePropagation();
+                                handleResizeStart(e, txt.id, 'text', 'se');
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                              }}
+                              style={{ 
+                                touchAction: 'none',
+                                pointerEvents: 'auto',
+                                userSelect: 'none',
+                              }}
+                              title="Increase text size"
                             />
                             <div
-                              className="absolute -bottom-2 -left-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-sw-resize z-30 hover:scale-125 hover:bg-primary/90 transition-transform shadow-lg"
-                              onMouseDown={(e) => handleResizeStart(e, txt.id, 'text', 'sw')}
-                              style={{ touchAction: 'none' }}
+                              data-resize-handle="true"
+                              className="resize-handle absolute -bottom-2 -left-2 w-4 h-4 bg-primary border-2 border-white rounded-full cursor-sw-resize z-[100] hover:scale-125 hover:bg-primary/90 transition-transform shadow-lg"
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                e.nativeEvent.stopImmediatePropagation();
+                                handleResizeStart(e, txt.id, 'text', 'sw');
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                              }}
+                              style={{ 
+                                touchAction: 'none',
+                                pointerEvents: 'auto',
+                                userSelect: 'none',
+                              }}
+                              title="Decrease text size"
                             />
                           </>
                         )}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                          className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-40"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteElement(txt.id, 'text');
@@ -557,10 +732,10 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
           </div>
 
           {/* Controls - Right Side (1 column) */}
-          <div className="space-y-6">
+          <div className="space-y-3">
             {/* Add Image */}
             <WorkflowCard title="Add Image" description="Upload images to place on canvas">
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <ImageUpload
                   onImageSelect={handleImageUpload}
                   label="Upload Image"
@@ -571,14 +746,14 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
 
             {/* Add Text */}
             <WorkflowCard title="Add Text" description="Add text elements to your layout">
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-sm">Text Content</Label>
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Text Content</Label>
                   <Input
                     value={newText}
                     onChange={(e) => setNewText(e.target.value)}
                     placeholder="Enter text..."
-                    className="bg-card/50 border-primary/30"
+                    className="bg-card/50 border-primary/30 h-9 text-sm"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -590,7 +765,7 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                       onChange={(e) => setNewTextFontSize(Number(e.target.value))}
                       min="12"
                       max="72"
-                      className="bg-card/50 border-primary/30 text-sm"
+                      className="bg-card/50 border-primary/30 text-sm h-8"
                     />
                   </div>
                   <div className="space-y-1">
@@ -599,45 +774,43 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                       type="color"
                       value={newTextColor}
                       onChange={(e) => setNewTextColor(e.target.value)}
-                      className="h-9 bg-card/50 border-primary/30"
+                      className="h-8 bg-card/50 border-primary/30"
                     />
                   </div>
                 </div>
                 <Button
                   onClick={handleAddText}
                   disabled={!newText.trim()}
-                  className="w-full bg-primary hover:bg-primary/90"
+                  className="w-full bg-primary hover:bg-primary/90 h-9 text-sm"
+                  size="sm"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-3.5 h-3.5 mr-1.5" />
                   Add Text
                 </Button>
               </div>
             </WorkflowCard>
 
             {/* Description */}
-            <WorkflowCard title="Post Description" description="Optional: Add details about your vision for the final post">
-              <div className="space-y-2">
-                <Label className="text-sm">Description (Optional)</Label>
+            <WorkflowCard title="Post Description" description="Optional: Add details about your vision">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Description (Optional)</Label>
                 <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe what you want in the final post... e.g., 'A motivational post with a gorilla holding a banana, text saying don't be like goril, modern and bold style'"
-                  rows={4}
-                  className="bg-card/50 border-primary/30 resize-none text-sm"
+                  placeholder="Describe your vision..."
+                  rows={3}
+                  className="bg-card/50 border-primary/30 resize-none text-xs"
                 />
-                <p className="text-xs text-muted-foreground">
-                  This helps AI understand your vision better and generate a more accurate post.
-                </p>
               </div>
             </WorkflowCard>
 
             {/* Settings */}
             <WorkflowCard title="Settings" description="Configure post style and aspect ratio">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm">Aspect Ratio</Label>
+              <div className="space-y-2.5">
+                <div className="space-y-1">
+                  <Label className="text-xs">Aspect Ratio</Label>
                   <Select value={aspectRatio} onValueChange={setAspectRatio}>
-                    <SelectTrigger className="bg-card/50 border-primary/30">
+                    <SelectTrigger className="bg-card/50 border-primary/30 h-9 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -649,10 +822,10 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm">Style</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">Style</Label>
                   <Select value={style} onValueChange={setStyle}>
-                    <SelectTrigger className="bg-card/50 border-primary/30">
+                    <SelectTrigger className="bg-card/50 border-primary/30 h-9 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
