@@ -25,6 +25,7 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isDetectingText, setIsDetectingText] = useState<boolean>(false);
   const [isTranslatingText, setIsTranslatingText] = useState<boolean>(false);
+  const [currentWorkflowStep, setCurrentWorkflowStep] = useState<'upload' | 'detect-translate' | 'results'>('upload');
   const [translationSettings, setTranslationSettings] = useState<TranslationSettingsType>({
     quality: "premium",
     fontMatching: "auto",
@@ -66,9 +67,13 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
       } else {
         toast.warning("No text detected automatically. You can add text manually or retry detection.");
       }
+      // Move to detect-translate step after upload
+      setCurrentWorkflowStep('detect-translate');
     } catch (error) {
       console.error('Text detection error:', error);
       toast.warning("Text detection failed. You can add text manually or retry detection.");
+      // Still move to detect-translate step so user can add text manually
+      setCurrentWorkflowStep('detect-translate');
     } finally {
       setIsDetectingText(false);
     }
@@ -96,6 +101,7 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
       setIsDetectingText(false);
     }
   };
+
 
   const handleAddManualText = () => {
     const newText: DetectedText = {
@@ -167,6 +173,9 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
       return;
     }
     
+    // Move to results step
+    setCurrentWorkflowStep('results');
+    
     // Make sure image is set in hook
     if (!originalImage && uploadedImage) {
       // Image is already detected, just process
@@ -184,19 +193,21 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
 
   const languageName = LANGUAGES.find(l => l.code === selectedLanguage)?.name || selectedLanguage;
 
-  // Determine current step for step indicator
-  const getCurrentStep = () => {
-    if (!uploadedImage && !originalImage) return 1;
-    if ((uploadedImage || originalImage) && !translatedImage && !isProcessing) return 2;
-    if (translatedImage) return 3;
-    return 2;
+  // Determine current step for step indicator based on workflow step
+  const getStepNumber = (step: typeof currentWorkflowStep) => {
+    switch (step) {
+      case 'upload': return 1;
+      case 'detect-translate': return 2;
+      case 'results': return 3;
+      default: return 1;
+    }
   };
 
-  const currentStep = getCurrentStep();
+  const currentStepNumber = getStepNumber(currentWorkflowStep);
   const steps: Array<{ number: number; label: string; status: "completed" | "current" | "upcoming" }> = [
-    { number: 1, label: "Upload", status: currentStep > 1 ? "completed" : currentStep === 1 ? "current" : "upcoming" },
-    { number: 2, label: "Configure", status: currentStep > 2 ? "completed" : currentStep === 2 ? "current" : "upcoming" },
-    { number: 3, label: "Results", status: currentStep >= 3 ? "current" : "upcoming" },
+    { number: 1, label: "Upload", status: currentStepNumber > 1 ? "completed" : currentStepNumber === 1 ? "current" : "upcoming" },
+    { number: 2, label: "Detect & Translate", status: currentStepNumber > 2 ? "completed" : currentStepNumber === 2 ? "current" : "upcoming" },
+    { number: 3, label: "Results", status: currentStepNumber >= 3 ? "current" : "upcoming" },
   ];
 
   return (
@@ -215,7 +226,7 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
         <StepIndicator steps={steps} />
       </div>
 
-      {!uploadedImage && !originalImage ? (
+      {currentWorkflowStep === 'upload' ? (
         <WorkflowCard
           title="Upload Your Image"
           description="Start by uploading an image with text you want to translate"
@@ -233,7 +244,7 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
             </div>
           )}
         </WorkflowCard>
-      ) : (uploadedImage || originalImage) && !translatedImage ? (
+      ) : currentWorkflowStep === 'detect' ? (
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Image Preview - Left Side */}
           <WorkflowCard title="Your Image" description="Preview your uploaded image with detected text">
@@ -348,23 +359,76 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
             </WorkflowCard>
 
             <WorkflowCard 
-              title="Text Translation" 
-              description={detectedTexts.length > 0 
-                ? "Review and translate detected text blocks"
-                : "Add text manually or retry detection to translate"}
+              title="Text Detection & Review" 
+              description="Review detected text blocks, edit if needed, or add text manually"
             >
               {detectedTexts.length > 0 ? (
-                <TextDetectionAndTranslation
-                  image={uploadedImage || originalImage || ''}
-                  detectedTexts={detectedTexts}
-                  targetLanguage={selectedLanguage}
-                  targetLanguageName={languageName}
-                  onTextsUpdate={setDetectedTexts}
-                  onTranslate={handleTranslateTexts}
-                  onApply={handleTranslate}
-                  isTranslating={isTranslatingText}
-                  isApplying={isProcessing}
-                />
+                <div className="space-y-6">
+                  {/* Summary */}
+                  <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 border border-primary/20">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/20">
+                        <Languages className="w-5 h-5 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-foreground">Text Blocks Ready</p>
+                        <p className="text-xs text-muted-foreground">
+                          {detectedTexts.length} text block{detectedTexts.length === 1 ? '' : 's'} detected. Review and edit below, then proceed to translation.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Text Blocks List - Simplified for review */}
+                  <div className="space-y-3">
+                    {detectedTexts.map((text, index) => (
+                      <div key={text.id} className="p-3 rounded-lg bg-muted/50 border border-border">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-semibold text-muted-foreground">#{index + 1}</span>
+                              {text.confidence < 0.8 && (
+                                <span className="text-xs text-yellow-600 dark:text-yellow-400">Low confidence</span>
+                              )}
+                            </div>
+                            <p className="text-sm font-medium">{text.text || <span className="text-muted-foreground italic">(Empty - click Edit to add)</span>}</p>
+                          </div>
+                          <Button
+                            onClick={() => {
+                              // Find the text block and edit it
+                              const textBlock = document.getElementById(`text-block-${text.id}`);
+                              if (textBlock) {
+                                textBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                // Trigger edit mode
+                                setTimeout(() => {
+                                  const editButton = textBlock.querySelector('button[aria-label*="Edit"], button:has-text("Edit")');
+                                  if (editButton) {
+                                    (editButton as HTMLButtonElement).click();
+                                  }
+                                }, 300);
+                              }
+                            }}
+                            variant="ghost"
+                            size="sm"
+                            className="h-8"
+                          >
+                            Edit
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-4 border-t border-primary/20">
+                    <Button
+                      onClick={handleProceedToTranslate}
+                      className="w-full h-12 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300"
+                    >
+                      <Languages className="w-5 h-5 mr-2" />
+                      Proceed to Translation ({detectedTexts.length} text block{detectedTexts.length === 1 ? '' : 's'})
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <div className="space-y-4 py-6">
                   <div className="text-center space-y-3">
@@ -374,7 +438,7 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
                     <div>
                       <p className="font-semibold text-foreground mb-1">No Text Blocks Yet</p>
                       <p className="text-sm text-muted-foreground">
-                        Add text manually or retry automatic detection above
+                        Add text manually or retry automatic detection
                       </p>
                     </div>
                   </div>
@@ -410,7 +474,67 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
             </WorkflowCard>
           </div>
         </div>
-      ) : translatedImage ? (
+      ) : currentWorkflowStep === 'translate' ? (
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Image Preview - Left Side */}
+          <WorkflowCard title="Your Image" description="Preview your uploaded image">
+            <div className="space-y-4">
+              <div className="relative w-full aspect-square rounded-xl overflow-hidden border-2 border-primary/20 bg-slate-900/50 group">
+                <img
+                  src={uploadedImage || originalImage || ''}
+                  alt="Original"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              {detectedTexts.length > 0 && (
+                <div className="text-sm text-muted-foreground text-center">
+                  <p><span className="font-semibold text-foreground">{detectedTexts.length}</span> text block{detectedTexts.length === 1 ? '' : 's'} ready to translate</p>
+                </div>
+              )}
+            </div>
+          </WorkflowCard>
+
+          {/* Translation - Right Side */}
+          <div className="space-y-6">
+            <WorkflowCard 
+              title="Translation Settings" 
+              description="Select target language and configure translation options"
+            >
+              <div className="space-y-6">
+                <LanguageSelector
+                  language={selectedLanguage}
+                  onLanguageChange={setSelectedLanguage}
+                  disabled={isProcessing}
+                />
+                
+                <TranslationSettingsComponent
+                  settings={translationSettings}
+                  onSettingsChange={setTranslationSettings}
+                  disabled={isProcessing}
+                />
+              </div>
+            </WorkflowCard>
+
+            <WorkflowCard 
+              title="Translate Text" 
+              description="Translate all detected text blocks to the selected language"
+            >
+              <TextDetectionAndTranslation
+                image={uploadedImage || originalImage || ''}
+                detectedTexts={detectedTexts}
+                targetLanguage={selectedLanguage}
+                targetLanguageName={languageName}
+                onTextsUpdate={setDetectedTexts}
+                onTranslate={handleTranslateTexts}
+                onApply={handleTranslate}
+                isTranslating={isTranslatingText}
+                isApplying={isProcessing}
+                showTranslateButton={true}
+              />
+            </WorkflowCard>
+          </div>
+        </div>
+      ) : currentWorkflowStep === 'results' && translatedImage ? (
         <WorkflowCard
           title="Translation Results"
           description={`Language: ${languageName} • Quality: ${translationSettings.quality} • Style: ${translationSettings.textStyle}`}
@@ -429,6 +553,7 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
                 onClick={() => {
                   reset();
                   setUploadedImage(null);
+                  setCurrentWorkflowStep('upload');
                 }}
                 variant="outline"
                 size="default"
