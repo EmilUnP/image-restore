@@ -222,44 +222,65 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
           </WorkflowCard>
 
           {/* Settings & Translation - Right Side */}
-          <WorkflowCard 
-            title="Translation Settings" 
-            description="Select language, review detected text, and adjust translation options"
-          >
-            <div className="space-y-6">
-              <LanguageSelector
-                language={selectedLanguage}
-                onLanguageChange={setSelectedLanguage}
-                disabled={isProcessing}
-              />
-              
-              {detectedTexts.length > 0 ? (
-                <div className="space-y-4">
-                  <TextDetectionAndTranslation
-                    image={uploadedImage || originalImage || ''}
-                    detectedTexts={detectedTexts}
-                    targetLanguage={selectedLanguage}
-                    targetLanguageName={languageName}
-                    onTextsUpdate={setDetectedTexts}
-                    onTranslate={handleTranslateTexts}
-                    onApply={handleTranslate}
-                    isTranslating={isTranslatingText}
-                    isApplying={isProcessing}
-                  />
-                </div>
-              ) : (
-                <div className="p-4 bg-muted/50 rounded-lg text-center">
-                  <p className="text-sm text-muted-foreground">No text detected. Try uploading a different image.</p>
-                </div>
-              )}
-              
-              <TranslationSettingsComponent
-                settings={translationSettings}
-                onSettingsChange={setTranslationSettings}
-                disabled={isProcessing}
-              />
-            </div>
-          </WorkflowCard>
+          <div className="space-y-6">
+            <WorkflowCard 
+              title="Translation Settings" 
+              description="Select language, review detected text, and adjust translation options"
+            >
+              <div className="space-y-6">
+                <LanguageSelector
+                  language={selectedLanguage}
+                  onLanguageChange={setSelectedLanguage}
+                  disabled={isProcessing}
+                />
+                
+                {detectedTexts.length > 0 ? (
+                  <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 border border-primary/20">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-lg bg-primary/20">
+                        <Languages className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-foreground">Text Detected!</p>
+                        <p className="text-xs text-muted-foreground">
+                          {detectedTexts.length} text block{detectedTexts.length === 1 ? '' : 's'} found. Scroll down to translate.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-muted/50 rounded-lg text-center">
+                    <p className="text-sm text-muted-foreground">No text detected. Try uploading a different image.</p>
+                  </div>
+                )}
+                
+                <TranslationSettingsComponent
+                  settings={translationSettings}
+                  onSettingsChange={setTranslationSettings}
+                  disabled={isProcessing}
+                />
+              </div>
+            </WorkflowCard>
+
+            {detectedTexts.length > 0 && (
+              <WorkflowCard 
+                title="Text Translation" 
+                description="Review and translate detected text blocks"
+              >
+                <TextDetectionAndTranslation
+                  image={uploadedImage || originalImage || ''}
+                  detectedTexts={detectedTexts}
+                  targetLanguage={selectedLanguage}
+                  targetLanguageName={languageName}
+                  onTextsUpdate={setDetectedTexts}
+                  onTranslate={handleTranslateTexts}
+                  onApply={handleTranslate}
+                  isTranslating={isTranslatingText}
+                  isApplying={isProcessing}
+                />
+              </WorkflowCard>
+            )}
+          </div>
         </div>
       ) : translatedImage ? (
         <WorkflowCard

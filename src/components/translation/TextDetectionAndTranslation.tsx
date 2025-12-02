@@ -277,36 +277,52 @@ export const TextDetectionAndTranslation = ({
         </CardContent>
       </Card>
 
-      {/* Translate Button - Prominent placement */}
-      {!hasTranslated && originalTexts.length > 0 && (
-        <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 shadow-md">
-          <CardContent className="p-8">
-            <div className="flex flex-col items-center justify-center gap-5">
-              <div className="text-center space-y-2">
-                <h3 className="text-xl md:text-2xl font-bold tracking-tight">Ready to Translate?</h3>
-                <p className="text-base text-muted-foreground max-w-md">
-                  Review the detected text below, then click the button to translate all text to <span className="font-semibold text-foreground">{targetLanguageName}</span>
+      {/* Translate Button - Always visible when texts are detected */}
+      {originalTexts.length > 0 && (
+        <Card className={`border-2 transition-all duration-300 ${
+          !hasTranslated 
+            ? "border-primary/50 bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 shadow-lg shadow-primary/20" 
+            : "border-primary/20 bg-gradient-to-br from-primary/5 via-primary/5 to-accent/5 shadow-md"
+        }`}>
+          <CardContent className="p-6 md:p-8">
+            {!hasTranslated ? (
+              <div className="flex flex-col items-center justify-center gap-5">
+                <div className="text-center space-y-2">
+                  <h3 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">Ready to Translate?</h3>
+                  <p className="text-base text-muted-foreground max-w-md">
+                    Review the detected text below, then click the button to translate all text to <span className="font-semibold text-foreground">{targetLanguageName}</span>
+                  </p>
+                </div>
+                <Button
+                  onClick={handleTranslate}
+                  size="lg"
+                  className="gap-2.5 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 min-w-[280px] h-12 md:h-14 text-base md:text-lg rounded-xl hover:scale-105"
+                  disabled={isTranslating || originalTexts.length === 0}
+                >
+                  {isTranslating ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Translating to {targetLanguageName}...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-5 h-5" />
+                      Translate All Text to {targetLanguageName}
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-4">
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span className="font-semibold">Translation Complete!</span>
+                </div>
+                <p className="text-sm text-muted-foreground text-center">
+                  Review the translations below, then click "Apply Translation to Image" to process
                 </p>
               </div>
-              <Button
-                onClick={handleTranslate}
-                size="lg"
-                className="gap-2.5 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-md hover:shadow-glow-accent transition-all duration-300 min-w-[280px] h-12 md:h-14 text-base md:text-lg rounded-xl"
-                disabled={isTranslating || originalTexts.length === 0}
-              >
-                {isTranslating ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Translating to {targetLanguageName}...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-5 h-5" />
-                    Translate All Text to {targetLanguageName}
-                  </>
-                )}
-              </Button>
-            </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -530,28 +546,45 @@ export const TextDetectionAndTranslation = ({
         </CardContent>
       </Card>
 
-      {/* Apply Button */}
-      {hasTranslated && allTranslated && (
-        <div className="flex justify-center pt-6">
-          <Button
-            onClick={handleApply}
-            size="lg"
-            className="gap-2.5 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-md hover:shadow-glow-accent transition-all duration-300 h-12 md:h-14 text-base md:text-lg rounded-xl px-8"
-            disabled={isApplying || !allTranslated}
-          >
-            {isApplying ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Applying Translation to Image...
-              </>
-            ) : (
-              <>
-                <Languages className="w-5 h-5" />
-                Apply Translation to Image
-              </>
-            )}
-          </Button>
-        </div>
+      {/* Apply Button - More prominent */}
+      {hasTranslated && (
+        <Card className="border-2 border-primary/40 bg-gradient-to-br from-primary/15 via-primary/10 to-accent/10 shadow-lg">
+          <CardContent className="p-6 md:p-8">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <div className="text-center space-y-2">
+                <h3 className="text-lg md:text-xl font-bold tracking-tight text-foreground">Apply Translation</h3>
+                <p className="text-sm text-muted-foreground max-w-md">
+                  {allTranslated 
+                    ? "All texts are translated. Click below to apply the translation to your image."
+                    : "Some translations are missing. Please complete all translations or remove untranslated text blocks."}
+                </p>
+              </div>
+              <Button
+                onClick={handleApply}
+                size="lg"
+                className="gap-2.5 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 h-12 md:h-14 text-base md:text-lg rounded-xl px-8 hover:scale-105"
+                disabled={isApplying || !allTranslated}
+              >
+                {isApplying ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Applying Translation to Image...
+                  </>
+                ) : (
+                  <>
+                    <Languages className="w-5 h-5" />
+                    Apply Translation to Image
+                  </>
+                )}
+              </Button>
+              {!allTranslated && (
+                <p className="text-xs text-yellow-600 dark:text-yellow-400 text-center mt-2">
+                  {translatedTexts.filter((t) => t.translatedText.trim().length === 0).length} text block(s) still need translation
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

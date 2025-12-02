@@ -69,7 +69,7 @@ export const Header = ({
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-slate-700/60 bg-slate-900/95 backdrop-blur-xl supports-[backdrop-filter]:bg-slate-900/90 shadow-lg shadow-black/20">
+      <header className="sticky top-0 z-50 w-full border-b border-slate-700/60 bg-slate-900/95 backdrop-blur-xl supports-[backdrop-filter]:bg-slate-900/90 shadow-lg shadow-black/20 transition-all duration-300">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center justify-between">
             {/* Logo */}
@@ -78,16 +78,16 @@ export const Header = ({
                   <Button
                   variant="ghost"
                   size="icon"
-                  className="lg:hidden h-10 w-10 rounded-xl text-slate-300 hover:text-slate-100 hover:bg-slate-800/50"
+                  className="lg:hidden h-10 w-10 rounded-xl text-slate-300 hover:text-slate-100 hover:bg-slate-800/50 transition-all duration-300 hover:scale-110"
                   onClick={() => {
                     setMobileMenuOpen(!mobileMenuOpen);
                     onMenuClick?.();
                   }}
                 >
                   {mobileMenuOpen ? (
-                    <X className="h-5 w-5" />
+                    <X className="h-5 w-5 transition-transform duration-300 rotate-90" />
                   ) : (
-                    <Menu className="h-5 w-5" />
+                    <Menu className="h-5 w-5 transition-transform duration-300" />
                   )}
                 </Button>
               )}
@@ -97,9 +97,9 @@ export const Header = ({
                 className="flex items-center gap-3 group cursor-pointer"
               >
                 <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-accent rounded-xl blur-lg opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-primary via-primary/90 to-accent shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform duration-300">
-                    <Sparkles className="h-5 w-5 text-primary-foreground" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-accent rounded-xl blur-lg opacity-60 group-hover:opacity-100 transition-opacity duration-300 animate-pulse-slow" />
+                  <div className="relative p-2.5 rounded-xl bg-gradient-to-br from-primary via-primary/90 to-accent shadow-lg shadow-primary/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                    <Sparkles className="h-5 w-5 text-primary-foreground transition-transform duration-300 group-hover:scale-110" />
                   </div>
                 </div>
                 <div className="flex flex-col">

@@ -145,17 +145,19 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
             <div className="flex flex-col sm:flex-row gap-5 justify-center pt-6">
               <Button
                 size="lg"
-                className="bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 font-bold text-lg px-10 py-7 shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all duration-300 rounded-xl hover:scale-105"
+                className="bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 font-bold text-lg px-10 py-7 shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all duration-300 rounded-xl hover:scale-105 glow-on-hover group"
                 onClick={() => onFunctionSelect('enhance')}
               >
-                Get Started Free
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                <span className="flex items-center">
+                  Get Started Free
+                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </span>
               </Button>
               
               <Button
                 size="lg"
                 variant="outline"
-                className="border-2 border-primary/40 bg-card/40 backdrop-blur-sm font-semibold text-lg px-10 py-7 hover:bg-primary/10 hover:border-primary/70 transition-all duration-300 rounded-xl hover:scale-105"
+                className="border-2 border-primary/40 bg-card/40 backdrop-blur-sm font-semibold text-lg px-10 py-7 hover:bg-primary/10 hover:border-primary/70 transition-all duration-300 rounded-xl hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
                 onClick={() => {
                   document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
                 }}
@@ -167,19 +169,26 @@ export const LandingPage = ({ onFunctionSelect }: LandingPageProps) => {
             {/* Stats or Trust Indicators */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 max-w-4xl mx-auto">
               {[
-                { label: 'AI Models', value: '5+' },
-                { label: 'Languages', value: '100+' },
-                { label: 'Quality', value: '4K' },
-                { label: 'Speed', value: '<5s' },
+                { label: 'AI Models', value: '5+', icon: '🤖' },
+                { label: 'Languages', value: '100+', icon: '🌍' },
+                { label: 'Quality', value: '4K', icon: '✨' },
+                { label: 'Speed', value: '<5s', icon: '⚡' },
               ].map((stat, idx) => (
                 <div 
                   key={idx}
-                  className="p-4 rounded-xl bg-card/40 backdrop-blur-sm border border-primary/20 hover:border-primary/40 transition-all duration-300 hover:scale-105"
+                  className="p-4 rounded-xl bg-card/40 backdrop-blur-sm border border-primary/20 hover:border-primary/50 transition-all duration-500 hover:scale-110 hover:shadow-xl hover:shadow-primary/20 group relative overflow-hidden"
+                  style={{ animationDelay: `${idx * 0.1}s` }}
                 >
-                  <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    {stat.value}
+                  {/* Animated gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-accent/0 group-hover:from-primary/10 group-hover:to-accent/10 transition-all duration-500" />
+                  
+                  <div className="relative z-10">
+                    <div className="text-lg mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">{stat.icon}</div>
+                    <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-300">
+                      {stat.value}
+                    </div>
+                    <div className="text-sm text-slate-400 mt-1 group-hover:text-slate-300 transition-colors">{stat.label}</div>
                   </div>
-                  <div className="text-sm text-slate-400 mt-1">{stat.label}</div>
                 </div>
               ))}
             </div>

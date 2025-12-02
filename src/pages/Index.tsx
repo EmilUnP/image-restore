@@ -125,13 +125,13 @@ const Index = () => {
   }, [location.hash, showLandingPage]);
   
   return (
-    <div className={`min-h-screen flex flex-col ${showLandingPage ? 'bg-slate-950' : 'bg-gradient-to-br from-background via-background to-accent/5'}`}>
+    <div className={`min-h-screen flex flex-col transition-all duration-500 ${showLandingPage ? 'bg-slate-950' : 'bg-gradient-to-br from-background via-background to-accent/5'}`}>
       {/* Background Effects - Show for dashboard and function pages, but not landing page */}
       {!showLandingPage && (
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
           <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl animate-pulse-slow" />
           <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-primary/5 to-accent/5 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-primary/5 to-accent/5 rounded-full blur-3xl animate-mesh-move" />
         </div>
       )}
 
@@ -164,13 +164,15 @@ const Index = () => {
           showLandingPage ? '' : 'z-10'
         )}>
           {showLandingPage ? (
-            <LandingPage onFunctionSelect={handleFunctionSelect} />
+            <div className="animate-fade-in">
+              <LandingPage onFunctionSelect={handleFunctionSelect} />
+            </div>
           ) : showDashboard ? (
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 animate-slide-in-from-bottom">
               <Dashboard onFunctionSelect={handleFunctionSelect} />
             </div>
           ) : (
-            <div className={`container mx-auto px-4 sm:px-6 lg:px-8 ${!selectedFunction && !isAuthenticated ? 'py-4 lg:py-6' : 'py-8 lg:py-12'}`}>
+            <div className={`container mx-auto px-4 sm:px-6 lg:px-8 ${!selectedFunction && !isAuthenticated ? 'py-4 lg:py-6' : 'py-8 lg:py-12'} animate-scale-in`}>
               {viewMode === 'profile' ? (
                 <ProfilePage onBack={() => setViewMode('landing')} />
               ) : !selectedFunction ? null : selectedFunction === 'enhance' ? (

@@ -732,135 +732,197 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
           </div>
 
           {/* Controls - Right Side (1 column) */}
-          <div className="space-y-3">
-            {/* Add Image */}
-            <WorkflowCard title="Add Image" description="Upload images to place on canvas">
-              <div className="space-y-2">
-                <ImageUpload
-                  onImageSelect={handleImageUpload}
-                  label="Upload Image"
-                  description="Click to select"
-                />
+          <div className="space-y-4">
+            {/* Section: Add Content */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-2">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-primary/80 flex items-center gap-2">
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Content
+                </h3>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
               </div>
-            </WorkflowCard>
 
-            {/* Add Text */}
-            <WorkflowCard title="Add Text" description="Add text elements to your layout">
-              <div className="space-y-2">
-                <div className="space-y-1">
-                  <Label className="text-xs">Text Content</Label>
-                  <Input
-                    value={newText}
-                    onChange={(e) => setNewText(e.target.value)}
-                    placeholder="Enter text..."
-                    className="bg-card/50 border-primary/30 h-9 text-sm"
+              {/* Add Image */}
+              <WorkflowCard title="Add Image" description="Upload images to place on canvas">
+                <div className="space-y-2">
+                  <ImageUpload
+                    onImageSelect={handleImageUpload}
+                    label="Upload Image"
+                    description="Click to select"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+              </WorkflowCard>
+
+              {/* Add Text */}
+              <WorkflowCard title="Add Text" description="Add text elements to your layout">
+                <div className="space-y-2">
                   <div className="space-y-1">
-                    <Label className="text-xs">Font Size</Label>
+                    <Label className="text-xs">Text Content</Label>
                     <Input
-                      type="number"
-                      value={newTextFontSize}
-                      onChange={(e) => setNewTextFontSize(Number(e.target.value))}
-                      min="12"
-                      max="72"
-                      className="bg-card/50 border-primary/30 text-sm h-8"
+                      value={newText}
+                      onChange={(e) => setNewText(e.target.value)}
+                      placeholder="Enter text..."
+                      className="bg-card/50 border-primary/30 h-9 text-sm"
                     />
                   </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Font Size</Label>
+                      <Input
+                        type="number"
+                        value={newTextFontSize}
+                        onChange={(e) => setNewTextFontSize(Number(e.target.value))}
+                        min="12"
+                        max="72"
+                        className="bg-card/50 border-primary/30 text-sm h-8"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Color</Label>
+                      <Input
+                        type="color"
+                        value={newTextColor}
+                        onChange={(e) => setNewTextColor(e.target.value)}
+                        className="h-8 bg-card/50 border-primary/30"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleAddText}
+                    disabled={!newText.trim()}
+                    className="w-full bg-primary hover:bg-primary/90 h-9 text-sm"
+                    size="sm"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1.5" />
+                    Add Text
+                  </Button>
+                </div>
+              </WorkflowCard>
+            </div>
+
+            {/* Section: Configuration */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-2">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-primary/80 flex items-center gap-2">
+                  <Move className="w-3.5 h-3.5" />
+                  Configuration
+                </h3>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+              </div>
+
+              {/* Settings */}
+              <WorkflowCard title="Settings" description="Configure post style and aspect ratio">
+                <div className="space-y-2.5">
                   <div className="space-y-1">
-                    <Label className="text-xs">Color</Label>
-                    <Input
-                      type="color"
-                      value={newTextColor}
-                      onChange={(e) => setNewTextColor(e.target.value)}
-                      className="h-8 bg-card/50 border-primary/30"
-                    />
+                    <Label className="text-xs">Aspect Ratio</Label>
+                    <Select value={aspectRatio} onValueChange={setAspectRatio}>
+                      <SelectTrigger className="bg-card/50 border-primary/30 h-9 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1:1">Square (1:1)</SelectItem>
+                        <SelectItem value="16:9">Landscape (16:9)</SelectItem>
+                        <SelectItem value="9:16">Portrait (9:16)</SelectItem>
+                        <SelectItem value="4:5">Instagram (4:5)</SelectItem>
+                        <SelectItem value="1.91:1">Facebook (1.91:1)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Style</Label>
+                    <Select value={style} onValueChange={setStyle}>
+                      <SelectTrigger className="bg-card/50 border-primary/30 h-9 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="modern">Modern</SelectItem>
+                        <SelectItem value="minimalist">Minimalist</SelectItem>
+                        <SelectItem value="bold">Bold</SelectItem>
+                        <SelectItem value="elegant">Elegant</SelectItem>
+                        <SelectItem value="playful">Playful</SelectItem>
+                        <SelectItem value="corporate">Corporate</SelectItem>
+                        <SelectItem value="creative">Creative</SelectItem>
+                        <SelectItem value="vintage">Vintage</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-                <Button
-                  onClick={handleAddText}
-                  disabled={!newText.trim()}
-                  className="w-full bg-primary hover:bg-primary/90 h-9 text-sm"
-                  size="sm"
-                >
-                  <Plus className="w-3.5 h-3.5 mr-1.5" />
-                  Add Text
-                </Button>
-              </div>
-            </WorkflowCard>
+              </WorkflowCard>
 
-            {/* Description */}
-            <WorkflowCard title="Post Description" description="Optional: Add details about your vision">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Description (Optional)</Label>
-                <Textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe your vision..."
-                  rows={3}
-                  className="bg-card/50 border-primary/30 resize-none text-xs"
-                />
-              </div>
-            </WorkflowCard>
-
-            {/* Settings */}
-            <WorkflowCard title="Settings" description="Configure post style and aspect ratio">
-              <div className="space-y-2.5">
-                <div className="space-y-1">
-                  <Label className="text-xs">Aspect Ratio</Label>
-                  <Select value={aspectRatio} onValueChange={setAspectRatio}>
-                    <SelectTrigger className="bg-card/50 border-primary/30 h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1:1">Square (1:1)</SelectItem>
-                      <SelectItem value="16:9">Landscape (16:9)</SelectItem>
-                      <SelectItem value="9:16">Portrait (9:16)</SelectItem>
-                      <SelectItem value="4:5">Instagram (4:5)</SelectItem>
-                      <SelectItem value="1.91:1">Facebook (1.91:1)</SelectItem>
-                    </SelectContent>
-                  </Select>
+              {/* Description */}
+              <WorkflowCard title="Post Description" description="Optional: Add details about your vision">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Description (Optional)</Label>
+                  <Textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Describe your vision..."
+                    rows={3}
+                    className="bg-card/50 border-primary/30 resize-none text-xs"
+                  />
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Style</Label>
-                  <Select value={style} onValueChange={setStyle}>
-                    <SelectTrigger className="bg-card/50 border-primary/30 h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="modern">Modern</SelectItem>
-                      <SelectItem value="minimalist">Minimalist</SelectItem>
-                      <SelectItem value="bold">Bold</SelectItem>
-                      <SelectItem value="elegant">Elegant</SelectItem>
-                      <SelectItem value="playful">Playful</SelectItem>
-                      <SelectItem value="corporate">Corporate</SelectItem>
-                      <SelectItem value="creative">Creative</SelectItem>
-                      <SelectItem value="vintage">Vintage</SelectItem>
-                    </SelectContent>
-                  </Select>
+              </WorkflowCard>
+            </div>
+
+            {/* Section: Generation */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-2">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-primary/80 flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Generate
+                </h3>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+              </div>
+
+              {/* Info Card */}
+              <div className="p-3 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 border border-primary/20 backdrop-blur-sm">
+                <div className="flex items-start gap-2">
+                  <div className="p-1.5 rounded-lg bg-primary/20 mt-0.5">
+                    <Type className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <p className="text-xs font-semibold text-foreground">Quick Tips</p>
+                    <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
+                      <li>Drag elements to reposition</li>
+                      <li>Click to select, then resize</li>
+                      <li>Add at least one element</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
-            </WorkflowCard>
 
-            {/* Generate Button */}
-            <Button
-              onClick={handleGenerate}
-              disabled={isGenerating || (placedImages.length === 0 && placedTexts.length === 0)}
-              className="w-full h-12 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 font-semibold shadow-lg shadow-primary/30"
-            >
-              {isGenerating ? (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Generate Post
-                </>
+              {/* Generate Button */}
+              <Button
+                onClick={handleGenerate}
+                disabled={isGenerating || (placedImages.length === 0 && placedTexts.length === 0)}
+                className="w-full h-12 bg-gradient-to-r from-primary via-primary to-accent hover:from-primary/90 hover:to-accent/90 font-semibold shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300"
+              >
+                {isGenerating ? (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate Post
+                  </>
+                )}
+              </Button>
+
+              {/* Status Info */}
+              {(placedImages.length > 0 || placedTexts.length > 0) && (
+                <div className="p-2.5 rounded-lg bg-card/40 border border-primary/10 text-center">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">{placedImages.length + placedTexts.length}</span> element{placedImages.length + placedTexts.length === 1 ? '' : 's'} on canvas
+                  </p>
+                </div>
               )}
-            </Button>
+            </div>
           </div>
         </div>
       ) : (

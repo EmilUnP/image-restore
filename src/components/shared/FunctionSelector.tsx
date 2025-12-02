@@ -19,25 +19,29 @@ export const FunctionSelector = ({ onFunctionSelect }: FunctionSelectorProps) =>
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Image Quality Improver */}
         <Card 
-          className="border hover:border-primary/60 transition-all duration-300 cursor-pointer group relative overflow-hidden hover:shadow-md"
+          className="border hover:border-primary/60 transition-all duration-500 cursor-pointer group relative overflow-hidden hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-2 bg-gradient-to-br from-card via-card to-card/95"
           onClick={() => onFunctionSelect('enhance')}
         >
-          <CardHeader className="pb-4">
+          {/* Animated gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/0 via-primary/0 to-accent/0 group-hover:from-primary/5 group-hover:via-primary/5 group-hover:to-accent/5 transition-all duration-500 pointer-events-none" />
+          
+          <CardHeader className="pb-4 relative z-10">
             <div className="flex items-start gap-4">
               <div className="relative flex-shrink-0">
-                <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <Sparkles className="w-6 h-6 text-primary" />
+                <div className="absolute inset-0 bg-primary/20 rounded-xl blur-lg group-hover:blur-xl group-hover:bg-primary/30 transition-all duration-500" />
+                <div className="relative p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-lg group-hover:shadow-xl">
+                  <Sparkles className="w-6 h-6 text-primary transition-transform duration-300 group-hover:scale-110" />
                 </div>
               </div>
               <div className="flex-1 min-w-0 pt-1">
-                <CardTitle className="text-xl font-bold mb-2">Image Quality Improver</CardTitle>
+                <CardTitle className="text-xl font-bold mb-2 group-hover:text-primary transition-colors duration-300">Image Quality Improver</CardTitle>
                 <CardDescription className="text-sm">
                   Enhance image quality using AI. Improve sharpness, reduce noise, enhance colors, and restore old photos.
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 relative z-10">
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
@@ -59,7 +63,7 @@ export const FunctionSelector = ({ onFunctionSelect }: FunctionSelectorProps) =>
               </li>
             </ul>
             <Button 
-              className="w-full"
+              className="w-full group-hover:shadow-lg group-hover:shadow-primary/30"
               onClick={() => onFunctionSelect('enhance')}
             >
               Use Image Quality Improver
@@ -69,47 +73,51 @@ export const FunctionSelector = ({ onFunctionSelect }: FunctionSelectorProps) =>
 
         {/* Text Translation */}
         <Card 
-          className="border hover:border-accent/60 transition-all duration-300 cursor-pointer group relative overflow-hidden hover:shadow-md"
+          className="border hover:border-accent/60 transition-all duration-500 cursor-pointer group relative overflow-hidden hover:shadow-xl hover:shadow-accent/20 hover:-translate-y-2 bg-gradient-to-br from-card via-card to-card/95"
           onClick={() => onFunctionSelect('translate')}
         >
-          <CardHeader className="pb-4">
+          {/* Animated gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-accent/0 via-accent/0 to-primary/0 group-hover:from-accent/5 group-hover:via-accent/5 group-hover:to-primary/5 transition-all duration-500 pointer-events-none" />
+          
+          <CardHeader className="pb-4 relative z-10">
             <div className="flex items-start gap-4">
               <div className="relative flex-shrink-0">
-                <div className="p-3 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
-                  <Languages className="w-6 h-6 text-accent" />
+                <div className="absolute inset-0 bg-accent/20 rounded-xl blur-lg group-hover:blur-xl group-hover:bg-accent/30 transition-all duration-500" />
+                <div className="relative p-3 rounded-xl bg-accent/10 group-hover:bg-accent/20 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-lg group-hover:shadow-xl">
+                  <Languages className="w-6 h-6 text-accent transition-transform duration-300 group-hover:scale-110" />
                 </div>
               </div>
               <div className="flex-1 min-w-0 pt-1">
-                <CardTitle className="text-xl font-bold mb-2">Text Translation</CardTitle>
+                <CardTitle className="text-xl font-bold mb-2 group-hover:text-accent transition-colors duration-300">Text Translation</CardTitle>
                 <CardDescription className="text-sm">
                   Translate text on images to any language while keeping the original image quality and style intact.
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 relative z-10">
             <ul className="space-y-2 text-sm">
-              <li className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
+              <li className="flex items-center gap-3 group/item">
+                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                   <span className="text-accent text-xs font-bold">✓</span>
                 </div>
-                <span className="text-muted-foreground">Translate text in images to any language</span>
+                <span className="text-muted-foreground group-hover/item:text-foreground transition-colors">Translate text in images to any language</span>
               </li>
-              <li className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
+              <li className="flex items-center gap-3 group/item">
+                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                   <span className="text-accent text-xs font-bold">✓</span>
                 </div>
-                <span className="text-muted-foreground">Preserves original image quality</span>
+                <span className="text-muted-foreground group-hover/item:text-foreground transition-colors">Preserves original image quality</span>
               </li>
-              <li className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
+              <li className="flex items-center gap-3 group/item">
+                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                   <span className="text-accent text-xs font-bold">✓</span>
                 </div>
-                <span className="text-muted-foreground">AI-powered translation</span>
+                <span className="text-muted-foreground group-hover/item:text-foreground transition-colors">AI-powered translation</span>
               </li>
             </ul>
             <Button 
-              className="w-full"
+              className="w-full group-hover:shadow-lg group-hover:shadow-accent/30"
               onClick={() => onFunctionSelect('translate')}
             >
               Use Text Translation
@@ -119,47 +127,51 @@ export const FunctionSelector = ({ onFunctionSelect }: FunctionSelectorProps) =>
 
         {/* Icon Generation */}
         <Card 
-          className="border hover:border-primary/60 transition-all duration-300 cursor-pointer group relative overflow-hidden hover:shadow-md"
+          className="border hover:border-primary/60 transition-all duration-500 cursor-pointer group relative overflow-hidden hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-2 bg-gradient-to-br from-card via-card to-card/95"
           onClick={() => onFunctionSelect('icons')}
         >
-          <CardHeader className="pb-4">
+          {/* Animated gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/0 via-primary/0 to-accent/0 group-hover:from-primary/5 group-hover:via-primary/5 group-hover:to-accent/5 transition-all duration-500 pointer-events-none" />
+          
+          <CardHeader className="pb-4 relative z-10">
             <div className="flex items-start gap-4">
               <div className="relative flex-shrink-0">
-                <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <Zap className="w-6 h-6 text-primary" />
+                <div className="absolute inset-0 bg-primary/20 rounded-xl blur-lg group-hover:blur-xl group-hover:bg-primary/30 transition-all duration-500" />
+                <div className="relative p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-lg group-hover:shadow-xl">
+                  <Zap className="w-6 h-6 text-primary transition-transform duration-300 group-hover:scale-110" />
                 </div>
               </div>
               <div className="flex-1 min-w-0 pt-1">
-                <CardTitle className="text-xl font-bold mb-2">Icon Generator</CardTitle>
+                <CardTitle className="text-xl font-bold mb-2 group-hover:text-primary transition-colors duration-300">Icon Generator</CardTitle>
                 <CardDescription className="text-sm">
                   Generate or upgrade powerful icons and web elements using AI. Create custom icons from text descriptions or enhance existing ones.
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 relative z-10">
             <ul className="space-y-2 text-sm">
-              <li className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+              <li className="flex items-center gap-3 group/item">
+                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                   <span className="text-primary text-xs font-bold">✓</span>
                 </div>
-                <span className="text-muted-foreground">Generate icons from text descriptions</span>
+                <span className="text-muted-foreground group-hover/item:text-foreground transition-colors">Generate icons from text descriptions</span>
               </li>
-              <li className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+              <li className="flex items-center gap-3 group/item">
+                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                   <span className="text-primary text-xs font-bold">✓</span>
                 </div>
-                <span className="text-muted-foreground">Upgrade existing icons with AI</span>
+                <span className="text-muted-foreground group-hover/item:text-foreground transition-colors">Upgrade existing icons with AI</span>
               </li>
-              <li className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+              <li className="flex items-center gap-3 group/item">
+                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                   <span className="text-primary text-xs font-bold">✓</span>
                 </div>
-                <span className="text-muted-foreground">Export in multiple sizes for web projects</span>
+                <span className="text-muted-foreground group-hover/item:text-foreground transition-colors">Export in multiple sizes for web projects</span>
               </li>
             </ul>
             <Button 
-              className="w-full"
+              className="w-full group-hover:shadow-lg group-hover:shadow-primary/30"
               onClick={() => onFunctionSelect('icons')}
             >
               Use Icon Generator
@@ -169,47 +181,51 @@ export const FunctionSelector = ({ onFunctionSelect }: FunctionSelectorProps) =>
 
         {/* Logo Generation */}
         <Card 
-          className="border hover:border-accent/60 transition-all duration-300 cursor-pointer group relative overflow-hidden hover:shadow-md"
+          className="border hover:border-accent/60 transition-all duration-500 cursor-pointer group relative overflow-hidden hover:shadow-xl hover:shadow-accent/20 hover:-translate-y-2 bg-gradient-to-br from-card via-card to-card/95"
           onClick={() => onFunctionSelect('logos')}
         >
-          <CardHeader className="pb-4">
+          {/* Animated gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-accent/0 via-accent/0 to-primary/0 group-hover:from-accent/5 group-hover:via-accent/5 group-hover:to-primary/5 transition-all duration-500 pointer-events-none" />
+          
+          <CardHeader className="pb-4 relative z-10">
             <div className="flex items-start gap-4">
               <div className="relative flex-shrink-0">
-                <div className="p-3 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
-                  <Palette className="w-6 h-6 text-accent" />
+                <div className="absolute inset-0 bg-accent/20 rounded-xl blur-lg group-hover:blur-xl group-hover:bg-accent/30 transition-all duration-500" />
+                <div className="relative p-3 rounded-xl bg-accent/10 group-hover:bg-accent/20 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-lg group-hover:shadow-xl">
+                  <Palette className="w-6 h-6 text-accent transition-transform duration-300 group-hover:scale-110" />
                 </div>
               </div>
               <div className="flex-1 min-w-0 pt-1">
-                <CardTitle className="text-xl font-bold mb-2">Logo Generator</CardTitle>
+                <CardTitle className="text-xl font-bold mb-2 group-hover:text-accent transition-colors duration-300">Logo Generator</CardTitle>
                 <CardDescription className="text-sm">
                   Create professional logos for your brand or business using AI. Generate unique logo designs from text descriptions or upgrade existing logos.
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 relative z-10">
             <ul className="space-y-2 text-sm">
-              <li className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
+              <li className="flex items-center gap-3 group/item">
+                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                   <span className="text-accent text-xs font-bold">✓</span>
                 </div>
-                <span className="text-muted-foreground">Generate professional logos from descriptions</span>
+                <span className="text-muted-foreground group-hover/item:text-foreground transition-colors">Generate professional logos from descriptions</span>
               </li>
-              <li className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
+              <li className="flex items-center gap-3 group/item">
+                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                   <span className="text-accent text-xs font-bold">✓</span>
                 </div>
-                <span className="text-muted-foreground">Upgrade existing logos with AI</span>
+                <span className="text-muted-foreground group-hover/item:text-foreground transition-colors">Upgrade existing logos with AI</span>
               </li>
-              <li className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
+              <li className="flex items-center gap-3 group/item">
+                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                   <span className="text-accent text-xs font-bold">✓</span>
                 </div>
-                <span className="text-muted-foreground">Multiple styles and customization options</span>
+                <span className="text-muted-foreground group-hover/item:text-foreground transition-colors">Multiple styles and customization options</span>
               </li>
             </ul>
             <Button 
-              className="w-full"
+              className="w-full group-hover:shadow-lg group-hover:shadow-accent/30"
               onClick={() => onFunctionSelect('logos')}
             >
               Use Logo Generator
@@ -219,47 +235,51 @@ export const FunctionSelector = ({ onFunctionSelect }: FunctionSelectorProps) =>
 
         {/* Social Post Generation */}
         <Card 
-          className="border hover:border-primary/60 transition-all duration-300 cursor-pointer group relative overflow-hidden hover:shadow-md"
+          className="border hover:border-primary/60 transition-all duration-500 cursor-pointer group relative overflow-hidden hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-2 bg-gradient-to-br from-card via-card to-card/95"
           onClick={() => onFunctionSelect('social')}
         >
-          <CardHeader className="pb-4">
+          {/* Animated gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/0 via-primary/0 to-accent/0 group-hover:from-primary/5 group-hover:via-primary/5 group-hover:to-accent/5 transition-all duration-500 pointer-events-none" />
+          
+          <CardHeader className="pb-4 relative z-10">
             <div className="flex items-start gap-4">
               <div className="relative flex-shrink-0">
-                <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <Share2 className="w-6 h-6 text-primary" />
+                <div className="absolute inset-0 bg-primary/20 rounded-xl blur-lg group-hover:blur-xl group-hover:bg-primary/30 transition-all duration-500" />
+                <div className="relative p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-lg group-hover:shadow-xl">
+                  <Share2 className="w-6 h-6 text-primary transition-transform duration-300 group-hover:scale-110" />
                 </div>
               </div>
               <div className="flex-1 min-w-0 pt-1">
-                <CardTitle className="text-xl font-bold mb-2">Social Post Generator</CardTitle>
+                <CardTitle className="text-xl font-bold mb-2 group-hover:text-primary transition-colors duration-300">Social Post Generator</CardTitle>
                 <CardDescription className="text-sm">
                   Create stunning social media posts. Generate from scratch, use reference images, or combine multiple inspirations.
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 relative z-10">
             <ul className="space-y-2 text-sm">
-              <li className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+              <li className="flex items-center gap-3 group/item">
+                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                   <span className="text-primary text-xs font-bold">✓</span>
                 </div>
-                <span className="text-muted-foreground">Generate posts from text descriptions</span>
+                <span className="text-muted-foreground group-hover/item:text-foreground transition-colors">Generate posts from text descriptions</span>
               </li>
-              <li className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+              <li className="flex items-center gap-3 group/item">
+                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                   <span className="text-primary text-xs font-bold">✓</span>
                 </div>
-                <span className="text-muted-foreground">Use reference images for inspiration</span>
+                <span className="text-muted-foreground group-hover/item:text-foreground transition-colors">Use reference images for inspiration</span>
               </li>
-              <li className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+              <li className="flex items-center gap-3 group/item">
+                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                   <span className="text-primary text-xs font-bold">✓</span>
                 </div>
-                <span className="text-muted-foreground">Multiple aspect ratios and styles</span>
+                <span className="text-muted-foreground group-hover/item:text-foreground transition-colors">Multiple aspect ratios and styles</span>
               </li>
             </ul>
             <Button 
-              className="w-full"
+              className="w-full group-hover:shadow-lg group-hover:shadow-primary/30"
               onClick={() => onFunctionSelect('social')}
             >
               Use Social Post Generator
@@ -269,47 +289,51 @@ export const FunctionSelector = ({ onFunctionSelect }: FunctionSelectorProps) =>
 
         {/* Object Remover */}
         <Card 
-          className="border hover:border-accent/60 transition-all duration-300 cursor-pointer group relative overflow-hidden hover:shadow-md"
+          className="border hover:border-accent/60 transition-all duration-500 cursor-pointer group relative overflow-hidden hover:shadow-xl hover:shadow-accent/20 hover:-translate-y-2 bg-gradient-to-br from-card via-card to-card/95"
           onClick={() => onFunctionSelect('remove')}
         >
-          <CardHeader className="pb-4">
+          {/* Animated gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-accent/0 via-accent/0 to-primary/0 group-hover:from-accent/5 group-hover:via-accent/5 group-hover:to-primary/5 transition-all duration-500 pointer-events-none" />
+          
+          <CardHeader className="pb-4 relative z-10">
             <div className="flex items-start gap-4">
               <div className="relative flex-shrink-0">
-                <div className="p-3 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
-                  <Eraser className="w-6 h-6 text-accent" />
+                <div className="absolute inset-0 bg-accent/20 rounded-xl blur-lg group-hover:blur-xl group-hover:bg-accent/30 transition-all duration-500" />
+                <div className="relative p-3 rounded-xl bg-accent/10 group-hover:bg-accent/20 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-lg group-hover:shadow-xl">
+                  <Eraser className="w-6 h-6 text-accent transition-transform duration-300 group-hover:scale-110" />
                 </div>
               </div>
               <div className="flex-1 min-w-0 pt-1">
-                <CardTitle className="text-xl font-bold mb-2">Object Remover</CardTitle>
+                <CardTitle className="text-xl font-bold mb-2 group-hover:text-accent transition-colors duration-300">Object Remover</CardTitle>
                 <CardDescription className="text-sm">
                   Remove unwanted objects from images with AI-powered precision. Select areas to clean and get professional results.
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 relative z-10">
             <ul className="space-y-2 text-sm">
-              <li className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
+              <li className="flex items-center gap-3 group/item">
+                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                   <span className="text-accent text-xs font-bold">✓</span>
                 </div>
-                <span className="text-muted-foreground">Interactive selection tool</span>
+                <span className="text-muted-foreground group-hover/item:text-foreground transition-colors">Interactive selection tool</span>
               </li>
-              <li className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
+              <li className="flex items-center gap-3 group/item">
+                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                   <span className="text-accent text-xs font-bold">✓</span>
                 </div>
-                <span className="text-muted-foreground">AI-powered inpainting</span>
+                <span className="text-muted-foreground group-hover/item:text-foreground transition-colors">AI-powered inpainting</span>
               </li>
-              <li className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
+              <li className="flex items-center gap-3 group/item">
+                <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center group-hover/item:scale-110 transition-transform">
                   <span className="text-accent text-xs font-bold">✓</span>
                 </div>
-                <span className="text-muted-foreground">Seamless object removal</span>
+                <span className="text-muted-foreground group-hover/item:text-foreground transition-colors">Seamless object removal</span>
               </li>
             </ul>
             <Button 
-              className="w-full"
+              className="w-full group-hover:shadow-lg group-hover:shadow-accent/30"
               onClick={() => onFunctionSelect('remove')}
             >
               Use Object Remover

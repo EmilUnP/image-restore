@@ -22,7 +22,7 @@ interface SocialPostGenerationWorkflowProps {
   onBack: () => void;
 }
 
-type GenerationMode = 'from-scratch' | 'single-reference' | 'multi-reference' | 'super';
+type GenerationMode = 'from-scratch' | 'multi-reference' | 'super';
 
 export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWorkflowProps) => {
   const { fileToBase64 } = useImageUpload();
@@ -30,7 +30,6 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [style, setStyle] = useState('modern');
-  const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [generatedPost, setGeneratedPost] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -39,59 +38,61 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
 
   const handleModeChange = (newMode: string) => {
     setMode(newMode as GenerationMode);
-    setReferenceImage(null);
     setReferenceImages([]);
     setGeneratedPost(null);
     setActualPrompt(null);
   };
 
-  const handleReferenceImageSelect = async (file: File) => {
+  const handleMultiReferenceImagesAdd = async (files: FileList | File[]) => {
     try {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload a valid image file');
+      const fileArray = Array.from(files);
+      const remainingSlots = 3 - referenceImages.length;
+      
+      if (fileArray.length > remainingSlots) {
+        toast.error(`You can only add ${remainingSlots} more image${remainingSlots === 1 ? '' : 's'}`);
         return;
       }
-      
-      const base64Image = await fileToBase64(file);
-      setReferenceImage(base64Image);
-      setGeneratedPost(null);
-      setActualPrompt(null);
-    } catch (error) {
-      console.error('Error converting file to base64:', error);
-      toast.error('Failed to process image. Please try again.');
-    }
-  };
 
-  const handleReferenceImageRemove = () => {
-    setReferenceImage(null);
-  };
+      // Validate all files
+      const validFiles = fileArray.filter(file => {
+        if (!file.type.startsWith('image/')) {
+          toast.error(`${file.name} is not a valid image file`);
+          return false;
+        }
+        return true;
+      });
 
-  const handleMultiReferenceImageAdd = async (file: File) => {
-    try {
-      if (referenceImages.length >= 3) {
-        toast.error('Maximum 3 reference images allowed');
+      if (validFiles.length === 0) {
         return;
       }
-      
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload a valid image file');
-        return;
+
+      // Process all files in parallel
+      const base64Promises = validFiles.map(async (file) => {
+        try {
+          const base64Image = await fileToBase64(file);
+          if (!base64Image || typeof base64Image !== 'string') {
+            throw new Error(`Failed to process ${file.name}`);
+          }
+          return base64Image;
+        } catch (error) {
+          console.error(`Error processing ${file.name}:`, error);
+          toast.error(`Failed to process ${file.name}`);
+          return null;
+        }
+      });
+
+      const base64Images = await Promise.all(base64Promises);
+      const validImages = base64Images.filter((img): img is string => img !== null);
+
+      if (validImages.length > 0) {
+        setReferenceImages([...referenceImages, ...validImages]);
+        setGeneratedPost(null);
+        setActualPrompt(null);
+        toast.success(`Added ${validImages.length} image${validImages.length === 1 ? '' : 's'}`);
       }
-      
-      const base64Image = await fileToBase64(file);
-      if (!base64Image || typeof base64Image !== 'string') {
-        toast.error('Failed to process image');
-        return;
-      }
-      
-      setReferenceImages([...referenceImages, base64Image]);
-      setGeneratedPost(null);
-      setActualPrompt(null);
     } catch (error) {
-      console.error('Error converting file to base64:', error);
-      toast.error('Failed to process image. Please try again.');
+      console.error('Error processing images:', error);
+      toast.error('Failed to process images. Please try again.');
     }
   };
 
@@ -102,11 +103,6 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       toast.error('Please enter a description for the social post');
-      return;
-    }
-
-    if (mode === 'single-reference' && !referenceImage) {
-      toast.error('Please upload a reference image');
       return;
     }
 
@@ -133,7 +129,6 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
         prompt,
         aspectRatio,
         style,
-        referenceImage: mode === 'single-reference' && referenceImage ? referenceImage : undefined,
         referenceImages: validReferenceImages,
       });
 
@@ -176,7 +171,6 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
 
   const handleReset = () => {
     setPrompt('');
-    setReferenceImage(null);
     setReferenceImages([]);
     setGeneratedPost(null);
     setActualPrompt(null);
@@ -204,20 +198,13 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
       {/* Enhanced Mode Selection */}
       <div className="mb-6">
         <Tabs value={mode} onValueChange={handleModeChange}>
-          <TabsList className="grid w-full grid-cols-4 bg-card/60 backdrop-blur-xl border border-primary/30 p-1 rounded-xl h-12 shadow-lg shadow-primary/5">
+          <TabsList className="grid w-full grid-cols-3 bg-card/60 backdrop-blur-xl border border-primary/30 p-1 rounded-xl h-12 shadow-lg shadow-primary/5">
             <TabsTrigger 
               value="from-scratch" 
               className="gap-2 text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 transition-all duration-300 rounded-lg"
             >
               <Sparkles className="w-4 h-4" />
               From Scratch
-            </TabsTrigger>
-            <TabsTrigger 
-              value="single-reference" 
-              className="gap-2 text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 transition-all duration-300 rounded-lg"
-            >
-              <ImageIcon className="w-4 h-4" />
-              Single Ref
             </TabsTrigger>
             <TabsTrigger 
               value="multi-reference" 
@@ -247,52 +234,6 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
           description="Describe your post and customize the style and aspect ratio"
         >
           <div className="space-y-5">
-            {/* Reference Image Upload - Single */}
-            {mode === 'single-reference' && (
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-primary" />
-                  Reference Image
-                </Label>
-                {referenceImage ? (
-                  <div className="relative group">
-                    <div className="w-full max-h-56 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm p-3 flex items-center justify-center overflow-hidden shadow-lg shadow-primary/10 transition-all duration-300 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20">
-                      {referenceImage && typeof referenceImage === 'string' ? (
-                        <img
-                          src={referenceImage}
-                          alt="Reference"
-                          className="w-full h-full object-contain max-h-52 rounded-lg transition-transform duration-300 group-hover:scale-[1.02]"
-                          onError={(e) => {
-                            console.error('Image load error:', e);
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div className="text-sm text-muted-foreground">Invalid image</div>
-                      )}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-3 right-3 h-8 w-8 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground border-2 border-destructive-foreground/20 shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl"
-                      onClick={handleReferenceImageRemove}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="transition-all duration-300 hover:scale-[1.01]">
-                    <ImageUpload
-                      onImageSelect={handleReferenceImageSelect}
-                      label="Upload Reference Image"
-                      description="Drag and drop or click to select"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* Reference Images Upload - Multiple */}
             {mode === 'multi-reference' && (
               <div className="space-y-3">
@@ -301,45 +242,91 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
                   Reference Images 
                   <span className="text-xs font-normal text-muted-foreground">({referenceImages.length}/3)</span>
                 </Label>
-                <div className="grid grid-cols-3 gap-3">
-                  {referenceImages.map((img, index) => (
-                    <div key={index} className="relative group">
-                      <div className="w-full h-32 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm overflow-hidden flex items-center justify-center shadow-md shadow-primary/5 transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/20 hover:scale-[1.02]">
-                        {img && typeof img === 'string' ? (
-                          <img
-                            src={img}
-                            alt={`Reference ${index + 1}`}
-                            className="w-full h-full object-contain p-2"
-                            onError={(e) => {
-                              console.error('Image load error:', e);
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <div className="text-xs text-muted-foreground">Invalid</div>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground border-2 border-destructive-foreground/20 shadow-md transition-all duration-300 hover:scale-110 hover:shadow-lg"
-                        onClick={() => handleMultiReferenceImageRemove(index)}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  ))}
-                  {referenceImages.length < 3 && (
-                    <div className="h-32 transition-all duration-300 hover:scale-[1.02]">
-                      <ImageUpload
-                        onImageSelect={handleMultiReferenceImageAdd}
-                        label="Add Image"
-                        description=""
+                
+                {/* Batch Upload Area */}
+                {referenceImages.length < 3 && (
+                  <div className="relative">
+                    <div
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const files = e.dataTransfer.files;
+                        if (files.length > 0) {
+                          handleMultiReferenceImagesAdd(files);
+                        }
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                      }}
+                      className="border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 bg-card/50 backdrop-blur-sm border-primary/30 hover:border-primary/50 hover:bg-primary/5 cursor-pointer group"
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          const files = e.target.files;
+                          if (files && files.length > 0) {
+                            handleMultiReferenceImagesAdd(files);
+                            // Reset input so same files can be selected again
+                            e.target.value = '';
+                          }
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        disabled={referenceImages.length >= 3}
                       />
+                      <div className="flex flex-col items-center gap-3 relative z-0">
+                        <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                          <ImageIcon className="w-8 h-8 text-primary" />
+                        </div>
+                        <div className="space-y-1">
+                          <h3 className="text-sm font-semibold text-foreground">
+                            Upload Reference Images
+                          </h3>
+                          <p className="text-xs text-muted-foreground">
+                            Click to select or drag and drop {referenceImages.length < 3 ? `up to ${3 - referenceImages.length} image${3 - referenceImages.length === 1 ? '' : 's'}` : 'images'}
+                          </p>
+                          <p className="text-xs text-muted-foreground/70 mt-1">
+                            You can upload multiple images at once
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {/* Display Uploaded Images */}
+                {referenceImages.length > 0 && (
+                  <div className="grid grid-cols-3 gap-3">
+                    {referenceImages.map((img, index) => (
+                      <div key={index} className="relative group">
+                        <div className="w-full h-32 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm overflow-hidden flex items-center justify-center shadow-md shadow-primary/5 transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/20 hover:scale-[1.02]">
+                          {img && typeof img === 'string' ? (
+                            <img
+                              src={img}
+                              alt={`Reference ${index + 1}`}
+                              className="w-full h-full object-contain p-2"
+                              onError={(e) => {
+                                console.error('Image load error:', e);
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="text-xs text-muted-foreground">Invalid</div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 h-7 w-7 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground border-2 border-destructive-foreground/20 shadow-md transition-all duration-300 hover:scale-110 hover:shadow-lg"
+                          onClick={() => handleMultiReferenceImageRemove(index)}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
