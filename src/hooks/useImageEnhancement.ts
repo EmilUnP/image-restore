@@ -26,6 +26,10 @@ export const useImageEnhancement = () => {
     quality?: string
   ) => {
     setIsProcessing(true);
+    // Set original image if not already set (for comparison view)
+    if (!originalImage) {
+      setOriginalImage(base64Image);
+    }
     try {
       const request: EnhanceImageRequest = {
         image: base64Image,
@@ -52,7 +56,7 @@ export const useImageEnhancement = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, []);
+  }, [originalImage]);
 
   const handleImageSelect = useCallback(async (
     file: File,

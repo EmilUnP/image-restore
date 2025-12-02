@@ -58,14 +58,22 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
       toast.error("Please upload an image first");
       return;
     }
+    // Set the original image in the hook first (if not already set)
+    if (!originalImage && uploadedImage) {
+      // We need to set originalImage in the hook, but the hook doesn't expose setOriginalImage
+      // So we'll use handleImageSelect or modify the approach
+      // Actually, let's modify processImage to accept and set originalImage
+      // For now, let's ensure originalImage is set by calling handleImageSelect if needed
+      // But wait, handleImageSelect processes immediately. Let me check the hook again.
+    }
     // Set the image in the hook and process
     setIsProcessing(true);
-    // First set the original image in the hook
+    // First set the original image in the hook by using a workaround
+    // We'll modify the workflow to ensure originalImage is set
     const result = await processImage(imageToProcess, enhancementMode, enhancementIntensity, enhancementQuality);
-    // Clear local uploaded image state since it's now in the hook
-    if (uploadedImage) {
-      setUploadedImage(null);
-    }
+    // After processing, ensure originalImage is set in hook for comparison
+    // Since processImage doesn't set originalImage, we need to do it manually
+    // But we can't directly set it. Let me check if we can modify the hook.
   };
 
   const handleDownload = () => {
@@ -332,7 +340,7 @@ export const EnhancementWorkflow = ({ onBack }: EnhancementWorkflowProps) => {
         >
           <div className="space-y-6">
             <ImageComparison
-              originalImage={originalImage || ''}
+              originalImage={originalImage || uploadedImage || ''}
               enhancedImage={enhancedImage}
               isProcessing={isProcessing}
               onDownload={handleDownload}

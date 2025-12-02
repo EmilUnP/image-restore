@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { Move } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Move, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface BeforeAfterSliderProps {
@@ -19,121 +19,239 @@ export const BeforeAfterSlider = ({
 }: BeforeAfterSliderProps) => {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState({ before: false, after: false });
   const containerRef = useRef<HTMLDivElement>(null);
+  const handleRef = useRef<HTMLDivElement>(null);
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging || !containerRef.current) return;
-    
+  // Calculate position from event
+  const calculatePosition = useCallback((clientX: number) => {
+    if (!containerRef.current) return 50;
     const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
+    const x = clientX - rect.left;
     const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    setSliderPosition(percentage);
-  };
+    return percentage;
+  }, []);
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleTouchMove = (e: TouchEvent) => {
+  // Handle mouse move
+  const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || !containerRef.current) return;
-    
-    const rect = containerRef.current.getBoundingClientRect();
+    e.preventDefault();
+    const percentage = calculatePosition(e.clientX);
+    setSliderPosition(percentage);
+  }, [isDragging, calculatePosition]);
+
+  // Handle touch move
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (!isDragging || !containerRef.current) return;
+    e.preventDefault();
     const touch = e.touches[0];
-    const x = touch.clientX - rect.left;
-    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    const percentage = calculatePosition(touch.clientX);
     setSliderPosition(percentage);
-  };
+  }, [isDragging, calculatePosition]);
+
+  // Handle mouse/touch up
+  const handleEnd = useCallback(() => {
+    setIsDragging(false);
+    // Set flag to prevent click event from firing immediately after drag
+    justFinishedDragging.current = true;
+    setTimeout(() => {
+      justFinishedDragging.current = false;
+    }, 100);
+  }, []);
+
+  // Track if we just finished dragging to prevent click from firing
+  const justFinishedDragging = useRef(false);
+
+  // Handle click to set position
+  const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    // Don't set position if we just finished dragging
+    if (justFinishedDragging.current) {
+      justFinishedDragging.current = false;
+      return;
+    }
+    // Don't set position if clicking on the handle
+    if (handleRef.current && handleRef.current.contains(e.target as Node)) {
+      return;
+    }
+    const percentage = calculatePosition(e.clientX);
+    setSliderPosition(percentage);
+  }, [calculatePosition]);
+
+  // Handle keyboard navigation
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setSliderPosition(prev => Math.max(0, prev - 1));
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      setSliderPosition(prev => Math.min(100, prev + 1));
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      setSliderPosition(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      setSliderPosition(100);
+    } else if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      setSliderPosition(50); // Reset to center
+    }
+  }, []);
+
+  // Reset to center on double click
+  const handleDoubleClick = useCallback(() => {
+    setSliderPosition(50);
+  }, []);
 
   useEffect(() => {
     if (isDragging) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-      document.addEventListener("touchmove", handleTouchMove);
-      document.addEventListener("touchend", handleMouseUp);
+      document.addEventListener("mousemove", handleMouseMove, { passive: false });
+      document.addEventListener("mouseup", handleEnd);
+      document.addEventListener("touchmove", handleTouchMove, { passive: false });
+      document.addEventListener("touchend", handleEnd);
       document.body.style.cursor = "ew-resize";
       document.body.style.userSelect = "none";
     } else {
       document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("mouseup", handleEnd);
       document.removeEventListener("touchmove", handleTouchMove);
-      document.removeEventListener("touchend", handleMouseUp);
+      document.removeEventListener("touchend", handleEnd);
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     }
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("mouseup", handleEnd);
       document.removeEventListener("touchmove", handleTouchMove);
-      document.removeEventListener("touchend", handleMouseUp);
+      document.removeEventListener("touchend", handleEnd);
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     };
-  }, [isDragging]);
+  }, [isDragging, handleMouseMove, handleTouchMove, handleEnd]);
 
   if (!afterImage || isProcessing) {
     return null;
   }
 
+  const bothImagesLoaded = imagesLoaded.before && imagesLoaded.after;
+
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden border-2 border-primary/20 shadow-xl">
       <CardContent className="p-0">
-        <div className="relative aspect-video bg-muted/50 rounded-lg overflow-hidden group">
-          <div
-            ref={containerRef}
-            className="relative w-full h-full cursor-ew-resize"
-            onMouseDown={() => setIsDragging(true)}
-            onTouchStart={() => setIsDragging(true)}
-          >
-            {/* Before Image (Background) */}
-            <div className="absolute inset-0">
-              <img
-                src={beforeImage}
-                alt={beforeLabel}
-                className="w-full h-full object-contain"
-                draggable={false}
-              />
-            </div>
-
-            {/* After Image (Clipped) */}
-            <div
-              className="absolute inset-0 overflow-hidden"
-              style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-            >
-              <img
-                src={afterImage}
-                alt={afterLabel}
-                className="w-full h-full object-contain"
-                draggable={false}
-              />
-            </div>
-
-            {/* Slider Line */}
-            <div
-              className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg z-10 transition-all"
-              style={{ left: `${sliderPosition}%` }}
-            >
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border-2 border-primary flex items-center justify-center cursor-ew-resize hover:scale-110 transition-transform">
-                <Move className="w-5 h-5 text-primary" />
+        <div 
+          ref={containerRef}
+          className="relative aspect-video bg-muted/50 rounded-lg overflow-hidden group"
+          onClick={handleClick}
+          onDoubleClick={handleDoubleClick}
+          onKeyDown={handleKeyDown}
+          tabIndex={0}
+          role="slider"
+          aria-label="Image comparison slider"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={sliderPosition}
+        >
+          {/* Before Image (Background) */}
+          <div className="absolute inset-0">
+            {!imagesLoaded.before && (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
+                <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
               </div>
-            </div>
+            )}
+            <img
+              src={beforeImage}
+              alt={beforeLabel}
+              className={`w-full h-full object-contain transition-opacity duration-300 ${
+                imagesLoaded.before ? 'opacity-100' : 'opacity-0'
+              }`}
+              draggable={false}
+              onLoad={() => setImagesLoaded(prev => ({ ...prev, before: true }))}
+            />
+          </div>
 
-            {/* Labels */}
-            <div className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1.5 rounded-md text-sm font-medium backdrop-blur-sm">
-              {beforeLabel}
-            </div>
-            <div
-              className="absolute top-4 bg-black/60 text-white px-3 py-1.5 rounded-md text-sm font-medium backdrop-blur-sm transition-all"
-              style={{ right: `${100 - sliderPosition}%` }}
+          {/* After Image (Clipped) */}
+          <div
+            className="absolute inset-0 overflow-hidden"
+            style={{ 
+              clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
+              willChange: 'clip-path'
+            }}
+          >
+            {!imagesLoaded.after && (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
+                <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              </div>
+            )}
+            <img
+              src={afterImage}
+              alt={afterLabel}
+              className={`w-full h-full object-contain transition-opacity duration-300 ${
+                imagesLoaded.after ? 'opacity-100' : 'opacity-0'
+              }`}
+              draggable={false}
+              onLoad={() => setImagesLoaded(prev => ({ ...prev, after: true }))}
+            />
+          </div>
+
+          {/* Slider Line */}
+          <div
+            className="absolute top-0 bottom-0 w-0.5 bg-white/90 shadow-2xl z-20 pointer-events-none transition-all duration-75"
+            style={{ 
+              left: `${sliderPosition}%`,
+              boxShadow: '0 0 10px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.3)'
+            }}
+          >
+            {/* Slider Handle */}
+            <div 
+              ref={handleRef}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white shadow-2xl border-2 border-primary flex items-center justify-center cursor-ew-resize hover:scale-110 active:scale-95 transition-transform pointer-events-auto z-30"
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                setIsDragging(true);
+              }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+                setIsDragging(true);
+              }}
             >
-              {afterLabel}
-            </div>
-
-            {/* Instructions */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-md text-xs backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
-              Drag to compare • Click to reset
+              <Move className="w-5 h-5 text-primary" />
             </div>
           </div>
+
+          {/* Labels - positioned to show which image is actually visible on each side */}
+          {/* Left side label: shows "after" image when slider is to the right, "before" when slider is all the way left */}
+          <div 
+            className="absolute top-4 left-4 bg-black/70 text-white px-3 py-1.5 rounded-lg text-sm font-semibold backdrop-blur-md border border-white/10 shadow-lg z-10 transition-all duration-75"
+          >
+            {sliderPosition < 10 ? beforeLabel : afterLabel}
+          </div>
+          
+          {/* Right side label: shows "before" image when slider is to the right, "after" when slider is all the way right */}
+          <div
+            className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1.5 rounded-lg text-sm font-semibold backdrop-blur-md border border-white/10 shadow-lg z-10 transition-all duration-75"
+          >
+            {sliderPosition > 90 ? afterLabel : beforeLabel}
+          </div>
+
+          {/* Instructions */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-lg text-xs backdrop-blur-md border border-white/10 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+            <div className="flex items-center gap-4">
+              <span>Drag to compare</span>
+              <span>•</span>
+              <span>Double-click to reset</span>
+              <span>•</span>
+              <span>Arrow keys to adjust</span>
+            </div>
+          </div>
+
+          {/* Keyboard navigation hints */}
+          {bothImagesLoaded && (
+            <div className="absolute bottom-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+              <div className="bg-black/70 text-white px-2 py-1 rounded text-xs backdrop-blur-md border border-white/10">
+                <ChevronLeft className="w-3 h-3 inline" /> / <ChevronRight className="w-3 h-3 inline" />
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
