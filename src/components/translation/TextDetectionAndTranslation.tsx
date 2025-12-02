@@ -33,6 +33,7 @@ interface TextDetectionAndTranslationProps {
   onApply: (translatedTexts: TranslatedText[]) => void;
   isTranslating?: boolean;
   isApplying?: boolean;
+  showTranslateButton?: boolean;
 }
 
 export const TextDetectionAndTranslation = ({
@@ -45,6 +46,7 @@ export const TextDetectionAndTranslation = ({
   onApply,
   isTranslating = false,
   isApplying = false,
+  showTranslateButton = true,
 }: TextDetectionAndTranslationProps) => {
   const [editingOriginalId, setEditingOriginalId] = useState<string | null>(null);
   const [editingTranslatedId, setEditingTranslatedId] = useState<string | null>(null);
@@ -277,8 +279,8 @@ export const TextDetectionAndTranslation = ({
         </CardContent>
       </Card>
 
-      {/* Translate Button - Always visible when texts are detected */}
-      {originalTexts.length > 0 && (
+      {/* Translate Button - Only show if showTranslateButton is true */}
+      {showTranslateButton && originalTexts.length > 0 && (
         <Card className={`border-2 transition-all duration-300 ${
           !hasTranslated 
             ? "border-primary/50 bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 shadow-lg shadow-primary/20" 
