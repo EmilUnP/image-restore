@@ -360,69 +360,12 @@ export const LogoGenerationWorkflow = ({ onBack }: LogoGenerationWorkflowProps) 
               description="Upload an existing logo to enhance its quality and style"
             >
               <div className="space-y-3">
-                {!originalLogo ? (
-                  <ImageUpload
-                    onImageSelect={(file) => handleLogoSelect(file, upgradeLevel, style)}
-                    disabled={isGenerating}
-                    label="Upload Logo"
-                    description="Drag and drop or click to select"
-                  />
-                ) : (
-                  <div className="space-y-3">
-                    <div className="p-3 bg-background/30 rounded-lg border border-primary/20">
-                      <img
-                        src={originalLogo}
-                        alt="Original logo"
-                        className="w-32 h-32 mx-auto object-contain rounded"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="upgrade-level" className="text-xs text-foreground/70">Level</Label>
-                        <Select value={upgradeLevel} onValueChange={setUpgradeLevel}>
-                          <SelectTrigger id="upgrade-level" className="h-9 text-sm bg-background/30 border-primary/20">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="low">Low</SelectItem>
-                            <SelectItem value="medium">Medium</SelectItem>
-                            <SelectItem value="high">High</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="upgrade-style" className="text-xs text-foreground/70">Style</Label>
-                        <Select value={style} onValueChange={setStyle}>
-                          <SelectTrigger id="upgrade-style" className="h-9 text-sm bg-background/30 border-primary/20">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="modern">Modern</SelectItem>
-                            <SelectItem value="classic">Classic</SelectItem>
-                            <SelectItem value="minimalist">Minimalist</SelectItem>
-                            <SelectItem value="bold">Bold</SelectItem>
-                            <SelectItem value="elegant">Elegant</SelectItem>
-                            <SelectItem value="playful">Playful</SelectItem>
-                            <SelectItem value="corporate">Corporate</SelectItem>
-                            <SelectItem value="creative">Creative</SelectItem>
-                            <SelectItem value="vintage">Vintage</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={handleSettingsReady}
-                        className="flex-1 h-9 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-sm font-semibold"
-                      >
-                        Upgrade
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                <ImageUpload
+                  onImageSelect={(file) => handleLogoSelect(file)}
+                  disabled={isGenerating}
+                  label="Upload Logo"
+                  description="Drag and drop or click to select"
+                />
               </div>
             </WorkflowCard>
           ) : !generatedLogo ? (

@@ -109,15 +109,13 @@ export const useLogoGeneration = () => {
   }, []);
 
   const handleLogoSelect = useCallback(async (
-    file: File,
-    upgradeLevel: string = 'medium',
-    style: string = 'modern'
+    file: File
   ) => {
     const base64Image = await fileToBase64(file);
     setOriginalLogo(base64Image);
     setGeneratedLogo(null);
-    await upgradeExistingLogo(base64Image, upgradeLevel, style);
-  }, [fileToBase64, upgradeExistingLogo]);
+    // Don't automatically start upgrade - let user review and configure first
+  }, [fileToBase64]);
 
   const reset = useCallback(() => {
     setGeneratedLogo(null);

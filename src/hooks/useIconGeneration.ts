@@ -104,15 +104,13 @@ export const useIconGeneration = () => {
   }, []);
 
   const handleIconSelect = useCallback(async (
-    file: File,
-    upgradeLevel: string = 'medium',
-    style: string = 'modern'
+    file: File
   ) => {
     const base64Image = await fileToBase64(file);
     setOriginalIcon(base64Image);
     setGeneratedIcon(null);
-    await upgradeExistingIcon(base64Image, upgradeLevel, style);
-  }, [fileToBase64, upgradeExistingIcon]);
+    // Don't automatically start upgrade - let user review and configure first
+  }, [fileToBase64]);
 
   const generateMultipleIcons = useCallback(async (
     mainPrompt: string,

@@ -424,37 +424,142 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
             </div>
           </WorkflowCard>
         </div>
-      ) : currentWorkflowStep === 'results' && translatedImage ? (
-        <WorkflowCard
-          title="Translation Results"
-          description={`Language: ${languageName} • Quality: ${translationSettings.quality} • Style: ${translationSettings.textStyle}`}
-        >
-          <div className="space-y-6">
-            <ImageComparison
-              originalImage={originalImage || uploadedImage || ''}
-              enhancedImage={translatedImage}
-              isProcessing={isProcessing}
-              onDownload={handleDownload}
-              originalLabel="Original"
-              processedLabel="Translated"
-            />
-            <div className="flex gap-3">
-              <Button
-                onClick={() => {
-                  reset();
-                  setUploadedImage(null);
-                  setCurrentWorkflowStep('upload');
-                }}
-                variant="outline"
-                size="default"
-                className="flex-1 border-primary/30 hover:bg-primary/10"
-              >
-                <X className="h-4 w-4 mr-2" />
-                Remove Image
-              </Button>
-            </div>
-          </div>
-        </WorkflowCard>
+      ) : currentWorkflowStep === 'results' ? (
+        <>
+          {isProcessing ? (
+            <WorkflowCard
+              title="Generating Translated Image"
+              description="Applying translations to your image. This may take a moment..."
+            >
+              <div className="space-y-6">
+                {/* Loading State */}
+                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                  <div className="relative">
+                    <Loader2 className="w-16 h-16 animate-spin text-primary" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-primary/20 animate-pulse"></div>
+                    </div>
+                  </div>
+                  <div className="text-center space-y-2">
+                    <p className="text-lg font-semibold text-foreground">Processing Translation</p>
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      AI is replacing text in your image with translations while preserving design and formatting...
+                    </p>
+                  </div>
+                  <div className="w-full max-w-md space-y-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                      <span>Status</span>
+                      <span>Processing...</span>
+                    </div>
+                    <div className="h-2 bg-background/30 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-primary via-primary to-accent rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Show original image while processing */}
+                <div className="border-2 border-primary/20 rounded-xl overflow-hidden bg-slate-900/50">
+                  <div className="p-4 bg-background/20 border-b border-primary/20">
+                    <p className="text-sm font-semibold text-foreground">Original Image</p>
+                  </div>
+                  <div className="p-4">
+                    <img
+                      src={originalImage || uploadedImage || ''}
+                      alt="Original"
+                      className="w-full max-h-96 object-contain mx-auto rounded-lg"
+                    />
+                  </div>
+                </div>
+              </div>
+            </WorkflowCard>
+          ) : translatedImage ? (
+            <WorkflowCard
+              title="Translation Results"
+              description={`Language: ${languageName} • Quality: ${translationSettings.quality} • Style: ${translationSettings.textStyle}`}
+            >
+              <div className="space-y-6">
+                <ImageComparison
+                  originalImage={originalImage || uploadedImage || ''}
+                  enhancedImage={translatedImage}
+                  isProcessing={isProcessing}
+                  onDownload={handleDownload}
+                  originalLabel="Original"
+                  processedLabel="Translated"
+                />
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => {
+                      reset();
+                      setUploadedImage(null);
+                      setCurrentWorkflowStep('upload');
+                    }}
+                    variant="outline"
+                    size="default"
+                    className="flex-1 border-primary/30 hover:bg-primary/10"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Remove Image
+                  </Button>
+                </div>
+              </div>
+            </WorkflowCard>
+          ) : (
+            <WorkflowCard
+              title="Translation Failed"
+              description="Something went wrong during the translation process"
+            >
+              <div className="space-y-6">
+                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                  <div className="p-4 rounded-full bg-destructive/20 border-2 border-destructive/30">
+                    <X className="w-12 h-12 text-destructive" />
+                  </div>
+                  <div className="text-center space-y-2">
+                    <p className="text-lg font-semibold text-foreground">Translation Failed</p>
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      The translation process encountered an error. Please try again or check your connection.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Show original image */}
+                <div className="border-2 border-primary/20 rounded-xl overflow-hidden bg-slate-900/50">
+                  <div className="p-4 bg-background/20 border-b border-primary/20">
+                    <p className="text-sm font-semibold text-foreground">Original Image</p>
+                  </div>
+                  <div className="p-4">
+                    <img
+                      src={originalImage || uploadedImage || ''}
+                      alt="Original"
+                      className="w-full max-h-96 object-contain mx-auto rounded-lg"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => setCurrentWorkflowStep('detect-translate')}
+                    className="flex-1 bg-primary hover:bg-primary/90"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Try Again
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      reset();
+                      setUploadedImage(null);
+                      setCurrentWorkflowStep('upload');
+                    }}
+                    variant="outline"
+                    className="flex-1 border-primary/30 hover:bg-primary/10"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Start Over
+                  </Button>
+                </div>
+              </div>
+            </WorkflowCard>
+          )}
+        </>
       ) : null}
     </div>
   );
