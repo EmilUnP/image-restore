@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Languages, Loader2, X } from "lucide-react";
+import { Languages, Loader2, X, RefreshCw, Plus } from "lucide-react";
 import { LanguageSelector } from "./LanguageSelector";
 import { ImageUpload } from "@/components/shared/ImageUpload";
 import { ImageComparison } from "@/components/shared/ImageComparison";
@@ -55,20 +55,64 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
     setUploadedImage(base64Image);
     setIsDetectingText(true);
     
+    // Always set image in hook so user can proceed even if no text detected
+    await handleImageSelect(file, selectedLanguage);
+    
     // Auto-detect text
     try {
       const texts = await detectTextInImage(base64Image);
       if (texts.length > 0) {
-        // Set image in hook for processing later
-        await handleImageSelect(file, selectedLanguage);
+        toast.success(`Detected ${texts.length} text block${texts.length === 1 ? '' : 's'}`);
       } else {
-        toast.error("No text detected in the image");
+        toast.warning("No text detected automatically. You can add text manually or retry detection.");
       }
     } catch (error) {
-      toast.error("Failed to detect text in image");
+      console.error('Text detection error:', error);
+      toast.warning("Text detection failed. You can add text manually or retry detection.");
     } finally {
       setIsDetectingText(false);
     }
+  };
+
+  const handleRetryDetection = async () => {
+    const imageToDetect = uploadedImage || originalImage;
+    if (!imageToDetect) {
+      toast.error("Please upload an image first");
+      return;
+    }
+
+    setIsDetectingText(true);
+    try {
+      const texts = await detectTextInImage(imageToDetect);
+      if (texts.length > 0) {
+        toast.success(`Detected ${texts.length} text block${texts.length === 1 ? '' : 's'}`);
+      } else {
+        toast.warning("No text detected. Try a different image or add text manually.");
+      }
+    } catch (error) {
+      console.error('Text detection error:', error);
+      toast.error("Failed to detect text. Please try again or add text manually.");
+    } finally {
+      setIsDetectingText(false);
+    }
+  };
+
+  const handleAddManualText = () => {
+    const newText: DetectedText = {
+      id: `manual-${Date.now()}`,
+      text: '',
+      confidence: 1.0,
+    };
+    const updatedTexts = [...detectedTexts, newText];
+    setDetectedTexts(updatedTexts);
+    // Scroll to the new text block after a brief delay
+    setTimeout(() => {
+      const element = document.getElementById(`text-block-${newText.id}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+    toast.success("Text block added. Click 'Edit' to add your text.");
   };
 
   const handleTranslateTexts = async (texts: DetectedText[]): Promise<TranslatedText[]> => {
@@ -240,7 +284,7 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
                       <div className="p-2 rounded-lg bg-primary/20">
                         <Languages className="w-5 h-5 text-primary" />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="font-semibold text-foreground">Text Detected!</p>
                         <p className="text-xs text-muted-foreground">
                           {detectedTexts.length} text block{detectedTexts.length === 1 ? '' : 's'} found. Scroll down to translate.
@@ -249,8 +293,49 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 bg-muted/50 rounded-lg text-center">
-                    <p className="text-sm text-muted-foreground">No text detected. Try uploading a different image.</p>
+                  <div className="p-4 rounded-xl bg-gradient-to-br from-yellow-500/10 via-yellow-500/5 to-orange-500/5 border border-yellow-500/20">
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-yellow-500/20">
+                          <Languages className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-foreground mb-1">No Text Detected</p>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            No text was automatically detected. You can retry detection or add text manually.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleRetryDetection}
+                          disabled={isDetectingText}
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 border-primary/30 hover:bg-primary/10"
+                        >
+                          {isDetectingText ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Detecting...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="w-4 h-4 mr-2" />
+                              Retry Detection
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          onClick={handleAddManualText}
+                          size="sm"
+                          className="flex-1 bg-primary hover:bg-primary/90"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Text Manually
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 )}
                 
@@ -262,11 +347,13 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
               </div>
             </WorkflowCard>
 
-            {detectedTexts.length > 0 && (
-              <WorkflowCard 
-                title="Text Translation" 
-                description="Review and translate detected text blocks"
-              >
+            <WorkflowCard 
+              title="Text Translation" 
+              description={detectedTexts.length > 0 
+                ? "Review and translate detected text blocks"
+                : "Add text manually or retry detection to translate"}
+            >
+              {detectedTexts.length > 0 ? (
                 <TextDetectionAndTranslation
                   image={uploadedImage || originalImage || ''}
                   detectedTexts={detectedTexts}
@@ -278,8 +365,49 @@ export const TranslationWorkflow = ({ onBack }: TranslationWorkflowProps) => {
                   isTranslating={isTranslatingText}
                   isApplying={isProcessing}
                 />
-              </WorkflowCard>
-            )}
+              ) : (
+                <div className="space-y-4 py-6">
+                  <div className="text-center space-y-3">
+                    <div className="p-4 rounded-full bg-muted/50 w-16 h-16 mx-auto flex items-center justify-center">
+                      <Languages className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground mb-1">No Text Blocks Yet</p>
+                      <p className="text-sm text-muted-foreground">
+                        Add text manually or retry automatic detection above
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 justify-center">
+                    <Button
+                      onClick={handleRetryDetection}
+                      disabled={isDetectingText}
+                      variant="outline"
+                      className="border-primary/30 hover:bg-primary/10"
+                    >
+                      {isDetectingText ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Detecting...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Retry Detection
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={handleAddManualText}
+                      className="bg-primary hover:bg-primary/90"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Text Manually
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </WorkflowCard>
           </div>
         </div>
       ) : translatedImage ? (

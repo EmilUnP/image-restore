@@ -341,7 +341,7 @@ export const TextDetectionAndTranslation = ({
           {originalTexts.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <AlertCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>No text detected in the image.</p>
+              <p>No text blocks added yet.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -357,9 +357,12 @@ export const TextDetectionAndTranslation = ({
 
                 return (
                   <Card
+                    id={`text-block-${originalText.id}`}
                     key={originalText.id}
                     className={`border-2 transition-all ${
-                      originalText.confidence < 0.6
+                      !originalText.text || originalText.text.trim().length === 0
+                        ? "border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20"
+                        : originalText.confidence < 0.6
                         ? "border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20"
                         : originalText.confidence < 0.8
                         ? "border-yellow-200 bg-yellow-50/50 dark:border-yellow-900 dark:bg-yellow-950/20"
@@ -376,12 +379,18 @@ export const TextDetectionAndTranslation = ({
                           <div>
                             <div className="flex items-center gap-2 mb-2">
                               <Badge variant="outline" className="text-xs">Original</Badge>
-                              <Badge
-                                variant="outline"
-                                className={`${getConfidenceColor(originalText.confidence)} text-white border-0 text-xs`}
-                              >
-                                {getConfidenceLabel(originalText.confidence)} ({(originalText.confidence * 100).toFixed(0)}%)
-                              </Badge>
+                              {(!originalText.text || originalText.text.trim().length === 0) ? (
+                                <Badge variant="outline" className="text-xs bg-blue-500 text-white border-0">
+                                  Manual Entry
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className={`${getConfidenceColor(originalText.confidence)} text-white border-0 text-xs`}
+                                >
+                                  {getConfidenceLabel(originalText.confidence)} ({(originalText.confidence * 100).toFixed(0)}%)
+                                </Badge>
+                              )}
                             </div>
                             {isEditingOriginal ? (
                               <div className="space-y-2">
@@ -419,7 +428,9 @@ export const TextDetectionAndTranslation = ({
                             ) : (
                               <div className="p-3 rounded-lg bg-muted/50 border border-border">
                                 <div className="flex items-start justify-between gap-2">
-                                  <p className="text-sm font-medium flex-1">{originalText.text || "(Empty)"}</p>
+                                  <p className="text-sm font-medium flex-1">
+                                    {originalText.text || <span className="text-muted-foreground italic">(Click Edit to add text)</span>}
+                                  </p>
                                   <div className="flex items-center gap-2 flex-shrink-0">
                                     {originalText.confidence >= 0.8 && (
                                       <CheckCircle2 className="w-4 h-4 text-green-500" />
