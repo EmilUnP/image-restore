@@ -2878,10 +2878,14 @@ app.post('/api/translate-image', async (req, res) => {
 
     // Language name mapping for better prompts
     const languageNames = {
-      'en': 'English',
-      'ru': 'Russian',
-      'tr': 'Turkish',
-      'uk': 'Ukrainian',
+      az: 'Azerbaijani',
+      en: 'English',
+      ru: 'Russian',
+      tr: 'Turkish',
+      uk: 'Ukrainian',
+      es: 'Spanish',
+      fr: 'French',
+      de: 'German',
     };
 
     const targetLangName = languageNames[targetLanguage] || targetLanguage;

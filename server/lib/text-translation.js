@@ -10,6 +10,7 @@ export class TranslationServiceError extends Error {
 }
 
 export const languageNames = {
+  az: 'Azerbaijani',
   en: 'English',
   ru: 'Russian',
   tr: 'Turkish',
@@ -17,13 +18,6 @@ export const languageNames = {
   es: 'Spanish',
   fr: 'French',
   de: 'German',
-  it: 'Italian',
-  pt: 'Portuguese',
-  zh: 'Chinese',
-  ja: 'Japanese',
-  ko: 'Korean',
-  ar: 'Arabic',
-  hi: 'Hindi',
 };
 
 export const getLanguageName = (code) => languageNames[code] || code;

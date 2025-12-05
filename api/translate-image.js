@@ -3,6 +3,7 @@ import { saveUploadedImage } from './lib/blob-storage.js';
 import { applyTextOverlaysToImage } from '../server/lib/local-image-translation.js';
 
 const LANGUAGE_NAMES = {
+  az: 'Azerbaijani',
   en: 'English',
   ru: 'Russian',
   tr: 'Turkish',
@@ -10,14 +11,7 @@ const LANGUAGE_NAMES = {
   es: 'Spanish',
   fr: 'French',
   de: 'German',
-  it: 'Italian',
-  pt: 'Portuguese',
-  zh: 'Chinese',
-  ja: 'Japanese',
-  ko: 'Korean',
-  ar: 'Arabic',
-  hi: 'Hindi',
-};
+ };
 
 const QUALITY_INSTRUCTIONS = {
   standard: 'Provide accurate translation with good text rendering.',
