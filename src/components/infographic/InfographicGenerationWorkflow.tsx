@@ -11,7 +11,7 @@ import { WorkflowHeader } from "@/components/shared/WorkflowHeader";
 import { WorkflowCard } from "@/components/shared/WorkflowCard";
 import { downloadImage } from "@/lib/utils";
 import { toast } from "sonner";
-import { BarChart3, Sparkles, X, Download, Image as ImageIcon, Type, Move, Trash2, Plus, Square, Circle, Triangle, TrendingUp } from "lucide-react";
+import { BarChart3, Sparkles, X, Download, Image as ImageIcon, Type, Move, Trash2, Plus, Square, Circle, Triangle, TrendingUp, ChevronUp, ChevronDown } from "lucide-react";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { generateInfographic } from "@/lib/api";
 
@@ -48,17 +48,6 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
   const [actualPrompt, setActualPrompt] = useState<string | null>(null);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-  const [resizeInfo, setResizeInfo] = useState<{
-    elementId: string;
-    handle: 'se' | 'sw' | 'ne' | 'nw';
-    startX: number;
-    startY: number;
-    startWidth: number;
-    startHeight: number;
-    startXPercent: number;
-    startYPercent: number;
-  } | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
   // Form states for adding elements
@@ -170,23 +159,9 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
   };
 
   const handleElementMouseDown = (e: React.MouseEvent, id: string) => {
-    const target = e.target as HTMLElement;
-    
-    // Don't start dragging if clicking on a resize handle
-    if (target.closest('.resize-handle') || target.hasAttribute('data-resize-handle') || target.closest('[data-resize-handle="true"]')) {
-      return;
-    }
-    
-    // Don't start dragging if we're already resizing
-    if (isResizing) {
-      return;
-    }
-    
     e.stopPropagation();
     setSelectedElement(id);
     setIsDragging(true);
-    setIsResizing(false);
-    setResizeInfo(null);
     
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -209,140 +184,36 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
     }
   };
 
-  const handleResizeStart = (e: React.MouseEvent, id: string, handle: 'se' | 'sw' | 'ne' | 'nw') => {
-    e.stopPropagation();
-    e.preventDefault();
-    e.nativeEvent.stopImmediatePropagation();
-    
-    // Immediately prevent dragging
-    setIsDragging(false);
-    setIsResizing(true);
-    setSelectedElement(id);
-    
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      setIsResizing(false);
-      return;
-    }
-    
-    const rect = canvas.getBoundingClientRect();
-    const element = elements.find(el => el.id === id);
-    
-    if (!element || !element.width || !element.height) {
-      setIsResizing(false);
-      return;
-    }
-    
-    const startX = e.clientX;
-    const startY = e.clientY;
-    
-    setResizeInfo({
-      elementId: id,
-      handle,
-      startX,
-      startY,
-      startWidth: element.width,
-      startHeight: element.height,
-      startXPercent: element.x,
-      startYPercent: element.y,
-    });
-  };
-
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!canvasRef.current) return;
     
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     
-    // Handle resizing first - it takes priority
-    if (isResizing && resizeInfo) {
-      const deltaX = e.clientX - resizeInfo.startX;
-      const deltaY = e.clientY - resizeInfo.startY;
-      
-      const deltaXPercent = (deltaX / rect.width) * 100;
-      const deltaYPercent = (deltaY / rect.height) * 100;
-      
-      setElements(prev => {
-        const elementIndex = prev.findIndex(el => el.id === resizeInfo.elementId);
-        if (elementIndex === -1) return prev;
-        
-        const element = prev[elementIndex];
-        if (!element.width || !element.height) return prev;
-        
-        let newWidth = resizeInfo.startWidth;
-        let newHeight = resizeInfo.startHeight;
-        let newX = resizeInfo.startXPercent;
-        let newY = resizeInfo.startYPercent;
-        
-        switch (resizeInfo.handle) {
-          case 'se':
-            newWidth = resizeInfo.startWidth + deltaXPercent;
-            newHeight = resizeInfo.startHeight + deltaYPercent;
-            break;
-          case 'sw':
-            newWidth = resizeInfo.startWidth - deltaXPercent;
-            newHeight = resizeInfo.startHeight + deltaYPercent;
-            newX = resizeInfo.startXPercent - (deltaXPercent / 2);
-            break;
-          case 'ne':
-            newWidth = resizeInfo.startWidth + deltaXPercent;
-            newHeight = resizeInfo.startHeight - deltaYPercent;
-            newY = resizeInfo.startYPercent - (deltaYPercent / 2);
-            break;
-          case 'nw':
-            newWidth = resizeInfo.startWidth - deltaXPercent;
-            newHeight = resizeInfo.startHeight - deltaYPercent;
-            newX = resizeInfo.startXPercent - (deltaXPercent / 2);
-            newY = resizeInfo.startYPercent - (deltaYPercent / 2);
-            break;
-        }
-        
-        newWidth = Math.max(5, Math.min(80, newWidth));
-        newHeight = Math.max(5, Math.min(80, newHeight));
-        newX = Math.max(0, Math.min(100, newX));
-        newY = Math.max(0, Math.min(100, newY));
-        
-        const updated = [...prev];
-        updated[elementIndex] = { 
-          ...updated[elementIndex], 
-          width: newWidth, 
-          height: newHeight,
-          x: newX,
-          y: newY,
-        };
-        return updated;
-      });
-      return;
-    }
-    
-    // Handle dragging only if not resizing
-    if (isDragging && selectedElement && !isResizing) {
+    // Handle dragging
+    if (isDragging && selectedElement) {
       const x = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
       const y = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
       
       const clampedX = Math.max(0, Math.min(100, x));
       const clampedY = Math.max(0, Math.min(100, y));
       
-      setElements(prev => {
-        const elementIndex = prev.findIndex(el => el.id === selectedElement);
-        if (elementIndex !== -1) {
-          const updated = [...prev];
-          updated[elementIndex] = { ...updated[elementIndex], x: clampedX, y: clampedY };
-          return updated;
-        }
-        return prev;
-      });
+      setElements(prevElements =>
+        prevElements.map(el =>
+          el.id === selectedElement
+            ? { ...el, x: clampedX, y: clampedY }
+            : el
+        )
+      );
     }
-  }, [isDragging, isResizing, resizeInfo, selectedElement, dragOffset]);
+  }, [isDragging, selectedElement, dragOffset]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-    setIsResizing(false);
-    setResizeInfo(null);
   }, []);
 
   useEffect(() => {
-    if (isDragging || isResizing) {
+    if (isDragging) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -350,7 +221,7 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
         window.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, isResizing, handleMouseMove, handleMouseUp]);
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   const handleDeleteElement = (id: string) => {
     setElements(elements.filter(el => el.id !== id));
@@ -366,6 +237,7 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
     ));
     toast.success('Element updated');
   };
+
 
   const selectedElementData = selectedElement ? elements.find(el => el.id === selectedElement) : null;
 
@@ -461,10 +333,7 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
               <div
                 className="cursor-move"
                 onMouseDown={(e) => {
-                  const target = e.target as HTMLElement;
-                  if (!target.closest('.resize-handle') && !target.hasAttribute('data-resize-handle')) {
-                    handleElementMouseDown(e, element.id);
-                  }
+                  handleElementMouseDown(e, element.id);
                 }}
                 onDoubleClick={() => {
                   setSelectedElement(element.id);
@@ -483,30 +352,9 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                 </p>
               </div>
               {isSelected && (
-                <>
-                  <div
-                    data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -right-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-se-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      e.nativeEvent.stopImmediatePropagation();
-                      handleResizeStart(e, element.id, 'se');
-                    }}
-                    style={{ touchAction: 'none', userSelect: 'none' }}
-                  />
-                  <div
-                    data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -left-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-sw-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      e.nativeEvent.stopImmediatePropagation();
-                      handleResizeStart(e, element.id, 'sw');
-                    }}
-                    style={{ touchAction: 'none', userSelect: 'none' }}
-                  />
-                </>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-1 bg-primary/90 text-primary-foreground text-xs font-semibold rounded-md shadow-lg z-[100] whitespace-nowrap">
+                  Selected
+                </div>
               )}
               <Button
                 variant="ghost"
@@ -540,10 +388,7 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
               <div
                 className="w-full h-full cursor-move"
                 onMouseDown={(e) => {
-                  const target = e.target as HTMLElement;
-                  if (!target.closest('.resize-handle') && !target.hasAttribute('data-resize-handle')) {
-                    handleElementMouseDown(e, element.id);
-                  }
+                  handleElementMouseDown(e, element.id);
                 }}
               >
                 <img
@@ -554,52 +399,9 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                 />
               </div>
               {isSelected && (
-                <>
-                  <div
-                    data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -right-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-se-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      e.nativeEvent.stopImmediatePropagation();
-                      handleResizeStart(e, element.id, 'se');
-                    }}
-                    style={{ touchAction: 'none', userSelect: 'none' }}
-                  />
-                  <div
-                    data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -left-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-sw-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      e.nativeEvent.stopImmediatePropagation();
-                      handleResizeStart(e, element.id, 'sw');
-                    }}
-                    style={{ touchAction: 'none', userSelect: 'none' }}
-                  />
-                  <div
-                    data-resize-handle="true"
-                    className="resize-handle absolute -top-2 -right-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-ne-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      e.nativeEvent.stopImmediatePropagation();
-                      handleResizeStart(e, element.id, 'ne');
-                    }}
-                    style={{ touchAction: 'none', userSelect: 'none' }}
-                  />
-                  <div
-                    data-resize-handle="true"
-                    className="resize-handle absolute -top-2 -left-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-nw-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      e.nativeEvent.stopImmediatePropagation();
-                      handleResizeStart(e, element.id, 'nw');
-                    }}
-                    style={{ touchAction: 'none', userSelect: 'none' }}
-                  />
-                </>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-1 bg-primary/90 text-primary-foreground text-xs font-semibold rounded-md shadow-lg z-[100] whitespace-nowrap">
+                  Selected
+                </div>
               )}
               <Button
                 variant="ghost"
@@ -634,10 +436,7 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
               <div
                 className="w-full h-full cursor-move"
                 onMouseDown={(e) => {
-                  const target = e.target as HTMLElement;
-                  if (!target.closest('.resize-handle') && !target.hasAttribute('data-resize-handle')) {
-                    handleElementMouseDown(e, element.id);
-                  }
+                  handleElementMouseDown(e, element.id);
                 }}
               >
                 <div
@@ -648,52 +447,9 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                 </div>
               </div>
               {isSelected && (
-                <>
-                  <div
-                    data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -right-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-se-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      e.nativeEvent.stopImmediatePropagation();
-                      handleResizeStart(e, element.id, 'se');
-                    }}
-                    style={{ touchAction: 'none', userSelect: 'none' }}
-                  />
-                  <div
-                    data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -left-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-sw-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      e.nativeEvent.stopImmediatePropagation();
-                      handleResizeStart(e, element.id, 'sw');
-                    }}
-                    style={{ touchAction: 'none', userSelect: 'none' }}
-                  />
-                  <div
-                    data-resize-handle="true"
-                    className="resize-handle absolute -top-2 -right-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-ne-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      e.nativeEvent.stopImmediatePropagation();
-                      handleResizeStart(e, element.id, 'ne');
-                    }}
-                    style={{ touchAction: 'none', userSelect: 'none' }}
-                  />
-                  <div
-                    data-resize-handle="true"
-                    className="resize-handle absolute -top-2 -left-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-nw-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      e.nativeEvent.stopImmediatePropagation();
-                      handleResizeStart(e, element.id, 'nw');
-                    }}
-                    style={{ touchAction: 'none', userSelect: 'none' }}
-                  />
-                </>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-1 bg-primary/90 text-primary-foreground text-xs font-semibold rounded-md shadow-lg z-[100] whitespace-nowrap">
+                  Selected
+                </div>
               )}
               <Button
                 variant="ghost"
@@ -727,10 +483,7 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
               <div
                 className="w-full h-full cursor-move"
                 onMouseDown={(e) => {
-                  const target = e.target as HTMLElement;
-                  if (!target.closest('.resize-handle') && !target.hasAttribute('data-resize-handle')) {
-                    handleElementMouseDown(e, element.id);
-                  }
+                  handleElementMouseDown(e, element.id);
                 }}
               >
                 <div className="w-full h-full rounded-lg border-2 border-dashed border-primary/50 bg-primary/5 shadow-lg flex items-center justify-center">
@@ -739,52 +492,9 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                 </div>
               </div>
               {isSelected && (
-                <>
-                  <div
-                    data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -right-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-se-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      e.nativeEvent.stopImmediatePropagation();
-                      handleResizeStart(e, element.id, 'se');
-                    }}
-                    style={{ touchAction: 'none', userSelect: 'none' }}
-                  />
-                  <div
-                    data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -left-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-sw-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      e.nativeEvent.stopImmediatePropagation();
-                      handleResizeStart(e, element.id, 'sw');
-                    }}
-                    style={{ touchAction: 'none', userSelect: 'none' }}
-                  />
-                  <div
-                    data-resize-handle="true"
-                    className="resize-handle absolute -top-2 -right-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-ne-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      e.nativeEvent.stopImmediatePropagation();
-                      handleResizeStart(e, element.id, 'ne');
-                    }}
-                    style={{ touchAction: 'none', userSelect: 'none' }}
-                  />
-                  <div
-                    data-resize-handle="true"
-                    className="resize-handle absolute -top-2 -left-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-nw-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      e.nativeEvent.stopImmediatePropagation();
-                      handleResizeStart(e, element.id, 'nw');
-                    }}
-                    style={{ touchAction: 'none', userSelect: 'none' }}
-                  />
-                </>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-1 bg-primary/90 text-primary-foreground text-xs font-semibold rounded-md shadow-lg z-[100] whitespace-nowrap">
+                  Selected
+                </div>
               )}
               <Button
                 variant="ghost"
@@ -873,11 +583,14 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                 </div>
 
                 <div className="text-xs text-muted-foreground text-center space-y-1">
-                  <p>Click and drag elements to reposition them</p>
-                  <p>Click an element to select it, then drag the corner handles to resize</p>
-                  <p className="text-primary/70">Double-click an element to edit it</p>
+                  <p className="font-semibold text-foreground mb-2">How to use:</p>
+                  <div className="space-y-1.5 text-left bg-background/50 p-3 rounded-lg border border-primary/20">
+                    <p>• <span className="font-semibold">Move:</span> Click and drag elements to reposition them</p>
+                    <p>• <span className="font-semibold">Select:</span> Click an element to select it</p>
+                    <p>• <span className="font-semibold">Edit:</span> Double-click an element or use the editor panel when selected</p>
+                  </div>
                   {selectedElementData && (
-                    <p className="text-accent font-semibold mt-2 animate-pulse">✓ Element selected - Use the editor panel to modify properties</p>
+                    <p className="text-accent font-semibold mt-2 animate-pulse">✓ Element selected - Use the editor panel on the right to modify</p>
                   )}
                 </div>
               </div>
@@ -988,34 +701,6 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                       </div>
                     )}
 
-                    {(selectedElementData.type === 'image' || selectedElementData.type === 'shape' || selectedElementData.type === 'chart') && (
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-accent/20">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Width (%)</Label>
-                          <Input
-                            type="number"
-                            value={selectedElementData.width?.toFixed(1) || '30'}
-                            onChange={(e) => handleUpdateElement(selectedElementData.id, { width: Number(e.target.value) })}
-                            min="5"
-                            max="80"
-                            step="0.1"
-                            className="bg-card/50 border-accent/30 text-sm h-8"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Height (%)</Label>
-                          <Input
-                            type="number"
-                            value={selectedElementData.height?.toFixed(1) || '30'}
-                            onChange={(e) => handleUpdateElement(selectedElementData.id, { height: Number(e.target.value) })}
-                            min="5"
-                            max="80"
-                            step="0.1"
-                            className="bg-card/50 border-accent/30 text-sm h-8"
-                          />
-                        </div>
-                      </div>
-                    )}
 
                     <Button
                       onClick={() => setSelectedElement(null)}
