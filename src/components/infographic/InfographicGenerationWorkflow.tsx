@@ -13,6 +13,7 @@ import { downloadImage } from "@/lib/utils";
 import { toast } from "sonner";
 import { BarChart3, Sparkles, X, Download, Image as ImageIcon, Type, Move, Trash2, Plus, Square, Circle, Triangle, TrendingUp } from "lucide-react";
 import { useImageUpload } from "@/hooks/useImageUpload";
+import { generateInfographic } from "@/lib/api";
 
 interface InfographicGenerationWorkflowProps {
   onBack: () => void;
@@ -356,45 +357,37 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
     try {
       const dimensions = aspectRatioDimensions[aspectRatio] || aspectRatioDimensions['16:9'];
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/generate-infographic`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt,
-          style,
-          aspectRatio,
-          description: description.trim() || undefined,
-          elements: elements.map(el => ({
-            type: el.type,
-            x: el.x,
-            y: el.y,
-            width: el.width,
-            height: el.height,
-            text: el.text,
-            fontSize: el.fontSize,
-            color: el.color,
-            image: el.image,
-            shapeType: el.shapeType,
-            chartType: el.chartType,
-          })),
-          canvasWidth: dimensions.width,
-          canvasHeight: dimensions.height,
-        }),
+      const response = await generateInfographic({
+        prompt,
+        style,
+        aspectRatio,
+        description: description.trim() || undefined,
+        elements: elements.map(el => ({
+          type: el.type,
+          x: el.x,
+          y: el.y,
+          width: el.width,
+          height: el.height,
+          text: el.text,
+          fontSize: el.fontSize,
+          color: el.color,
+          image: el.image,
+          shapeType: el.shapeType,
+          chartType: el.chartType,
+        })),
+        canvasWidth: dimensions.width,
+        canvasHeight: dimensions.height,
       });
 
-      const data = await response.json();
-
-      if (data.error) {
-        toast.error(data.error);
+      if (response.error) {
+        toast.error(response.error);
         return;
       }
 
-      if (data.generatedInfographic) {
-        setGeneratedInfographic(data.generatedInfographic);
-        if (data.actualPrompt) {
-          setActualPrompt(data.actualPrompt);
+      if (response.generatedInfographic) {
+        setGeneratedInfographic(response.generatedInfographic);
+        if (response.actualPrompt) {
+          setActualPrompt(response.actualPrompt);
         }
         toast.success('Infographic generated successfully!');
       }
@@ -430,6 +423,7 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
       case 'text':
         return (
           <div
+            key={element.id}
             className={`absolute transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-2 z-20' : 'z-10'}`}
             style={{
               left: `${element.x}%`,
@@ -499,6 +493,7 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
       case 'image':
         return (
           <div
+            key={element.id}
             className={`absolute transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-2 z-20' : 'z-10'}`}
             style={{
               left: `${element.x}%`,
@@ -584,6 +579,7 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
         const ShapeIcon = element.shapeType === 'circle' ? Circle : element.shapeType === 'triangle' ? Triangle : Square;
         return (
           <div
+            key={element.id}
             className={`absolute transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-2 z-20' : 'z-10'}`}
             style={{
               left: `${element.x}%`,
@@ -668,6 +664,7 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
       case 'chart':
         return (
           <div
+            key={element.id}
             className={`absolute transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-2 z-20' : 'z-10'}`}
             style={{
               left: `${element.x}%`,
@@ -803,7 +800,10 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                   onClick={() => setSelectedElement(null)}
                 >
                   {/* Render all elements */}
-                  {elements.map((element) => renderElement(element))}
+                  {elements.map((element) => {
+                    const rendered = renderElement(element);
+                    return rendered ? { ...rendered, key: element.id } : null;
+                  })}
 
                   {elements.length === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">

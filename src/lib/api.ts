@@ -586,6 +586,87 @@ export interface RemoveObjectResponse {
   error?: string;
 }
 
+export interface GenerateInfographicRequest {
+  prompt: string;
+  style?: string;
+  aspectRatio?: string;
+  description?: string;
+  elements?: Array<{
+    type: 'text' | 'image' | 'shape' | 'chart';
+    x: number;
+    y: number;
+    width?: number;
+    height?: number;
+    text?: string;
+    fontSize?: number;
+    color?: string;
+    image?: string;
+    shapeType?: 'rectangle' | 'circle' | 'triangle';
+    chartType?: 'bar' | 'line' | 'pie';
+  }>;
+  canvasWidth?: number;
+  canvasHeight?: number;
+}
+
+export interface GenerateInfographicResponse {
+  generatedInfographic?: string;
+  message?: string;
+  error?: string;
+  actualPrompt?: string;
+}
+
+export const generateInfographic = async (request: GenerateInfographicRequest): Promise<GenerateInfographicResponse> => {
+  const API_URL = getApiUrl();
+  const url = `${API_URL}/api/generate-infographic`;
+  
+  console.log('[API] generateInfographic - Calling URL:', url);
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  let responseData: GenerateInfographicResponse;
+  try {
+    const responseText = await response.text();
+    
+    if (!responseText || responseText.trim().length === 0) {
+      throw new Error('Server returned empty response');
+    }
+    
+    // Check if response is HTML (404 page)
+    if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+      throw new Error(`Server returned HTML instead of JSON. This usually means the endpoint doesn't exist. Status: ${response.status}`);
+    }
+    
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('[API] generateInfographic - JSON parse error:', parseError);
+      throw new Error(`Server returned invalid JSON. Status: ${response.status}. Response: ${responseText.substring(0, 200)}`);
+    }
+  } catch (e) {
+    console.error('[API] generateInfographic - Failed to parse response:', e);
+    if (e instanceof Error) {
+      throw e;
+    }
+    throw new Error(`Server responded with non-JSON: ${response.status}`);
+  }
+
+  if (!response.ok) {
+    const errorMessage = responseData.error || `Failed to generate infographic. Error: ${response.status}`;
+    return {
+      ...responseData,
+      error: errorMessage,
+    };
+  }
+
+  return responseData;
+};
+
 export async function removeObject(
   image: string,
   mask: string
