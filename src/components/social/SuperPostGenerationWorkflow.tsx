@@ -373,8 +373,22 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
     } else {
       setPlacedTexts(placedTexts.filter(txt => txt.id !== id));
     }
+    if (selectedElement === id) {
+      setSelectedElement(null);
+    }
     toast.success('Element removed');
   };
+
+  const handleUpdateText = (id: string, updates: Partial<PlacedText>) => {
+    setPlacedTexts(placedTexts.map(txt => 
+      txt.id === id ? { ...txt, ...updates } : txt
+    ));
+    toast.success('Text updated');
+  };
+
+  const selectedElementData = selectedElement 
+    ? placedTexts.find(txt => txt.id === selectedElement) || placedImages.find(img => img.id === selectedElement)
+    : null;
 
   const handleGenerate = async () => {
     if (placedImages.length === 0 && placedTexts.length === 0) {
@@ -640,7 +654,11 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                         pointerEvents: 'auto',
                       }}
                     >
-                      <div className="relative group px-2 py-1 bg-white/90 rounded border-2 border-primary/50 shadow-lg">
+                      <div className={`relative group px-2 py-1 rounded border-2 shadow-lg transition-all ${
+                        selectedElement === txt.id
+                          ? 'bg-primary/10 border-primary ring-2 ring-primary/50'
+                          : 'bg-white/90 border-primary/50 hover:border-primary/70'
+                      }`}>
                         <div
                           className="cursor-move"
                           onMouseDown={(e) => {
@@ -649,6 +667,9 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                             if (!target.closest('.resize-handle') && !target.hasAttribute('data-resize-handle')) {
                               handleElementMouseDown(e, txt.id, 'text');
                             }
+                          }}
+                          onDoubleClick={() => {
+                            setSelectedElement(txt.id);
                           }}
                         >
                           <p
@@ -736,6 +757,10 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                 <div className="text-xs text-muted-foreground text-center space-y-1">
                   <p>Click and drag elements to reposition them</p>
                   <p>Click an element to select it, then drag the corner handles to resize</p>
+                  <p className="text-primary/70">Double-click text to edit it</p>
+                  {selectedElementData && 'text' in selectedElementData && (
+                    <p className="text-accent font-semibold mt-2 animate-pulse">✓ Text selected - Use the editor panel to modify</p>
+                  )}
                 </div>
               </div>
             </WorkflowCard>
@@ -743,6 +768,68 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
 
           {/* Controls - Right Side (1 column) */}
           <div className="space-y-4">
+            {/* Edit Selected Element Section */}
+            {selectedElementData && 'text' in selectedElementData && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 px-2">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-accent/80 flex items-center gap-2">
+                    <Type className="w-3.5 h-3.5" />
+                    Edit Text
+                  </h3>
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
+                </div>
+
+                <WorkflowCard 
+                  title="Edit Text Element"
+                  description="Modify selected text properties"
+                >
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Text Content</Label>
+                      <Input
+                        value={selectedElementData.text}
+                        onChange={(e) => handleUpdateText(selectedElementData.id, { text: e.target.value })}
+                        placeholder="Enter text..."
+                        className="bg-card/50 border-accent/30 h-9 text-sm"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Font Size</Label>
+                        <Input
+                          type="number"
+                          value={selectedElementData.fontSize}
+                          onChange={(e) => handleUpdateText(selectedElementData.id, { fontSize: Number(e.target.value) })}
+                          min="12"
+                          max="72"
+                          className="bg-card/50 border-accent/30 text-sm h-8"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Color</Label>
+                        <Input
+                          type="color"
+                          value={selectedElementData.color}
+                          onChange={(e) => handleUpdateText(selectedElementData.id, { color: e.target.value })}
+                          className="h-8 bg-card/50 border-accent/30"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => setSelectedElement(null)}
+                      variant="outline"
+                      className="w-full border-accent/30 hover:bg-accent/10 h-9 text-sm"
+                      size="sm"
+                    >
+                      <X className="w-3.5 h-3.5 mr-1.5" />
+                      Close Editor
+                    </Button>
+                  </div>
+                </WorkflowCard>
+              </div>
+            )}
+
             {/* Section: Add Content */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 px-2">

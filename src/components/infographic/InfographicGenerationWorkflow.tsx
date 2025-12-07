@@ -347,6 +347,15 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
     toast.success('Element removed');
   };
 
+  const handleUpdateElement = (id: string, updates: Partial<InfographicElement>) => {
+    setElements(elements.map(el => 
+      el.id === id ? { ...el, ...updates } : el
+    ));
+    toast.success('Element updated');
+  };
+
+  const selectedElementData = selectedElement ? elements.find(el => el.id === selectedElement) : null;
+
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       toast.error('Please enter a topic/description for the infographic');
@@ -431,7 +440,11 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
               transform: 'translate(-50%, -50%)',
             }}
           >
-            <div className="relative group px-2 py-1 bg-white/90 rounded border-2 border-primary/50 shadow-lg">
+            <div className={`relative group px-2 py-1 rounded border-2 shadow-lg transition-all ${
+              isSelected 
+                ? 'bg-primary/10 border-primary ring-2 ring-primary/50' 
+                : 'bg-white/90 border-primary/50 hover:border-primary/70'
+            }`}>
               <div
                 className="cursor-move"
                 onMouseDown={(e) => {
@@ -439,6 +452,9 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                   if (!target.closest('.resize-handle') && !target.hasAttribute('data-resize-handle')) {
                     handleElementMouseDown(e, element.id);
                   }
+                }}
+                onDoubleClick={() => {
+                  setSelectedElement(element.id);
                 }}
               >
                 <p
@@ -800,10 +816,7 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                   onClick={() => setSelectedElement(null)}
                 >
                   {/* Render all elements */}
-                  {elements.map((element) => {
-                    const rendered = renderElement(element);
-                    return rendered ? { ...rendered, key: element.id } : null;
-                  })}
+                  {elements.map((element) => renderElement(element))}
 
                   {elements.length === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -819,6 +832,10 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                 <div className="text-xs text-muted-foreground text-center space-y-1">
                   <p>Click and drag elements to reposition them</p>
                   <p>Click an element to select it, then drag the corner handles to resize</p>
+                  <p className="text-primary/70">Double-click an element to edit it</p>
+                  {selectedElementData && (
+                    <p className="text-accent font-semibold mt-2 animate-pulse">✓ Element selected - Use the editor panel to modify properties</p>
+                  )}
                 </div>
               </div>
             </WorkflowCard>
@@ -826,6 +843,151 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
 
           {/* Controls - Right Side (1 column) */}
           <div className="space-y-4">
+            {/* Edit Selected Element Section */}
+            {selectedElementData && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 px-2">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-accent/80 flex items-center gap-2">
+                    <Type className="w-3.5 h-3.5" />
+                    Edit Element
+                  </h3>
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
+                </div>
+
+                <WorkflowCard 
+                  title={`Edit ${selectedElementData.type.charAt(0).toUpperCase() + selectedElementData.type.slice(1)}`}
+                  description="Modify selected element properties"
+                >
+                  <div className="space-y-3">
+                    {selectedElementData.type === 'text' && (
+                      <>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Text Content</Label>
+                          <Input
+                            value={selectedElementData.text || ''}
+                            onChange={(e) => handleUpdateElement(selectedElementData.id, { text: e.target.value })}
+                            placeholder="Enter text..."
+                            className="bg-card/50 border-accent/30 h-9 text-sm"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Font Size</Label>
+                            <Input
+                              type="number"
+                              value={selectedElementData.fontSize || 24}
+                              onChange={(e) => handleUpdateElement(selectedElementData.id, { fontSize: Number(e.target.value) })}
+                              min="12"
+                              max="72"
+                              className="bg-card/50 border-accent/30 text-sm h-8"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Color</Label>
+                            <Input
+                              type="color"
+                              value={selectedElementData.color || '#000000'}
+                              onChange={(e) => handleUpdateElement(selectedElementData.id, { color: e.target.value })}
+                              className="h-8 bg-card/50 border-accent/30"
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {selectedElementData.type === 'shape' && (
+                      <>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Shape Type</Label>
+                          <Select 
+                            value={selectedElementData.shapeType || 'rectangle'} 
+                            onValueChange={(v) => handleUpdateElement(selectedElementData.id, { shapeType: v as typeof newShapeType })}
+                          >
+                            <SelectTrigger className="bg-card/50 border-accent/30 h-9 text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="rectangle">Rectangle</SelectItem>
+                              <SelectItem value="circle">Circle</SelectItem>
+                              <SelectItem value="triangle">Triangle</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Color</Label>
+                          <Input
+                            type="color"
+                            value={selectedElementData.color || '#3b82f6'}
+                            onChange={(e) => handleUpdateElement(selectedElementData.id, { color: e.target.value })}
+                            className="h-8 bg-card/50 border-accent/30"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {selectedElementData.type === 'chart' && (
+                      <div className="space-y-1">
+                        <Label className="text-xs">Chart Type</Label>
+                        <Select 
+                          value={selectedElementData.chartType || 'bar'} 
+                          onValueChange={(v) => handleUpdateElement(selectedElementData.id, { chartType: v as typeof newChartType })}
+                        >
+                          <SelectTrigger className="bg-card/50 border-accent/30 h-9 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="bar">Bar Chart</SelectItem>
+                            <SelectItem value="line">Line Chart</SelectItem>
+                            <SelectItem value="pie">Pie Chart</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {(selectedElementData.type === 'image' || selectedElementData.type === 'shape' || selectedElementData.type === 'chart') && (
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-accent/20">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Width (%)</Label>
+                          <Input
+                            type="number"
+                            value={selectedElementData.width?.toFixed(1) || '30'}
+                            onChange={(e) => handleUpdateElement(selectedElementData.id, { width: Number(e.target.value) })}
+                            min="5"
+                            max="80"
+                            step="0.1"
+                            className="bg-card/50 border-accent/30 text-sm h-8"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Height (%)</Label>
+                          <Input
+                            type="number"
+                            value={selectedElementData.height?.toFixed(1) || '30'}
+                            onChange={(e) => handleUpdateElement(selectedElementData.id, { height: Number(e.target.value) })}
+                            min="5"
+                            max="80"
+                            step="0.1"
+                            className="bg-card/50 border-accent/30 text-sm h-8"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={() => setSelectedElement(null)}
+                      variant="outline"
+                      className="w-full border-accent/30 hover:bg-accent/10 h-9 text-sm"
+                      size="sm"
+                    >
+                      <X className="w-3.5 h-3.5 mr-1.5" />
+                      Close Editor
+                    </Button>
+                  </div>
+                </WorkflowCard>
+              </div>
+            )}
+
             {/* Add Elements Section */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 px-2">
