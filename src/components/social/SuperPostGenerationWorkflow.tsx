@@ -136,7 +136,7 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
   const handleElementMouseDown = (e: React.MouseEvent, id: string, type: 'image' | 'text') => {
     // Don't start dragging if clicking on a resize handle
     const target = e.target as HTMLElement;
-    if (target.closest('.resize-handle') || target.hasAttribute('data-resize-handle')) {
+    if (target.closest('.resize-handle') || target.hasAttribute('data-resize-handle') || target.closest('[data-resize-handle="true"]')) {
       return;
     }
     
@@ -152,7 +152,10 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
     setResizeInfo(null);
     
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      setIsDragging(false);
+      return;
+    }
     
     const rect = canvas.getBoundingClientRect();
     const element = type === 'image' 
@@ -166,6 +169,8 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
         x: e.clientX - rect.left - elementX,
         y: e.clientY - rect.top - elementY,
       });
+    } else {
+      setIsDragging(false);
     }
   };
 
@@ -227,124 +232,120 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     
-    // Handle resizing with requestAnimationFrame for better performance
+    // Handle resizing first - it takes priority
     if (isResizing && resizeInfo) {
-      requestAnimationFrame(() => {
-        const deltaX = e.clientX - resizeInfo.startX;
-        const deltaY = e.clientY - resizeInfo.startY;
-        
-        // Convert pixel movement to percentage
-        const deltaXPercent = (deltaX / rect.width) * 100;
-        const deltaYPercent = (deltaY / rect.height) * 100;
-        
-        if (resizeInfo.elementType === 'image') {
-          setPlacedImages(prev => {
-            const imageIndex = prev.findIndex(img => img.id === resizeInfo.elementId);
-            if (imageIndex === -1) return prev;
-            
-            let newWidth = resizeInfo.startWidth;
-            let newHeight = resizeInfo.startHeight;
-            let newX = resizeInfo.startXPercent;
-            let newY = resizeInfo.startYPercent;
-            
-            // Calculate new size and position based on handle
-            switch (resizeInfo.handle) {
-              case 'se': // Southeast - drag right and down
-                newWidth = resizeInfo.startWidth + deltaXPercent;
-                newHeight = resizeInfo.startHeight + deltaYPercent;
-                break;
-              case 'sw': // Southwest - drag left and down
-                newWidth = resizeInfo.startWidth - deltaXPercent;
-                newHeight = resizeInfo.startHeight + deltaYPercent;
-                newX = resizeInfo.startXPercent - (deltaXPercent / 2);
-                break;
-              case 'ne': // Northeast - drag right and up
-                newWidth = resizeInfo.startWidth + deltaXPercent;
-                newHeight = resizeInfo.startHeight - deltaYPercent;
-                newY = resizeInfo.startYPercent - (deltaYPercent / 2);
-                break;
-              case 'nw': // Northwest - drag left and up
-                newWidth = resizeInfo.startWidth - deltaXPercent;
-                newHeight = resizeInfo.startHeight - deltaYPercent;
-                newX = resizeInfo.startXPercent - (deltaXPercent / 2);
-                newY = resizeInfo.startYPercent - (deltaYPercent / 2);
-                break;
-            }
-            
-            // Clamp values
-            newWidth = Math.max(5, Math.min(80, newWidth));
-            newHeight = Math.max(5, Math.min(80, newHeight));
-            newX = Math.max(0, Math.min(100, newX));
-            newY = Math.max(0, Math.min(100, newY));
-            
-            const updated = [...prev];
-            updated[imageIndex] = { 
-              ...updated[imageIndex], 
-              width: newWidth, 
-              height: newHeight,
-              x: newX,
-              y: newY,
-            };
-            return updated;
-          });
-        } else {
-          // Text resizing - only change font size
-          setPlacedTexts(prev => {
-            const textIndex = prev.findIndex(txt => txt.id === resizeInfo.elementId);
-            if (textIndex === -1) return prev;
-            
-            // Use diagonal distance for font size
-            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-            const fontSizeChange = (distance / rect.width) * 100;
-            
-            let newFontSize = resizeInfo.startWidth;
-            if (resizeInfo.handle === 'se' || resizeInfo.handle === 'ne') {
-              newFontSize = resizeInfo.startWidth + fontSizeChange;
-            } else {
-              newFontSize = resizeInfo.startWidth - fontSizeChange;
-            }
-            
-            newFontSize = Math.max(12, Math.min(72, newFontSize));
-            
-            const updated = [...prev];
-            updated[textIndex] = { ...updated[textIndex], fontSize: newFontSize };
-            return updated;
-          });
-        }
-      });
+      const deltaX = e.clientX - resizeInfo.startX;
+      const deltaY = e.clientY - resizeInfo.startY;
+      
+      // Convert pixel movement to percentage
+      const deltaXPercent = (deltaX / rect.width) * 100;
+      const deltaYPercent = (deltaY / rect.height) * 100;
+      
+      if (resizeInfo.elementType === 'image') {
+        setPlacedImages(prev => {
+          const imageIndex = prev.findIndex(img => img.id === resizeInfo.elementId);
+          if (imageIndex === -1) return prev;
+          
+          let newWidth = resizeInfo.startWidth;
+          let newHeight = resizeInfo.startHeight;
+          let newX = resizeInfo.startXPercent;
+          let newY = resizeInfo.startYPercent;
+          
+          // Calculate new size and position based on handle
+          switch (resizeInfo.handle) {
+            case 'se': // Southeast - drag right and down
+              newWidth = resizeInfo.startWidth + deltaXPercent;
+              newHeight = resizeInfo.startHeight + deltaYPercent;
+              break;
+            case 'sw': // Southwest - drag left and down
+              newWidth = resizeInfo.startWidth - deltaXPercent;
+              newHeight = resizeInfo.startHeight + deltaYPercent;
+              newX = resizeInfo.startXPercent - (deltaXPercent / 2);
+              break;
+            case 'ne': // Northeast - drag right and up
+              newWidth = resizeInfo.startWidth + deltaXPercent;
+              newHeight = resizeInfo.startHeight - deltaYPercent;
+              newY = resizeInfo.startYPercent - (deltaYPercent / 2);
+              break;
+            case 'nw': // Northwest - drag left and up
+              newWidth = resizeInfo.startWidth - deltaXPercent;
+              newHeight = resizeInfo.startHeight - deltaYPercent;
+              newX = resizeInfo.startXPercent - (deltaXPercent / 2);
+              newY = resizeInfo.startYPercent - (deltaYPercent / 2);
+              break;
+          }
+          
+          // Clamp values
+          newWidth = Math.max(5, Math.min(80, newWidth));
+          newHeight = Math.max(5, Math.min(80, newHeight));
+          newX = Math.max(0, Math.min(100, newX));
+          newY = Math.max(0, Math.min(100, newY));
+          
+          const updated = [...prev];
+          updated[imageIndex] = { 
+            ...updated[imageIndex], 
+            width: newWidth, 
+            height: newHeight,
+            x: newX,
+            y: newY,
+          };
+          return updated;
+        });
+      } else {
+        // Text resizing - only change font size
+        setPlacedTexts(prev => {
+          const textIndex = prev.findIndex(txt => txt.id === resizeInfo.elementId);
+          if (textIndex === -1) return prev;
+          
+          // Use diagonal distance for font size
+          const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+          const fontSizeChange = (distance / rect.width) * 100;
+          
+          let newFontSize = resizeInfo.startWidth;
+          if (resizeInfo.handle === 'se' || resizeInfo.handle === 'ne') {
+            newFontSize = resizeInfo.startWidth + fontSizeChange;
+          } else {
+            newFontSize = resizeInfo.startWidth - fontSizeChange;
+          }
+          
+          newFontSize = Math.max(12, Math.min(72, newFontSize));
+          
+          const updated = [...prev];
+          updated[textIndex] = { ...updated[textIndex], fontSize: newFontSize };
+          return updated;
+        });
+      }
       return;
     }
     
     // Handle dragging - only if not resizing
-    if (isDragging && selectedElement && !isResizing && !resizeInfo) {
-      requestAnimationFrame(() => {
-        const x = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
-        const y = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
-        
-        // Clamp to canvas bounds
-        const clampedX = Math.max(0, Math.min(100, x));
-        const clampedY = Math.max(0, Math.min(100, y));
-        
-        // Update position
-        setPlacedImages(prev => {
-          const imageIndex = prev.findIndex(img => img.id === selectedElement);
-          if (imageIndex !== -1) {
-            const updated = [...prev];
-            updated[imageIndex] = { ...updated[imageIndex], x: clampedX, y: clampedY };
-            return updated;
-          }
-          return prev;
-        });
-        
-        setPlacedTexts(prev => {
-          const textIndex = prev.findIndex(txt => txt.id === selectedElement);
-          if (textIndex !== -1) {
-            const updated = [...prev];
-            updated[textIndex] = { ...updated[textIndex], x: clampedX, y: clampedY };
-            return updated;
-          }
-          return prev;
-        });
+    if (isDragging && selectedElement && !isResizing) {
+      const x = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
+      const y = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
+      
+      // Clamp to canvas bounds
+      const clampedX = Math.max(0, Math.min(100, x));
+      const clampedY = Math.max(0, Math.min(100, y));
+      
+      // Update position
+      setPlacedImages(prev => {
+        const imageIndex = prev.findIndex(img => img.id === selectedElement);
+        if (imageIndex !== -1) {
+          const updated = [...prev];
+          updated[imageIndex] = { ...updated[imageIndex], x: clampedX, y: clampedY };
+          return updated;
+        }
+        return prev;
+      });
+      
+      setPlacedTexts(prev => {
+        const textIndex = prev.findIndex(txt => txt.id === selectedElement);
+        if (textIndex !== -1) {
+          const updated = [...prev];
+          updated[textIndex] = { ...updated[textIndex], x: clampedX, y: clampedY };
+          return updated;
+        }
+        return prev;
       });
     }
   }, [isDragging, isResizing, resizeInfo, selectedElement, dragOffset]);
@@ -497,12 +498,14 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
               <div className="space-y-4">
                 <div 
                   ref={canvasRef}
-                  className="relative border-2 border-primary/30 rounded-xl bg-gradient-to-br from-slate-900/50 to-slate-800/50 overflow-hidden"
+                  className="relative border-2 border-primary/40 rounded-xl bg-gradient-to-br from-background via-background/95 to-primary/5 overflow-hidden shadow-2xl shadow-primary/10"
                   style={{ 
                     width: `${canvasDims.width}px`, 
                     height: `${canvasDims.height}px`,
                     maxWidth: '100%',
-                    margin: '0 auto'
+                    margin: '0 auto',
+                    backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.03) 1px, transparent 0)',
+                    backgroundSize: '40px 40px'
                   }}
                   onClick={() => setSelectedElement(null)}
                 >
@@ -842,18 +845,34 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
               </div>
 
               {/* Add Image */}
-              <WorkflowCard title="Add Image" description="Upload images to place on canvas">
-                <div className="space-y-2">
-                  <ImageUpload
-                    onImageSelect={handleImageUpload}
-                    label="Upload Image"
-                    description="Click to select"
-                  />
+              <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 border border-primary/20 backdrop-blur-sm hover:border-primary/30 transition-all">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-2 rounded-lg bg-primary/20">
+                    <ImageIcon className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">Add Image</h4>
+                    <p className="text-xs text-muted-foreground">Upload images to place on canvas</p>
+                  </div>
                 </div>
-              </WorkflowCard>
+                <ImageUpload
+                  onImageSelect={handleImageUpload}
+                  label="Upload Image"
+                  description="Click to select"
+                />
+              </div>
 
               {/* Add Text */}
-              <WorkflowCard title="Add Text" description="Add text elements to your layout">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-accent/10 via-accent/5 to-primary/5 border border-accent/20 backdrop-blur-sm hover:border-accent/30 transition-all">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-2 rounded-lg bg-accent/20">
+                    <Type className="w-4 h-4 text-accent" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">Add Text</h4>
+                    <p className="text-xs text-muted-foreground">Add text elements to your layout</p>
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <div className="space-y-1">
                     <Label className="text-xs">Text Content</Label>
@@ -861,7 +880,7 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                       value={newText}
                       onChange={(e) => setNewText(e.target.value)}
                       placeholder="Enter text..."
-                      className="bg-card/50 border-primary/30 h-9 text-sm"
+                      className="bg-background/80 border-primary/30 h-9 text-sm focus:border-primary/60"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -873,7 +892,7 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                         onChange={(e) => setNewTextFontSize(Number(e.target.value))}
                         min="12"
                         max="72"
-                        className="bg-card/50 border-primary/30 text-sm h-8"
+                        className="bg-background/80 border-primary/30 text-sm h-8 focus:border-primary/60"
                       />
                     </div>
                     <div className="space-y-1">
@@ -882,21 +901,21 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                         type="color"
                         value={newTextColor}
                         onChange={(e) => setNewTextColor(e.target.value)}
-                        className="h-8 bg-card/50 border-primary/30"
+                        className="h-8 bg-background/80 border-primary/30 cursor-pointer"
                       />
                     </div>
                   </div>
                   <Button
                     onClick={handleAddText}
                     disabled={!newText.trim()}
-                    className="w-full bg-primary hover:bg-primary/90 h-9 text-sm"
+                    className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 h-9 text-sm shadow-lg shadow-primary/20"
                     size="sm"
                   >
                     <Plus className="w-3.5 h-3.5 mr-1.5" />
                     Add Text
                   </Button>
                 </div>
-              </WorkflowCard>
+              </div>
             </div>
 
             {/* Section: Configuration */}
@@ -911,12 +930,21 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
               </div>
 
               {/* Settings */}
-              <WorkflowCard title="Settings" description="Configure post style and aspect ratio">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 border border-primary/20 backdrop-blur-sm hover:border-primary/30 transition-all">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-2 rounded-lg bg-primary/20">
+                    <Move className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">Settings</h4>
+                    <p className="text-xs text-muted-foreground">Configure post style and aspect ratio</p>
+                  </div>
+                </div>
                 <div className="space-y-2.5">
                   <div className="space-y-1">
                     <Label className="text-xs">Aspect Ratio</Label>
                     <Select value={aspectRatio} onValueChange={setAspectRatio}>
-                      <SelectTrigger className="bg-card/50 border-primary/30 h-9 text-sm">
+                      <SelectTrigger className="bg-background/80 border-primary/30 h-9 text-sm focus:border-primary/60">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -931,7 +959,7 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                   <div className="space-y-1">
                     <Label className="text-xs">Style</Label>
                     <Select value={style} onValueChange={setStyle}>
-                      <SelectTrigger className="bg-card/50 border-primary/30 h-9 text-sm">
+                      <SelectTrigger className="bg-background/80 border-primary/30 h-9 text-sm focus:border-primary/60">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -947,10 +975,19 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                     </Select>
                   </div>
                 </div>
-              </WorkflowCard>
+              </div>
 
               {/* Description */}
-              <WorkflowCard title="Post Description" description="Optional: Add details about your vision">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-accent/10 via-accent/5 to-primary/5 border border-accent/20 backdrop-blur-sm hover:border-accent/30 transition-all">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-2 rounded-lg bg-accent/20">
+                    <Type className="w-4 h-4 text-accent" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">Post Description</h4>
+                    <p className="text-xs text-muted-foreground">Optional: Add details about your vision</p>
+                  </div>
+                </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Description (Optional)</Label>
                   <Textarea
@@ -958,10 +995,10 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Describe your vision..."
                     rows={3}
-                    className="bg-card/50 border-primary/30 resize-none text-xs"
+                    className="bg-background/80 border-primary/30 resize-none text-xs focus:border-primary/60"
                   />
                 </div>
-              </WorkflowCard>
+              </div>
             </div>
 
             {/* Section: Generation */}

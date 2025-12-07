@@ -171,10 +171,13 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
 
   const handleElementMouseDown = (e: React.MouseEvent, id: string) => {
     const target = e.target as HTMLElement;
-    if (target.closest('.resize-handle') || target.hasAttribute('data-resize-handle')) {
+    
+    // Don't start dragging if clicking on a resize handle
+    if (target.closest('.resize-handle') || target.hasAttribute('data-resize-handle') || target.closest('[data-resize-handle="true"]')) {
       return;
     }
     
+    // Don't start dragging if we're already resizing
     if (isResizing) {
       return;
     }
@@ -186,7 +189,10 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
     setResizeInfo(null);
     
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      setIsDragging(false);
+      return;
+    }
     
     const rect = canvas.getBoundingClientRect();
     const element = elements.find(el => el.id === id);
@@ -198,6 +204,8 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
         x: e.clientX - rect.left - elementX,
         y: e.clientY - rect.top - elementY,
       });
+    } else {
+      setIsDragging(false);
     }
   };
 
@@ -206,17 +214,24 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
     e.preventDefault();
     e.nativeEvent.stopImmediatePropagation();
     
-    setIsResizing(true);
+    // Immediately prevent dragging
     setIsDragging(false);
+    setIsResizing(true);
     setSelectedElement(id);
     
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      setIsResizing(false);
+      return;
+    }
     
     const rect = canvas.getBoundingClientRect();
     const element = elements.find(el => el.id === id);
     
-    if (!element || !element.width || !element.height) return;
+    if (!element || !element.width || !element.height) {
+      setIsResizing(false);
+      return;
+    }
     
     const startX = e.clientX;
     const startY = e.clientY;
@@ -239,88 +254,86 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     
+    // Handle resizing first - it takes priority
     if (isResizing && resizeInfo) {
-      requestAnimationFrame(() => {
-        const deltaX = e.clientX - resizeInfo.startX;
-        const deltaY = e.clientY - resizeInfo.startY;
+      const deltaX = e.clientX - resizeInfo.startX;
+      const deltaY = e.clientY - resizeInfo.startY;
+      
+      const deltaXPercent = (deltaX / rect.width) * 100;
+      const deltaYPercent = (deltaY / rect.height) * 100;
+      
+      setElements(prev => {
+        const elementIndex = prev.findIndex(el => el.id === resizeInfo.elementId);
+        if (elementIndex === -1) return prev;
         
-        const deltaXPercent = (deltaX / rect.width) * 100;
-        const deltaYPercent = (deltaY / rect.height) * 100;
+        const element = prev[elementIndex];
+        if (!element.width || !element.height) return prev;
         
-        setElements(prev => {
-          const elementIndex = prev.findIndex(el => el.id === resizeInfo.elementId);
-          if (elementIndex === -1) return prev;
-          
-          const element = prev[elementIndex];
-          if (!element.width || !element.height) return prev;
-          
-          let newWidth = resizeInfo.startWidth;
-          let newHeight = resizeInfo.startHeight;
-          let newX = resizeInfo.startXPercent;
-          let newY = resizeInfo.startYPercent;
-          
-          switch (resizeInfo.handle) {
-            case 'se':
-              newWidth = resizeInfo.startWidth + deltaXPercent;
-              newHeight = resizeInfo.startHeight + deltaYPercent;
-              break;
-            case 'sw':
-              newWidth = resizeInfo.startWidth - deltaXPercent;
-              newHeight = resizeInfo.startHeight + deltaYPercent;
-              newX = resizeInfo.startXPercent - (deltaXPercent / 2);
-              break;
-            case 'ne':
-              newWidth = resizeInfo.startWidth + deltaXPercent;
-              newHeight = resizeInfo.startHeight - deltaYPercent;
-              newY = resizeInfo.startYPercent - (deltaYPercent / 2);
-              break;
-            case 'nw':
-              newWidth = resizeInfo.startWidth - deltaXPercent;
-              newHeight = resizeInfo.startHeight - deltaYPercent;
-              newX = resizeInfo.startXPercent - (deltaXPercent / 2);
-              newY = resizeInfo.startYPercent - (deltaYPercent / 2);
-              break;
-          }
-          
-          newWidth = Math.max(5, Math.min(80, newWidth));
-          newHeight = Math.max(5, Math.min(80, newHeight));
-          newX = Math.max(0, Math.min(100, newX));
-          newY = Math.max(0, Math.min(100, newY));
-          
-          const updated = [...prev];
-          updated[elementIndex] = { 
-            ...updated[elementIndex], 
-            width: newWidth, 
-            height: newHeight,
-            x: newX,
-            y: newY,
-          };
-          return updated;
-        });
+        let newWidth = resizeInfo.startWidth;
+        let newHeight = resizeInfo.startHeight;
+        let newX = resizeInfo.startXPercent;
+        let newY = resizeInfo.startYPercent;
+        
+        switch (resizeInfo.handle) {
+          case 'se':
+            newWidth = resizeInfo.startWidth + deltaXPercent;
+            newHeight = resizeInfo.startHeight + deltaYPercent;
+            break;
+          case 'sw':
+            newWidth = resizeInfo.startWidth - deltaXPercent;
+            newHeight = resizeInfo.startHeight + deltaYPercent;
+            newX = resizeInfo.startXPercent - (deltaXPercent / 2);
+            break;
+          case 'ne':
+            newWidth = resizeInfo.startWidth + deltaXPercent;
+            newHeight = resizeInfo.startHeight - deltaYPercent;
+            newY = resizeInfo.startYPercent - (deltaYPercent / 2);
+            break;
+          case 'nw':
+            newWidth = resizeInfo.startWidth - deltaXPercent;
+            newHeight = resizeInfo.startHeight - deltaYPercent;
+            newX = resizeInfo.startXPercent - (deltaXPercent / 2);
+            newY = resizeInfo.startYPercent - (deltaYPercent / 2);
+            break;
+        }
+        
+        newWidth = Math.max(5, Math.min(80, newWidth));
+        newHeight = Math.max(5, Math.min(80, newHeight));
+        newX = Math.max(0, Math.min(100, newX));
+        newY = Math.max(0, Math.min(100, newY));
+        
+        const updated = [...prev];
+        updated[elementIndex] = { 
+          ...updated[elementIndex], 
+          width: newWidth, 
+          height: newHeight,
+          x: newX,
+          y: newY,
+        };
+        return updated;
       });
       return;
     }
     
-    if (isDragging && selectedElement && !isResizing && !resizeInfo) {
-      requestAnimationFrame(() => {
-        const x = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
-        const y = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
-        
-        const clampedX = Math.max(0, Math.min(100, x));
-        const clampedY = Math.max(0, Math.min(100, y));
-        
-        setElements(prev => {
-          const elementIndex = prev.findIndex(el => el.id === selectedElement);
-          if (elementIndex !== -1) {
-            const updated = [...prev];
-            updated[elementIndex] = { ...updated[elementIndex], x: clampedX, y: clampedY };
-            return updated;
-          }
-          return prev;
-        });
+    // Handle dragging only if not resizing
+    if (isDragging && selectedElement && !isResizing) {
+      const x = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
+      const y = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
+      
+      const clampedX = Math.max(0, Math.min(100, x));
+      const clampedY = Math.max(0, Math.min(100, y));
+      
+      setElements(prev => {
+        const elementIndex = prev.findIndex(el => el.id === selectedElement);
+        if (elementIndex !== -1) {
+          const updated = [...prev];
+          updated[elementIndex] = { ...updated[elementIndex], x: clampedX, y: clampedY };
+          return updated;
+        }
+        return prev;
       });
     }
-  }, [isDragging, isResizing, resizeInfo, selectedElement, dragOffset, elements]);
+  }, [isDragging, isResizing, resizeInfo, selectedElement, dragOffset]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
@@ -473,21 +486,25 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                 <>
                   <div
                     data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -right-2 w-4 h-4 bg-primary border-2 border-white rounded-full cursor-se-resize z-[100] hover:scale-125"
+                    className="resize-handle absolute -bottom-2 -right-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-se-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
+                      e.nativeEvent.stopImmediatePropagation();
                       handleResizeStart(e, element.id, 'se');
                     }}
+                    style={{ touchAction: 'none', userSelect: 'none' }}
                   />
                   <div
                     data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -left-2 w-4 h-4 bg-primary border-2 border-white rounded-full cursor-sw-resize z-[100] hover:scale-125"
+                    className="resize-handle absolute -bottom-2 -left-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-sw-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
+                      e.nativeEvent.stopImmediatePropagation();
                       handleResizeStart(e, element.id, 'sw');
                     }}
+                    style={{ touchAction: 'none', userSelect: 'none' }}
                   />
                 </>
               )}
@@ -540,39 +557,47 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                 <>
                   <div
                     data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -right-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-se-resize z-[100] hover:scale-125"
+                    className="resize-handle absolute -bottom-2 -right-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-se-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
+                      e.nativeEvent.stopImmediatePropagation();
                       handleResizeStart(e, element.id, 'se');
                     }}
+                    style={{ touchAction: 'none', userSelect: 'none' }}
                   />
                   <div
                     data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -left-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-sw-resize z-[100] hover:scale-125"
+                    className="resize-handle absolute -bottom-2 -left-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-sw-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
+                      e.nativeEvent.stopImmediatePropagation();
                       handleResizeStart(e, element.id, 'sw');
                     }}
+                    style={{ touchAction: 'none', userSelect: 'none' }}
                   />
                   <div
                     data-resize-handle="true"
-                    className="resize-handle absolute -top-2 -right-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-ne-resize z-[100] hover:scale-125"
+                    className="resize-handle absolute -top-2 -right-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-ne-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
+                      e.nativeEvent.stopImmediatePropagation();
                       handleResizeStart(e, element.id, 'ne');
                     }}
+                    style={{ touchAction: 'none', userSelect: 'none' }}
                   />
                   <div
                     data-resize-handle="true"
-                    className="resize-handle absolute -top-2 -left-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-nw-resize z-[100] hover:scale-125"
+                    className="resize-handle absolute -top-2 -left-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-nw-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
+                      e.nativeEvent.stopImmediatePropagation();
                       handleResizeStart(e, element.id, 'nw');
                     }}
+                    style={{ touchAction: 'none', userSelect: 'none' }}
                   />
                 </>
               )}
@@ -626,39 +651,47 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                 <>
                   <div
                     data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -right-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-se-resize z-[100] hover:scale-125"
+                    className="resize-handle absolute -bottom-2 -right-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-se-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
+                      e.nativeEvent.stopImmediatePropagation();
                       handleResizeStart(e, element.id, 'se');
                     }}
+                    style={{ touchAction: 'none', userSelect: 'none' }}
                   />
                   <div
                     data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -left-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-sw-resize z-[100] hover:scale-125"
+                    className="resize-handle absolute -bottom-2 -left-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-sw-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
+                      e.nativeEvent.stopImmediatePropagation();
                       handleResizeStart(e, element.id, 'sw');
                     }}
+                    style={{ touchAction: 'none', userSelect: 'none' }}
                   />
                   <div
                     data-resize-handle="true"
-                    className="resize-handle absolute -top-2 -right-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-ne-resize z-[100] hover:scale-125"
+                    className="resize-handle absolute -top-2 -right-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-ne-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
+                      e.nativeEvent.stopImmediatePropagation();
                       handleResizeStart(e, element.id, 'ne');
                     }}
+                    style={{ touchAction: 'none', userSelect: 'none' }}
                   />
                   <div
                     data-resize-handle="true"
-                    className="resize-handle absolute -top-2 -left-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-nw-resize z-[100] hover:scale-125"
+                    className="resize-handle absolute -top-2 -left-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-nw-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
+                      e.nativeEvent.stopImmediatePropagation();
                       handleResizeStart(e, element.id, 'nw');
                     }}
+                    style={{ touchAction: 'none', userSelect: 'none' }}
                   />
                 </>
               )}
@@ -709,39 +742,47 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                 <>
                   <div
                     data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -right-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-se-resize z-[100] hover:scale-125"
+                    className="resize-handle absolute -bottom-2 -right-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-se-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
+                      e.nativeEvent.stopImmediatePropagation();
                       handleResizeStart(e, element.id, 'se');
                     }}
+                    style={{ touchAction: 'none', userSelect: 'none' }}
                   />
                   <div
                     data-resize-handle="true"
-                    className="resize-handle absolute -bottom-2 -left-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-sw-resize z-[100] hover:scale-125"
+                    className="resize-handle absolute -bottom-2 -left-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-sw-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
+                      e.nativeEvent.stopImmediatePropagation();
                       handleResizeStart(e, element.id, 'sw');
                     }}
+                    style={{ touchAction: 'none', userSelect: 'none' }}
                   />
                   <div
                     data-resize-handle="true"
-                    className="resize-handle absolute -top-2 -right-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-ne-resize z-[100] hover:scale-125"
+                    className="resize-handle absolute -top-2 -right-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-ne-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
+                      e.nativeEvent.stopImmediatePropagation();
                       handleResizeStart(e, element.id, 'ne');
                     }}
+                    style={{ touchAction: 'none', userSelect: 'none' }}
                   />
                   <div
                     data-resize-handle="true"
-                    className="resize-handle absolute -top-2 -left-2 w-5 h-5 bg-primary border-2 border-white rounded-full cursor-nw-resize z-[100] hover:scale-125"
+                    className="resize-handle absolute -top-2 -left-2 w-6 h-6 bg-primary border-2 border-white rounded-full cursor-nw-resize z-[100] hover:scale-110 hover:bg-primary/90 shadow-lg transition-all"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
+                      e.nativeEvent.stopImmediatePropagation();
                       handleResizeStart(e, element.id, 'nw');
                     }}
+                    style={{ touchAction: 'none', userSelect: 'none' }}
                   />
                 </>
               )}
@@ -806,12 +847,14 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
 
                 <div 
                   ref={canvasRef}
-                  className="relative border-2 border-primary/30 rounded-xl bg-gradient-to-br from-slate-900/50 to-slate-800/50 overflow-hidden"
+                  className="relative border-2 border-primary/40 rounded-xl bg-gradient-to-br from-background via-background/95 to-primary/5 overflow-hidden shadow-2xl shadow-primary/10"
                   style={{ 
                     width: `${canvasDims.width}px`, 
                     height: `${canvasDims.height}px`,
                     maxWidth: '100%',
-                    margin: '0 auto'
+                    margin: '0 auto',
+                    backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.03) 1px, transparent 0)',
+                    backgroundSize: '40px 40px'
                   }}
                   onClick={() => setSelectedElement(null)}
                 >
@@ -1000,16 +1043,34 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
               </div>
 
               {/* Add Image */}
-              <WorkflowCard title="Add Image" description="Upload images">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 border border-primary/20 backdrop-blur-sm hover:border-primary/30 transition-all">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-2 rounded-lg bg-primary/20">
+                    <ImageIcon className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">Add Image</h4>
+                    <p className="text-xs text-muted-foreground">Upload images</p>
+                  </div>
+                </div>
                 <ImageUpload
                   onImageSelect={handleImageUpload}
                   label="Upload Image"
                   description="Click to select"
                 />
-              </WorkflowCard>
+              </div>
 
               {/* Add Text */}
-              <WorkflowCard title="Add Text" description="Add text elements">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-accent/10 via-accent/5 to-primary/5 border border-accent/20 backdrop-blur-sm hover:border-accent/30 transition-all">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-2 rounded-lg bg-accent/20">
+                    <Type className="w-4 h-4 text-accent" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">Add Text</h4>
+                    <p className="text-xs text-muted-foreground">Add text elements</p>
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <div className="space-y-1">
                     <Label className="text-xs">Text Content</Label>
@@ -1017,7 +1078,7 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                       value={newText}
                       onChange={(e) => setNewText(e.target.value)}
                       placeholder="Enter text..."
-                      className="bg-card/50 border-primary/30 h-9 text-sm"
+                      className="bg-background/80 border-primary/30 h-9 text-sm focus:border-primary/60"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -1029,7 +1090,7 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                         onChange={(e) => setNewTextFontSize(Number(e.target.value))}
                         min="12"
                         max="72"
-                        className="bg-card/50 border-primary/30 text-sm h-8"
+                        className="bg-background/80 border-primary/30 text-sm h-8 focus:border-primary/60"
                       />
                     </div>
                     <div className="space-y-1">
@@ -1038,29 +1099,38 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                         type="color"
                         value={newTextColor}
                         onChange={(e) => setNewTextColor(e.target.value)}
-                        className="h-8 bg-card/50 border-primary/30"
+                        className="h-8 bg-background/80 border-primary/30 cursor-pointer"
                       />
                     </div>
                   </div>
                   <Button
                     onClick={handleAddText}
                     disabled={!newText.trim()}
-                    className="w-full bg-primary hover:bg-primary/90 h-9 text-sm"
+                    className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 h-9 text-sm shadow-lg shadow-primary/20"
                     size="sm"
                   >
                     <Plus className="w-3.5 h-3.5 mr-1.5" />
                     Add Text
                   </Button>
                 </div>
-              </WorkflowCard>
+              </div>
 
               {/* Add Shape */}
-              <WorkflowCard title="Add Shape" description="Add shape elements">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 border border-primary/20 backdrop-blur-sm hover:border-primary/30 transition-all">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-2 rounded-lg bg-primary/20">
+                    <Square className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">Add Shape</h4>
+                    <p className="text-xs text-muted-foreground">Add shape elements</p>
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <div className="space-y-1">
                     <Label className="text-xs">Shape Type</Label>
                     <Select value={newShapeType} onValueChange={(v) => setNewShapeType(v as typeof newShapeType)}>
-                      <SelectTrigger className="bg-card/50 border-primary/30 h-9 text-sm">
+                      <SelectTrigger className="bg-background/80 border-primary/30 h-9 text-sm focus:border-primary/60">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1076,27 +1146,36 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                       type="color"
                       value={newShapeColor}
                       onChange={(e) => setNewShapeColor(e.target.value)}
-                      className="h-8 bg-card/50 border-primary/30"
+                      className="h-8 bg-background/80 border-primary/30 cursor-pointer"
                     />
                   </div>
                   <Button
                     onClick={handleAddShape}
-                    className="w-full bg-primary hover:bg-primary/90 h-9 text-sm"
+                    className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 h-9 text-sm shadow-lg shadow-primary/20"
                     size="sm"
                   >
                     <Plus className="w-3.5 h-3.5 mr-1.5" />
                     Add Shape
                   </Button>
                 </div>
-              </WorkflowCard>
+              </div>
 
               {/* Add Chart */}
-              <WorkflowCard title="Add Chart" description="Add chart placeholders">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-accent/10 via-accent/5 to-primary/5 border border-accent/20 backdrop-blur-sm hover:border-accent/30 transition-all">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-2 rounded-lg bg-accent/20">
+                    <BarChart3 className="w-4 h-4 text-accent" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">Add Chart</h4>
+                    <p className="text-xs text-muted-foreground">Add chart placeholders</p>
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <div className="space-y-1">
                     <Label className="text-xs">Chart Type</Label>
                     <Select value={newChartType} onValueChange={(v) => setNewChartType(v as typeof newChartType)}>
-                      <SelectTrigger className="bg-card/50 border-primary/30 h-9 text-sm">
+                      <SelectTrigger className="bg-background/80 border-accent/30 h-9 text-sm focus:border-accent/60">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1108,14 +1187,14 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                   </div>
                   <Button
                     onClick={handleAddChart}
-                    className="w-full bg-primary hover:bg-primary/90 h-9 text-sm"
+                    className="w-full bg-gradient-to-r from-accent to-primary hover:from-accent/90 hover:to-primary/90 h-9 text-sm shadow-lg shadow-accent/20"
                     size="sm"
                   >
                     <Plus className="w-3.5 h-3.5 mr-1.5" />
                     Add Chart
                   </Button>
                 </div>
-              </WorkflowCard>
+              </div>
             </div>
 
             {/* Configuration Section */}
@@ -1130,12 +1209,21 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
               </div>
 
               {/* Settings */}
-              <WorkflowCard title="Settings" description="Configure infographic style">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 border border-primary/20 backdrop-blur-sm hover:border-primary/30 transition-all">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-2 rounded-lg bg-primary/20">
+                    <Move className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">Settings</h4>
+                    <p className="text-xs text-muted-foreground">Configure infographic style</p>
+                  </div>
+                </div>
                 <div className="space-y-2.5">
                   <div className="space-y-1">
                     <Label className="text-xs">Aspect Ratio</Label>
                     <Select value={aspectRatio} onValueChange={setAspectRatio}>
-                      <SelectTrigger className="bg-card/50 border-primary/30 h-9 text-sm">
+                      <SelectTrigger className="bg-background/80 border-primary/30 h-9 text-sm focus:border-primary/60">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1151,7 +1239,7 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                   <div className="space-y-1">
                     <Label className="text-xs">Style</Label>
                     <Select value={style} onValueChange={setStyle}>
-                      <SelectTrigger className="bg-card/50 border-primary/30 h-9 text-sm">
+                      <SelectTrigger className="bg-background/80 border-primary/30 h-9 text-sm focus:border-primary/60">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1167,10 +1255,19 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                     </Select>
                   </div>
                 </div>
-              </WorkflowCard>
+              </div>
 
               {/* Description */}
-              <WorkflowCard title="Additional Details" description="Optional: Add more context">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-accent/10 via-accent/5 to-primary/5 border border-accent/20 backdrop-blur-sm hover:border-accent/30 transition-all">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-2 rounded-lg bg-accent/20">
+                    <Type className="w-4 h-4 text-accent" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">Additional Details</h4>
+                    <p className="text-xs text-muted-foreground">Optional: Add more context</p>
+                  </div>
+                </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Description (Optional)</Label>
                   <Textarea
@@ -1178,10 +1275,10 @@ export const InfographicGenerationWorkflow = ({ onBack }: InfographicGenerationW
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Add more details about your infographic..."
                     rows={3}
-                    className="bg-card/50 border-primary/30 resize-none text-xs"
+                    className="bg-background/80 border-primary/30 resize-none text-xs focus:border-primary/60"
                   />
                 </div>
-              </WorkflowCard>
+              </div>
             </div>
 
             {/* Generation Section */}
