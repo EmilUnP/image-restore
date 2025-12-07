@@ -13,7 +13,7 @@ import { WorkflowHeader } from "@/components/shared/WorkflowHeader";
 import { WorkflowCard } from "@/components/shared/WorkflowCard";
 import { downloadImage } from "@/lib/utils";
 import { toast } from "sonner";
-import { Share2, Sparkles, X, Copy, Check, Image as ImageIcon, Download, Wand2 } from "lucide-react";
+import { Share2, Sparkles, X, Copy, Check, Image as ImageIcon, Download, Wand2, Type } from "lucide-react";
 import { generateSocialPost } from "@/lib/api";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { SuperPostGenerationWorkflow } from "./SuperPostGenerationWorkflow";
@@ -35,6 +35,8 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
   const [isGenerating, setIsGenerating] = useState(false);
   const [actualPrompt, setActualPrompt] = useState<string | null>(null);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [generatedContext, setGeneratedContext] = useState<string | null>(null);
+  const [generatedHashtags, setGeneratedHashtags] = useState<string[]>([]);
 
   const handleModeChange = (newMode: string) => {
     setMode(newMode as GenerationMode);
@@ -142,6 +144,12 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
         if (response.actualPrompt) {
           setActualPrompt(response.actualPrompt);
         }
+        if (response.context) {
+          setGeneratedContext(response.context);
+        }
+        if (response.hashtags && Array.isArray(response.hashtags)) {
+          setGeneratedHashtags(response.hashtags);
+        }
         toast.success('Social post generated successfully!');
       }
     } catch (error) {
@@ -174,6 +182,8 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
     setReferenceImages([]);
     setGeneratedPost(null);
     setActualPrompt(null);
+    setGeneratedContext(null);
+    setGeneratedHashtags([]);
   };
 
   return (
@@ -434,6 +444,61 @@ export const SocialPostGenerationWorkflow = ({ onBack }: SocialPostGenerationWor
                 />
               </div>
             </div>
+
+            {/* Generated Context and Hashtags */}
+            {(generatedContext || generatedHashtags.length > 0) && (
+              <div className="space-y-3">
+                {generatedContext && (
+                  <div className="p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 backdrop-blur-sm rounded-xl border-2 border-primary/20 shadow-md transition-all duration-300 hover:border-primary/30 hover:shadow-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Type className="w-4 h-4 text-primary" />
+                      <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Generated Caption</p>
+                    </div>
+                    <p className="text-sm text-foreground/90 leading-relaxed">{generatedContext}</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-3 text-xs mt-2 hover:bg-primary/10 transition-all duration-300"
+                      onClick={() => handleCopyPrompt(generatedContext)}
+                    >
+                      <Copy className="w-3.5 h-3.5 mr-1.5" />
+                      Copy Caption
+                    </Button>
+                  </div>
+                )}
+                
+                {generatedHashtags.length > 0 && (
+                  <div className="p-4 bg-gradient-to-br from-accent/10 via-accent/5 to-primary/5 backdrop-blur-sm rounded-xl border-2 border-accent/20 shadow-md transition-all duration-300 hover:border-accent/30 hover:shadow-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Share2 className="w-4 h-4 text-accent" />
+                        <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Suggested Hashtags</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-3 text-xs hover:bg-accent/10 transition-all duration-300"
+                        onClick={() => handleCopyPrompt(generatedHashtags.map(h => `#${h}`).join(' '))}
+                      >
+                        <Copy className="w-3.5 h-3.5 mr-1.5" />
+                        Copy All
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {generatedHashtags.map((hashtag, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleCopyPrompt(`#${hashtag}`)}
+                          className="px-3 py-1.5 rounded-lg bg-background/50 hover:bg-background/80 border border-accent/30 hover:border-accent/50 text-sm text-foreground/90 hover:text-accent transition-all duration-300 cursor-pointer"
+                        >
+                          #{hashtag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* AI Prompt Display */}
             {actualPrompt && (

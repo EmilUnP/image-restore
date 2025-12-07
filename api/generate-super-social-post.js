@@ -62,10 +62,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { prompt, style = 'modern', aspectRatio = '1:1', referenceImage, referenceImages } = req.body;
+    const { aspectRatio = '1:1', style = 'modern', description, placedImages = [], placedTexts = [], canvasWidth, canvasHeight } = req.body;
     
-    if (!prompt || !prompt.trim()) {
-      return res.status(400).json({ error: 'No prompt provided' });
+    if (placedImages.length === 0 && placedTexts.length === 0) {
+      return res.status(400).json({ error: 'At least one image or text element is required' });
     }
 
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -83,84 +83,82 @@ export default async function handler(req, res) {
     // Get dimensions for aspect ratio
     const dimensions = aspectRatioDimensions[aspectRatio] || aspectRatioDimensions['1:1'];
 
-    // Build the social post generation prompt
-    let socialPostPrompt = `Generate a high-quality social media post for ${dimensions.width}x${dimensions.height} pixels. ${styleConfig.prompt} The post should represent: "${prompt}".`;
+    // Build comprehensive prompt based on layout plan
+    let superPostPrompt = `Generate a high-quality social media post for ${dimensions.width}x${dimensions.height} pixels. ${styleConfig.prompt}\n\n`;
     
-    // Add reference image context if provided
-    if (referenceImage) {
-      socialPostPrompt += ` Use the provided reference image as inspiration and create a similar style social media post.`;
+    // Add user description if provided
+    if (description && description.trim()) {
+      superPostPrompt += `USER'S VISION:\n`;
+      superPostPrompt += `${description.trim()}\n\n`;
     }
     
-    if (referenceImages && referenceImages.length > 0) {
-      socialPostPrompt += ` Use the provided ${referenceImages.length} reference image(s) as inspiration. Combine elements, styles, and aesthetics from these references to create a unique social media post.`;
+    superPostPrompt += `LAYOUT PLAN:\n`;
+    superPostPrompt += `The user has created a visual layout plan with the following elements:\n\n`;
+    
+    // Describe placed images
+    if (placedImages.length > 0) {
+      superPostPrompt += `IMAGES TO INCLUDE (with relative positions):\n`;
+      placedImages.forEach((img, index) => {
+        superPostPrompt += `${index + 1}. An image positioned at approximately ${img.x.toFixed(1)}% from left and ${img.y.toFixed(1)}% from top, taking up about ${img.width.toFixed(1)}% width and ${img.height.toFixed(1)}% height of the canvas.\n`;
+      });
+      superPostPrompt += `\n`;
     }
+    
+    // Describe placed texts
+    if (placedTexts.length > 0) {
+      superPostPrompt += `TEXT ELEMENTS TO INCLUDE (with relative positions):\n`;
+      placedTexts.forEach((txt, index) => {
+        superPostPrompt += `${index + 1}. Text "${txt.text}" positioned at approximately ${txt.x.toFixed(1)}% from left and ${txt.y.toFixed(1)}% from top, with font size ${txt.fontSize}px and color ${txt.color}.\n`;
+      });
+      superPostPrompt += `\n`;
+    }
+    
+    superPostPrompt += `INSTRUCTIONS:\n`;
+    superPostPrompt += `- Create a professional social media post that incorporates all the images and text elements according to their relative positions in the layout plan.\n`;
+    superPostPrompt += `- The images should be placed at their specified relative positions (as percentages of canvas width/height).\n`;
+    superPostPrompt += `- The text elements should be placed at their specified relative positions with the specified styling.\n`;
+    superPostPrompt += `- Maintain the overall composition and balance while following the layout plan.\n`;
+    superPostPrompt += `- Ensure all elements are clearly visible and well-integrated into the design.\n`;
+    superPostPrompt += `- The final post should be visually appealing, professional, and ready to use on social media.\n\n`;
+    
+    superPostPrompt += `TECHNICAL SPECIFICATIONS:\n`;
+    superPostPrompt += `- Size: ${dimensions.width}x${dimensions.height} pixels\n`;
+    superPostPrompt += `- Aspect Ratio: ${aspectRatio}\n`;
+    superPostPrompt += `- Style: ${validStyle}\n`;
+    superPostPrompt += `- Format: High-quality social media post\n`;
+    superPostPrompt += `- Quality: Professional, ready for social media use\n`;
 
-    socialPostPrompt += ` 
-
-TECHNICAL SPECIFICATIONS:
-- Size: ${dimensions.width}x${dimensions.height} pixels
-- Aspect Ratio: ${aspectRatio}
-- Format: High-quality social media post
-- Use: Instagram, Facebook, Twitter, LinkedIn, and other social platforms
-- Quality: Professional, eye-catching, shareable, production-ready
-- Design: Optimized for social media engagement with clear visual hierarchy
-
-The social media post should be visually appealing, professional, and ready to use on any social media platform. Include engaging visuals, appropriate text placement, and modern design elements.`;
-
-    // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
 
     try {
-      // Prepare content array with images if provided
+      // Prepare content array with all reference images
       const contentParts = [];
       
-      // Add reference images if provided
-      if (referenceImage) {
-        // Extract base64 from data URL
-        const base64Data = referenceImage.includes(',') 
-          ? referenceImage.split(',')[1] 
-          : referenceImage;
+      // Add all placed images as references
+      for (const img of placedImages) {
+        const base64Data = img.image.includes(',') 
+          ? img.image.split(',')[1] 
+          : img.image;
+        
+        let mimeType = 'image/png';
+        if (img.image.includes('data:image/')) {
+          const mimeMatch = img.image.match(/data:image\/([^;]+)/);
+          if (mimeMatch) {
+            mimeType = `image/${mimeMatch[1]}`;
+          }
+        }
+        
         contentParts.push({
           inlineData: {
             data: base64Data,
-            mimeType: 'image/png'
+            mimeType: mimeType
           }
         });
       }
       
-      if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
-        for (const refImg of referenceImages) {
-          // Validate that refImg is a string
-          if (!refImg || typeof refImg !== 'string') {
-            console.warn('[Vercel Function] Skipping invalid reference image:', typeof refImg);
-            continue;
-          }
-          
-          const base64Data = refImg.includes(',') 
-            ? refImg.split(',')[1] 
-            : refImg;
-          
-          // Determine MIME type
-          let mimeType = 'image/png';
-          if (refImg.includes('data:image/')) {
-            const mimeMatch = refImg.match(/data:image\/([^;]+)/);
-            if (mimeMatch) {
-              mimeType = `image/${mimeMatch[1]}`;
-            }
-          }
-          
-          contentParts.push({
-            inlineData: {
-              data: base64Data,
-              mimeType: mimeType
-            }
-          });
-        }
-      }
-      
       // Add text prompt
-      contentParts.push(socialPostPrompt);
+      contentParts.push(superPostPrompt);
 
       const result = await model.generateContent(contentParts);
       const response = await result.response;
@@ -170,28 +168,30 @@ The social media post should be visually appealing, professional, and ready to u
       let mimeType = "image/png";
       
       if (response.candidates && response.candidates[0]) {
-        const parts = response.candidates[0].content?.parts || [];
-        for (const part of parts) {
-          if (part.inlineData?.data) {
-            generatedImageBase64 = part.inlineData.data;
-            if (part.inlineData.mimeType) {
-              mimeType = part.inlineData.mimeType;
+        const candidate = response.candidates[0];
+        
+        if (candidate.content && candidate.content.parts) {
+          for (const part of candidate.content.parts) {
+            if (part.inlineData) {
+              generatedImageBase64 = part.inlineData.data;
+              mimeType = part.inlineData.mimeType || "image/png";
+              break;
             }
-            break;
           }
         }
       }
       
-      // If post is generated, generate context and hashtags
       if (generatedImageBase64) {
-        console.log('[Vercel Function] Social post generated successfully');
+        // Convert to data URL
+        const dataUrl = `data:${mimeType};base64,${generatedImageBase64}`;
         
-        // Generate context and hashtags using AI
+        // Generate context and hashtags
         let generatedContext = '';
         let generatedHashtags = [];
         
         try {
-          const contextPrompt = `Based on this social media post description: "${prompt}", generate:
+          const userDescription = description && description.trim() ? description : 'social media post';
+          const contextPrompt = `Based on this social media post description: "${userDescription}", generate:
 1. A compelling social media caption (2-3 sentences) that would accompany this post
 2. A list of 5-10 relevant hashtags (without # symbol, just the words)
 
@@ -208,7 +208,6 @@ Format your response as JSON:
           
           // Try to parse JSON from response
           try {
-            // Extract JSON from markdown code blocks if present
             let jsonText = contextText;
             const jsonMatch = contextText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
             if (jsonMatch) {
@@ -219,55 +218,44 @@ Format your response as JSON:
             generatedContext = parsed.caption || '';
             generatedHashtags = Array.isArray(parsed.hashtags) ? parsed.hashtags : [];
           } catch (parseError) {
-            // Fallback: extract hashtags and caption manually
             const lines = contextText.split('\n').filter(l => l.trim());
             generatedContext = lines.filter(l => !l.includes('#') && !l.toLowerCase().includes('hashtag')).join(' ').substring(0, 200);
             const hashtagMatches = contextText.match(/#(\w+)/g);
             if (hashtagMatches) {
               generatedHashtags = hashtagMatches.map(h => h.replace('#', ''));
-            } else {
-              // Generate hashtags from prompt keywords
-              const keywords = prompt.toLowerCase().match(/\b\w{4,}\b/g) || [];
-              generatedHashtags = keywords.slice(0, 8).filter((v, i, a) => a.indexOf(v) === i);
             }
           }
         } catch (contextError) {
-          console.warn('[Vercel Function] Context generation failed, using fallback:', contextError);
-          // Fallback: generate simple hashtags from prompt
-          const keywords = prompt.toLowerCase().match(/\b\w{4,}\b/g) || [];
-          generatedHashtags = keywords.slice(0, 8).filter((v, i, a) => a.indexOf(v) === i);
-          generatedContext = `Check out this amazing ${prompt.substring(0, 50)}!`;
+          console.warn('[Vercel Function] Context generation failed:', contextError);
         }
         
-        const responseData = { 
-          generatedPost: `data:${mimeType};base64,${generatedImageBase64}`,
-          message: `Social post generated successfully using ${validStyle} style.`,
-          style: validStyle,
-          aspectRatio: aspectRatio,
-          actualPrompt: socialPostPrompt,
+        console.log('[Vercel Function] Super social post generated successfully');
+        return res.json({
+          generatedPost: dataUrl,
+          message: `Super post generated successfully using ${validStyle} style.`,
+          actualPrompt: superPostPrompt,
           context: generatedContext,
           hashtags: generatedHashtags
-        };
-        return res.status(200).json(responseData);
+        });
       } else {
-        console.error('[Vercel Function] No image in response');
-        return res.status(500).json({ 
-          error: 'Failed to generate social post. No image was returned from the AI model.',
-          actualPrompt: socialPostPrompt
+        console.warn('[Vercel Function] No image in response, returning text description');
+        return res.json({
+          message: `Super post generation attempted. Note: Gemini may provide text descriptions. Please refine your layout plan.`,
+          actualPrompt: superPostPrompt
         });
       }
-    } catch (aiError) {
-      console.error('[Vercel Function] AI generation error:', aiError);
-      return res.status(500).json({ 
-        error: `AI generation failed: ${aiError.message || 'Unknown error'}`,
-        actualPrompt: socialPostPrompt
+    } catch (geminiError) {
+      console.error('[Vercel Function] Gemini API error:', geminiError);
+      return res.status(500).json({
+        error: 'Failed to generate super post',
+        details: geminiError instanceof Error ? geminiError.message : 'Unknown error',
+        actualPrompt: superPostPrompt
       });
     }
   } catch (error) {
-    console.error('[Vercel Function] Handler error:', error);
-    return res.status(500).json({ 
-      error: error.message || 'Internal server error',
-      details: error.stack
+    console.error('[Vercel Function] Super post generation error:', error);
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to generate super post'
     });
   }
 }

@@ -434,6 +434,8 @@ export interface GenerateSocialPostResponse {
   actualPrompt?: string;
   style?: string;
   aspectRatio?: string;
+  context?: string;
+  hashtags?: string[];
 }
 
 export const generateSocialPost = async (request: GenerateSocialPostRequest): Promise<GenerateSocialPostResponse> => {
@@ -522,6 +524,8 @@ export interface GenerateSuperSocialPostResponse {
   message?: string;
   error?: string;
   actualPrompt?: string;
+  context?: string;
+  hashtags?: string[];
 }
 
 export const generateSuperSocialPost = async (request: GenerateSuperSocialPostRequest): Promise<GenerateSuperSocialPostResponse> => {

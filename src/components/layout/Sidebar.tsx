@@ -7,13 +7,14 @@ import {
   Palette,
   Share2,
   Eraser,
+  BarChart3,
   X,
   Image as ImageIcon,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
 
-type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | 'remove' | null;
+type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | 'remove' | 'infographic' | null;
 
 interface SidebarProps {
   selectedFunction: AppFunction;
@@ -72,6 +73,14 @@ const functions = [
     icon: Eraser,
     color: 'text-red-400',
     bgColor: 'bg-red-500/10',
+  },
+  {
+    id: 'infographic' as AppFunction,
+    name: 'Infographic Generator',
+    description: 'Create powerful infographics',
+    icon: BarChart3,
+    color: 'text-cyan-400',
+    bgColor: 'bg-cyan-500/10',
   },
 ];
 

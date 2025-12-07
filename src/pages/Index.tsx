@@ -13,9 +13,10 @@ import { IconGenerationWorkflow } from "@/components/icons/IconGenerationWorkflo
 import { LogoGenerationWorkflow } from "@/components/logos/LogoGenerationWorkflow";
 import { SocialPostGenerationWorkflow } from "@/components/social/SocialPostGenerationWorkflow";
 import { ObjectRemovalWorkflow } from "@/components/removal/ObjectRemovalWorkflow";
+import { InfographicGenerationWorkflow } from "@/components/infographic/InfographicGenerationWorkflow";
 import { useAuthContext } from "@/contexts/AuthContext";
 
-type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | 'remove' | null;
+type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | 'remove' | 'infographic' | null;
 type ViewMode = 'landing' | 'profile' | 'function';
 
 const Index = () => {
@@ -187,6 +188,8 @@ const Index = () => {
                 <SocialPostGenerationWorkflow onBack={handleBack} />
               ) : selectedFunction === 'remove' ? (
                 <ObjectRemovalWorkflow onBack={handleBack} />
+              ) : selectedFunction === 'infographic' ? (
+                <InfographicGenerationWorkflow onBack={handleBack} />
               ) : null}
             </div>
           )}

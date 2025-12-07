@@ -46,6 +46,8 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
   const [generatedPost, setGeneratedPost] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [actualPrompt, setActualPrompt] = useState<string | null>(null);
+  const [generatedContext, setGeneratedContext] = useState<string | null>(null);
+  const [generatedHashtags, setGeneratedHashtags] = useState<string[]>([]);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -416,6 +418,12 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
         if (response.actualPrompt) {
           setActualPrompt(response.actualPrompt);
         }
+        if (response.context) {
+          setGeneratedContext(response.context);
+        }
+        if (response.hashtags && Array.isArray(response.hashtags)) {
+          setGeneratedHashtags(response.hashtags);
+        }
         toast.success('Super post generated successfully!');
       }
     } catch (error) {
@@ -440,6 +448,8 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
     setSelectedElement(null);
     setNewText('');
     setDescription('');
+    setGeneratedContext(null);
+    setGeneratedHashtags([]);
   };
 
   const canvasDims = getCanvasDimensions();
@@ -940,6 +950,40 @@ export const SuperPostGenerationWorkflow = ({ onBack }: SuperPostGenerationWorkf
                 />
               </div>
             </div>
+
+            {/* Generated Context and Hashtags */}
+            {(generatedContext || generatedHashtags.length > 0) && (
+              <div className="space-y-3">
+                {generatedContext && (
+                  <div className="p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 backdrop-blur-sm rounded-xl border-2 border-primary/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Type className="w-4 h-4 text-primary" />
+                      <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Generated Caption</p>
+                    </div>
+                    <p className="text-sm text-foreground/90 leading-relaxed">{generatedContext}</p>
+                  </div>
+                )}
+                
+                {generatedHashtags.length > 0 && (
+                  <div className="p-4 bg-gradient-to-br from-accent/10 via-accent/5 to-primary/5 backdrop-blur-sm rounded-xl border-2 border-accent/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Share2 className="w-4 h-4 text-accent" />
+                      <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Suggested Hashtags</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {generatedHashtags.map((hashtag, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1.5 rounded-lg bg-background/50 border border-accent/30 text-sm text-foreground/90"
+                        >
+                          #{hashtag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {actualPrompt && (
               <div className="p-4 bg-gradient-to-br from-card/60 to-card/40 backdrop-blur-sm rounded-xl border-2 border-primary/20">
