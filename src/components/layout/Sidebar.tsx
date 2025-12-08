@@ -8,13 +8,14 @@ import {
   Share2,
   Eraser,
   BarChart3,
+  Users,
   X,
   Image as ImageIcon,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
 
-type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | 'remove' | 'infographic' | null;
+type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | 'remove' | 'infographic' | 'uniform-styling' | null;
 
 interface SidebarProps {
   selectedFunction: AppFunction;
@@ -81,6 +82,14 @@ const functions = [
     icon: BarChart3,
     color: 'text-cyan-400',
     bgColor: 'bg-cyan-500/10',
+  },
+  {
+    id: 'uniform-styling' as AppFunction,
+    name: 'Uniform Image Styling',
+    description: 'Transform multiple images to same style',
+    icon: Users,
+    color: 'text-indigo-400',
+    bgColor: 'bg-indigo-500/10',
   },
 ];
 

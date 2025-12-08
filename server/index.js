@@ -3295,6 +3295,166 @@ app.post('/api/generate-infographic', async (req, res) => {
   }
 });
 
+// Uniform Image Styling endpoint
+app.post('/api/uniform-image-styling', async (req, res) => {
+  try {
+    const { image, stylePrompt, aspectRatio = '1:1', backgroundStyle = 'natural', backgroundColor } = req.body;
+    
+    if (!image) {
+      return res.status(400).json({ error: 'No image provided' });
+    }
+
+    if (!stylePrompt || !stylePrompt.trim()) {
+      return res.status(400).json({ error: 'No style prompt provided' });
+    }
+
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
+      return res.status(500).json({ 
+        error: 'AI service not configured. Please set GEMINI_API_KEY in server/.env file',
+        instructions: 'Get your API key from https://aistudio.google.com/app/apikey and add it to server/.env'
+      });
+    }
+
+    // Get dimensions for aspect ratio
+    const aspectRatioDimensions = {
+      '1:1': { width: 1024, height: 1024 },
+      '4:3': { width: 1920, height: 1440 },
+      '16:9': { width: 1920, height: 1080 },
+      '9:16': { width: 1080, height: 1920 },
+      '3:4': { width: 1440, height: 1920 },
+    };
+
+    const dimensions = aspectRatioDimensions[aspectRatio] || aspectRatioDimensions['1:1'];
+
+    // Build the transformation prompt - be explicit about generating an image
+    let transformationPrompt = `Generate a new image by transforming the provided image to match the following style: "${stylePrompt}". `;
+    
+    transformationPrompt += `\n\nCRITICAL: You must OUTPUT AN IMAGE, not text. Generate a new transformed image file. `;
+    transformationPrompt += `Maintain the person's face and identity from the original image, but apply the specified style consistently. `;
+    transformationPrompt += `Ensure the background, lighting, colors, and overall aesthetic match the style description. `;
+    
+    if (backgroundStyle === 'solid' && backgroundColor) {
+      transformationPrompt += `Use a solid ${backgroundColor} background. `;
+    } else if (backgroundStyle === 'gradient') {
+      transformationPrompt += `Use an elegant gradient background that complements the style. `;
+    } else if (backgroundStyle === 'blur') {
+      transformationPrompt += `Use a blurred, professional background. `;
+    } else if (backgroundStyle === 'transparent') {
+      transformationPrompt += `Use a transparent background. `;
+    }
+
+    transformationPrompt += `
+    
+OUTPUT REQUIREMENTS:
+- You MUST generate and return an IMAGE FILE (PNG format)
+- Do NOT return text descriptions
+- Do NOT explain what you will do - just generate the image
+
+TECHNICAL SPECIFICATIONS:
+- Output size: ${dimensions.width}x${dimensions.height} pixels
+- Format: PNG image
+- Maintain high quality and sharpness
+- Preserve facial features and identity from the original
+- Apply consistent styling across all elements
+- Ensure professional, polished appearance
+- Match the style description exactly
+
+TRANSFORMATION REQUIREMENTS:
+- Keep the person's face recognizable from the original image
+- Apply the style uniformly to match the description
+- Ensure consistent lighting and colors throughout
+- Match the background style specified
+- Output a high-quality, professional result as an IMAGE FILE`;
+
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    
+    // Use gemini-3-pro-image-preview for image generation (same as other image endpoints)
+    let model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
+    let actualModelName = "gemini-3-pro-image-preview";
+
+    // Prepare the image part
+    const base64Data = image.includes(',') ? image.split(',')[1] : image;
+    let mimeType = 'image/png';
+    if (image.includes('data:image/')) {
+      const mimeMatch = image.match(/data:image\/([^;]+)/);
+      if (mimeMatch) {
+        mimeType = `image/${mimeMatch[1]}`;
+      }
+    }
+
+    console.log('[Server] Uniform image styling - Generating with style:', stylePrompt);
+    console.log('[Server] Uniform image styling - Dimensions:', dimensions);
+    console.log('[Server] Uniform image styling - Using model:', actualModelName);
+
+    let result;
+    let response;
+    
+    try {
+      // Use the same format as enhance-image endpoint (string prompt, then image object)
+      result = await model.generateContent([
+        transformationPrompt,
+        { inlineData: { data: base64Data, mimeType } }
+      ]);
+      response = await result.response;
+    } catch (error) {
+      // Fallback to gemini-2.0-flash-exp if gemini-3-pro-image-preview fails
+      console.log('[Server] Uniform image styling - Primary model failed, trying fallback:', error.message);
+      try {
+        model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+        actualModelName = 'gemini-2.0-flash-exp';
+        console.log('[Server] Uniform image styling - Using fallback model:', actualModelName);
+        result = await model.generateContent([
+          transformationPrompt,
+          { inlineData: { data: base64Data, mimeType } }
+        ]);
+        response = await result.response;
+      } catch (fallbackError) {
+        console.error('[Server] Uniform image styling - Both models failed:', fallbackError);
+        throw fallbackError;
+      }
+    }
+
+    // Check if response contains image data - use same pattern as enhance-image
+    let processedImage = null;
+    
+    if (response.candidates && response.candidates[0]) {
+      const parts = response.candidates[0].content?.parts || [];
+      for (const part of parts) {
+        if (part.inlineData?.data) {
+          const responseMimeType = part.inlineData.mimeType || mimeType;
+          processedImage = `data:${responseMimeType};base64,${part.inlineData.data}`;
+          break;
+        }
+      }
+    }
+
+    if (!processedImage) {
+      // If no image in response, try to get text response for debugging
+      const textResponse = response.text();
+      console.error('[Server] Uniform image styling - No image in response. Text response:', textResponse);
+      return res.status(500).json({ 
+        error: 'Failed to generate processed image',
+        details: 'The AI model did not return an image. The model may have returned text instead. Please try again with a different style description.',
+        debug: textResponse.substring(0, 500)
+      });
+    }
+
+    console.log('[Server] Uniform image styling - Image processed successfully');
+    return res.status(200).json({
+      processedImage,
+      message: 'Image successfully processed with uniform styling',
+    });
+
+  } catch (error) {
+    console.error('[Server] Uniform image styling error:', error);
+    return res.status(500).json({ 
+      error: error.message || 'Failed to process image',
+      details: error.toString()
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Image Optimizer AI Backend running on http://localhost:${PORT}`);
   console.log('📝 Make sure you have GEMINI_API_KEY set in server/.env file');

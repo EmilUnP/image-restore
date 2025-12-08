@@ -666,6 +666,21 @@ All colors use OKLCH format for better color accuracy and consistency.
     color: oklch(var(--foreground));
   }
 
+  /* Ensure text inputs allow text selection */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+  }
+
   /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 10px;
