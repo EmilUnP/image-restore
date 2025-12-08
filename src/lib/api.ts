@@ -726,3 +726,69 @@ export async function removeObject(
   return responseData;
 };
 
+export interface UniformImageStylingRequest {
+  image: string;
+  stylePrompt: string;
+  aspectRatio?: string;
+  backgroundStyle?: string;
+  backgroundColor?: string;
+}
+
+export interface UniformImageStylingResponse {
+  processedImage?: string;
+  message?: string;
+  error?: string;
+}
+
+export const uniformImageStyling = async (request: UniformImageStylingRequest): Promise<UniformImageStylingResponse> => {
+  const API_URL = getApiUrl();
+  const url = `${API_URL}/api/uniform-image-styling`;
+  
+  console.log('[API] uniformImageStyling - Calling URL:', url);
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  let responseData: UniformImageStylingResponse;
+  try {
+    const responseText = await response.text();
+    
+    if (!responseText || responseText.trim().length === 0) {
+      throw new Error('Server returned empty response');
+    }
+    
+    // Check if response is HTML (404 page)
+    if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+      throw new Error(`Server returned HTML instead of JSON. This usually means the endpoint doesn't exist. Status: ${response.status}`);
+    }
+    
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('[API] uniformImageStyling - JSON parse error:', parseError);
+      throw new Error(`Server returned invalid JSON. Status: ${response.status}. Response: ${responseText.substring(0, 200)}`);
+    }
+  } catch (e) {
+    console.error('[API] uniformImageStyling - Failed to parse response:', e);
+    if (e instanceof Error) {
+      throw e;
+    }
+    throw new Error(`Server responded with non-JSON: ${response.status}`);
+  }
+
+  if (!response.ok) {
+    const errorMessage = responseData.error || `Failed to process image. Error: ${response.status}`;
+    return {
+      ...responseData,
+      error: errorMessage,
+    };
+  }
+
+  return responseData;
+};
+

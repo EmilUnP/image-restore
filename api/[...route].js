@@ -24,6 +24,8 @@ import adminImagesFilenameHandler from './admin/images/[folderType]/[filename].j
 import generateSuperSocialPostHandler from './generate-super-social-post.js';
 // Import generate-infographic handler
 import generateInfographicHandler from './generate-infographic.js';
+// Import uniform-image-styling handler
+import uniformImageStylingHandler from './uniform-image-styling.js';
 
 export default async function handler(req, res) {
   // Extract route from query parameter (Vercel catch-all format)
@@ -83,6 +85,8 @@ export default async function handler(req, res) {
       return generateSuperSocialPostHandler(req, res);
     case 'generate-infographic':
       return generateInfographicHandler(req, res);
+    case 'uniform-image-styling':
+      return uniformImageStylingHandler(req, res);
     case 'remove-object':
       return removeObjectHandler(req, res);
     case 'enhancement-modes':

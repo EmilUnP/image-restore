@@ -14,9 +14,10 @@ import { LogoGenerationWorkflow } from "@/components/logos/LogoGenerationWorkflo
 import { SocialPostGenerationWorkflow } from "@/components/social/SocialPostGenerationWorkflow";
 import { ObjectRemovalWorkflow } from "@/components/removal/ObjectRemovalWorkflow";
 import { InfographicGenerationWorkflow } from "@/components/infographic/InfographicGenerationWorkflow";
+import { UniformImageStylingWorkflow } from "@/components/uniform-styling/UniformImageStylingWorkflow";
 import { useAuthContext } from "@/contexts/AuthContext";
 
-type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | 'remove' | 'infographic' | null;
+type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | 'remove' | 'infographic' | 'uniform-styling' | null;
 type ViewMode = 'landing' | 'profile' | 'function';
 
 const Index = () => {
@@ -190,6 +191,8 @@ const Index = () => {
                 <ObjectRemovalWorkflow onBack={handleBack} />
               ) : selectedFunction === 'infographic' ? (
                 <InfographicGenerationWorkflow onBack={handleBack} />
+              ) : selectedFunction === 'uniform-styling' ? (
+                <UniformImageStylingWorkflow onBack={handleBack} />
               ) : null}
             </div>
           )}

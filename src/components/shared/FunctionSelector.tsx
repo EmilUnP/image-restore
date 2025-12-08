@@ -1,8 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Languages, Zap, Palette, Share2, Eraser, BarChart3 } from "lucide-react";
+import { Sparkles, Languages, Zap, Palette, Share2, Eraser, BarChart3, Users } from "lucide-react";
 
-type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | 'remove' | 'infographic' | null;
+type AppFunction = 'enhance' | 'translate' | 'icons' | 'logos' | 'social' | 'remove' | 'infographic' | 'uniform-styling' | null;
 
 interface FunctionSelectorProps {
   onFunctionSelect: (func: AppFunction) => void;
@@ -391,6 +391,61 @@ export const FunctionSelector = ({ onFunctionSelect }: FunctionSelectorProps) =>
               onClick={() => onFunctionSelect('infographic')}
             >
               Use Infographic Generator
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Uniform Image Styling */}
+        <Card 
+          className="border hover:border-primary/60 transition-all duration-500 cursor-pointer group relative overflow-hidden hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-2 bg-gradient-to-br from-card via-card to-card/95"
+          onClick={() => onFunctionSelect('uniform-styling')}
+        >
+          {/* Animated gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/0 via-primary/0 to-accent/0 group-hover:from-primary/5 group-hover:via-primary/5 group-hover:to-accent/5 transition-all duration-500 pointer-events-none" />
+          
+          <CardHeader className="pb-4 relative z-10">
+            <div className="flex items-start gap-4">
+              <div className="relative flex-shrink-0">
+                <div className="absolute inset-0 bg-primary/20 rounded-xl blur-lg group-hover:blur-xl group-hover:bg-primary/30 transition-all duration-500" />
+                <div className="relative p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-lg group-hover:shadow-xl">
+                  <Users className="w-6 h-6 text-primary transition-transform duration-300 group-hover:scale-110" />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0 pt-1">
+                <CardTitle className="text-xl font-bold mb-2 group-hover:text-primary transition-colors duration-300">Uniform Image Styling</CardTitle>
+                <CardDescription className="text-sm">
+                  Transform multiple images to match the same style, background, and design. Perfect for team photos and employee headshots.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4 relative z-10">
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="text-primary text-xs font-bold">✓</span>
+                </div>
+                <span className="text-muted-foreground">Batch process multiple images</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="text-primary text-xs font-bold">✓</span>
+                </div>
+                <span className="text-muted-foreground">Consistent styling across all images</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="text-primary text-xs font-bold">✓</span>
+                </div>
+                <span className="text-muted-foreground">Professional headshots & team photos</span>
+              </li>
+            </ul>
+            <Button 
+              className="w-full mt-4 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+              onClick={() => onFunctionSelect('uniform-styling')}
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Start Uniform Styling
             </Button>
           </CardContent>
         </Card>
