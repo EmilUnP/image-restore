@@ -732,6 +732,9 @@ export interface UniformImageStylingRequest {
   aspectRatio?: string;
   backgroundStyle?: string;
   backgroundColor?: string;
+  referenceName?: string;
+  referenceLogo?: string;
+  referenceClothing?: string;
 }
 
 export interface UniformImageStylingResponse {

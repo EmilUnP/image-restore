@@ -3298,7 +3298,16 @@ app.post('/api/generate-infographic', async (req, res) => {
 // Uniform Image Styling endpoint
 app.post('/api/uniform-image-styling', async (req, res) => {
   try {
-    const { image, stylePrompt, aspectRatio = '1:1', backgroundStyle = 'natural', backgroundColor } = req.body;
+    const { 
+      image, 
+      stylePrompt, 
+      aspectRatio = '1:1', 
+      backgroundStyle = 'natural', 
+      backgroundColor,
+      referenceName,
+      referenceLogo,
+      referenceClothing
+    } = req.body;
     
     if (!image) {
       return res.status(400).json({ error: 'No image provided' });
@@ -3328,49 +3337,131 @@ app.post('/api/uniform-image-styling', async (req, res) => {
     const dimensions = aspectRatioDimensions[aspectRatio] || aspectRatioDimensions['1:1'];
 
     // Build the transformation prompt - be explicit about generating an image
-    let transformationPrompt = `Generate a new image by transforming the provided image to match the following style: "${stylePrompt}". `;
+    let transformationPrompt = `You are performing a UNIFORM STYLE TRANSFORMATION as part of a BATCH PROCESSING operation. `;
+    transformationPrompt += `Multiple images are being processed with the SAME style, and they MUST look IDENTICAL in styling (only the faces differ). `;
+    transformationPrompt += `This means applying the EXACT same styling template to different images while preserving each person's unique identity. `;
     
-    transformationPrompt += `\n\nCRITICAL: You must OUTPUT AN IMAGE, not text. Generate a new transformed image file. `;
-    transformationPrompt += `Maintain the person's face and identity from the original image, but apply the specified style consistently. `;
-    transformationPrompt += `Ensure the background, lighting, colors, and overall aesthetic match the style description. `;
+    transformationPrompt += `\n\n═══════════════════════════════════════════════════════════════\n`;
+    transformationPrompt += `CRITICAL REQUIREMENTS - FOLLOW EXACTLY:\n`;
+    transformationPrompt += `═══════════════════════════════════════════════════════════════\n\n`;
+    
+    transformationPrompt += `1. FACE PRESERVATION (MOST IMPORTANT):\n`;
+    transformationPrompt += `   - The person's face in the output MUST be 100% IDENTICAL to the input image\n`;
+    transformationPrompt += `   - Keep EXACT same facial features, bone structure, proportions, and appearance\n`;
+    transformationPrompt += `   - Do NOT change: eye shape, nose, mouth, face shape, skin texture, age, or any facial characteristics\n`;
+    transformationPrompt += `   - Do NOT generate a different person - it must be the EXACT same person\n`;
+    transformationPrompt += `   - Only adjust lighting/color on the face to match the style, but the face structure itself stays IDENTICAL\n\n`;
+    
+    transformationPrompt += `2. UNIFORM STYLING (CRITICAL FOR CONSISTENCY):\n`;
+    transformationPrompt += `   - Style to apply: "${stylePrompt}"\n`;
+    transformationPrompt += `   - ALL images processed with this exact style prompt MUST look IDENTICAL in:\n`;
+    transformationPrompt += `     * Background: EXACT same color, pattern, texture, and appearance\n`;
+    transformationPrompt += `     * Lighting: EXACT same direction, intensity, shadows, highlights, and quality\n`;
+    transformationPrompt += `     * Color grading: EXACT same color palette, saturation, contrast, and tone\n`;
+    transformationPrompt += `     * Overall aesthetic: EXACT same mood, style, and visual appearance\n`;
+    transformationPrompt += `   - Think of this as applying a "template" - the styling template is identical, only the person's face changes\n\n`;
+    
+    transformationPrompt += `3. WHAT TO CHANGE:\n`;
+    transformationPrompt += `   - Background (to match style)\n`;
+    transformationPrompt += `   - Lighting setup (to match style)\n`;
+    transformationPrompt += `   - Color grading (to match style)\n`;
+    transformationPrompt += `   - Clothing (if reference provided)\n\n`;
+    
+    transformationPrompt += `4. WHAT TO NEVER CHANGE:\n`;
+    transformationPrompt += `   - Person's face (MUST stay identical)\n`;
+    transformationPrompt += `   - Person's body structure/proportions\n`;
+    transformationPrompt += `   - Person's identity\n\n`;
+    
+    transformationPrompt += `5. OUTPUT FORMAT:\n`;
+    transformationPrompt += `   - You MUST generate an IMAGE FILE (PNG format), NOT text\n`;
+    transformationPrompt += `   - Do NOT return descriptions or explanations - only the image\n\n`;
+    
+    // Add optional reference elements if provided
+    if (referenceName && referenceName.trim()) {
+      transformationPrompt += `\n\nINCLUDE TEXT: Add the text "${referenceName.trim()}" in the image (as a name tag, badge, or text overlay). Use the same font, size, position, and style for all images. `;
+    }
+    
+    if (referenceLogo) {
+      transformationPrompt += `\n\nINCLUDE LOGO: Add the provided logo reference to the image. Use the EXACT same logo, same size, same position, same colors for all images. `;
+    }
+    
+    if (referenceClothing) {
+      transformationPrompt += `\n\nCLOTHING STYLE: Use the EXACT clothing/dress style from the reference clothing image. Match the clothing style, colors, design, and fit exactly. Apply the same clothing to all images uniformly. `;
+    }
     
     if (backgroundStyle === 'solid' && backgroundColor) {
-      transformationPrompt += `Use a solid ${backgroundColor} background. `;
+      transformationPrompt += `\n\nBACKGROUND: Use a solid ${backgroundColor} background. The background must be EXACTLY the same color and appearance for all images. `;
     } else if (backgroundStyle === 'gradient') {
-      transformationPrompt += `Use an elegant gradient background that complements the style. `;
+      transformationPrompt += `\n\nBACKGROUND: Use an elegant gradient background. The gradient must be EXACTLY the same colors, direction, and appearance for all images. `;
     } else if (backgroundStyle === 'blur') {
-      transformationPrompt += `Use a blurred, professional background. `;
+      transformationPrompt += `\n\nBACKGROUND: Use a blurred, professional background. The blur effect and background appearance must be EXACTLY the same for all images. `;
     } else if (backgroundStyle === 'transparent') {
-      transformationPrompt += `Use a transparent background. `;
+      transformationPrompt += `\n\nBACKGROUND: Use a transparent background. `;
+    } else {
+      transformationPrompt += `\n\nBACKGROUND: Match the background style from the style description. The background must be EXACTLY the same for all images. `;
+    }
+
+    // Add notes about reference images if provided
+    if (referenceLogo || referenceClothing) {
+      transformationPrompt += `\n\nREFERENCE IMAGES PROVIDED:`;
+      if (referenceLogo) {
+        transformationPrompt += `\n- The second image is a reference logo. Include this logo in the generated image, matching its style, colors, and design.`;
+      }
+      if (referenceClothing) {
+        transformationPrompt += `\n- The ${referenceLogo ? 'third' : 'second'} image is a reference clothing/dress style. Use this exact clothing style, colors, and design in the generated image.`;
+      }
     }
 
     transformationPrompt += `
     
+REPEAT - FACE PRESERVATION (READ AGAIN):
+- The person's face MUST be 100% IDENTICAL to the input image
+- Same facial features, same structure, same proportions, same appearance
+- Same person, NOT a different person
+- Only lighting/color adjustments on face, but face structure stays IDENTICAL
+
+REPEAT - STYLING CONSISTENCY (READ AGAIN):
+- This is a UNIFORM style transformation - all images must have IDENTICAL styling
+- Background: EXACT same (color, pattern, texture)
+- Lighting: EXACT same (direction, intensity, shadows, highlights)
+- Colors: EXACT same (palette, saturation, contrast, tone)
+- Aesthetic: EXACT same (mood, style, appearance)
+- The ONLY difference between images should be the person's face (which is preserved from original)
+
 OUTPUT REQUIREMENTS:
 - You MUST generate and return an IMAGE FILE (PNG format)
-- Do NOT return text descriptions
+- Do NOT return text descriptions or explanations
 - Do NOT explain what you will do - just generate the image
 
 TECHNICAL SPECIFICATIONS:
 - Output size: ${dimensions.width}x${dimensions.height} pixels
 - Format: PNG image
 - Maintain high quality and sharpness
-- Preserve facial features and identity from the original
+- Preserve facial features and identity from the original (CRITICAL)
 - Apply consistent styling across all elements
 - Ensure professional, polished appearance
 - Match the style description exactly
 
-TRANSFORMATION REQUIREMENTS:
-- Keep the person's face recognizable from the original image
-- Apply the style uniformly to match the description
-- Ensure consistent lighting and colors throughout
-- Match the background style specified
-- Output a high-quality, professional result as an IMAGE FILE`;
+FINAL REMINDER:
+- Face: IDENTICAL to original (same person, same features)
+- Styling: EXACTLY the same as all other images with this style
+- Background: EXACTLY the same as all other images
+- Lighting: EXACTLY the same as all other images
+- Colors: EXACTLY the same as all other images
+- Output: IMAGE FILE only, no text`;
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     
     // Use gemini-3-pro-image-preview for image generation (same as other image endpoints)
-    let model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
+    // Use lower temperature for more consistent results across multiple images
+    let model = genAI.getGenerativeModel({ 
+      model: "gemini-3-pro-image-preview",
+      generationConfig: {
+        temperature: 0.2, // Very low temperature for maximum consistency
+        topP: 0.9,
+        topK: 20,
+      }
+    });
     let actualModelName = "gemini-3-pro-image-preview";
 
     // Prepare the image part
@@ -3386,16 +3477,58 @@ TRANSFORMATION REQUIREMENTS:
     console.log('[Server] Uniform image styling - Generating with style:', stylePrompt);
     console.log('[Server] Uniform image styling - Dimensions:', dimensions);
     console.log('[Server] Uniform image styling - Using model:', actualModelName);
+    if (referenceName) console.log('[Server] Uniform image styling - Reference name:', referenceName);
+    if (referenceLogo) console.log('[Server] Uniform image styling - Reference logo provided');
+    if (referenceClothing) console.log('[Server] Uniform image styling - Reference clothing provided');
+
+    // Prepare content array with main image and optional reference images
+    const contentParts = [transformationPrompt];
+    
+    // Add main image
+    contentParts.push({ inlineData: { data: base64Data, mimeType } });
+    
+    // Add reference logo if provided
+    if (referenceLogo) {
+      const logoBase64 = referenceLogo.includes(',') ? referenceLogo.split(',')[1] : referenceLogo;
+      let logoMimeType = 'image/png';
+      if (referenceLogo.includes('data:image/')) {
+        const logoMimeMatch = referenceLogo.match(/data:image\/([^;]+)/);
+        if (logoMimeMatch) {
+          logoMimeType = `image/${logoMimeMatch[1]}`;
+        }
+      }
+      contentParts.push({ 
+        inlineData: { 
+          data: logoBase64, 
+          mimeType: logoMimeType 
+        } 
+      });
+    }
+    
+    // Add reference clothing if provided
+    if (referenceClothing) {
+      const clothingBase64 = referenceClothing.includes(',') ? referenceClothing.split(',')[1] : referenceClothing;
+      let clothingMimeType = 'image/png';
+      if (referenceClothing.includes('data:image/')) {
+        const clothingMimeMatch = referenceClothing.match(/data:image\/([^;]+)/);
+        if (clothingMimeMatch) {
+          clothingMimeType = `image/${clothingMimeMatch[1]}`;
+        }
+      }
+      contentParts.push({ 
+        inlineData: { 
+          data: clothingBase64, 
+          mimeType: clothingMimeType 
+        } 
+      });
+    }
 
     let result;
     let response;
     
     try {
-      // Use the same format as enhance-image endpoint (string prompt, then image object)
-      result = await model.generateContent([
-        transformationPrompt,
-        { inlineData: { data: base64Data, mimeType } }
-      ]);
+      // Use the same format as enhance-image endpoint (string prompt, then image objects)
+      result = await model.generateContent(contentParts);
       response = await result.response;
     } catch (error) {
       // Fallback to gemini-2.0-flash-exp if gemini-3-pro-image-preview fails

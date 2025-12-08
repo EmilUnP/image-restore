@@ -9,7 +9,7 @@ import { BackButton } from "@/components/shared/BackButton";
 import { StepIndicator } from "@/components/shared/StepIndicator";
 import { WorkflowHeader } from "@/components/shared/WorkflowHeader";
 import { WorkflowCard } from "@/components/shared/WorkflowCard";
-import { downloadImage } from "@/lib/utils";
+import { downloadImage, cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Users, Sparkles, X, Download, Upload, Image as ImageIcon, Trash2, CheckCircle2, Loader2 } from "lucide-react";
 import { useImageUpload } from "@/hooks/useImageUpload";
@@ -47,6 +47,14 @@ export const UniformImageStylingWorkflow = ({ onBack }: UniformImageStylingWorkf
   const [backgroundStyle, setBackgroundStyle] = useState('solid');
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
   const [customPrompt, setCustomPrompt] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  
+  // Optional reference elements
+  const [referenceName, setReferenceName] = useState('');
+  const [referenceLogo, setReferenceLogo] = useState<string | null>(null);
+  const [referenceLogoFile, setReferenceLogoFile] = useState<File | null>(null);
+  const [referenceClothing, setReferenceClothing] = useState<string | null>(null);
+  const [referenceClothingFile, setReferenceClothingFile] = useState<File | null>(null);
 
   const stylePresets = {
     professional: {
@@ -86,15 +94,16 @@ export const UniformImageStylingWorkflow = ({ onBack }: UniformImageStylingWorkf
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const processFiles = (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
 
     const newImages: UploadedImage[] = [];
+    const invalidFiles: string[] = [];
     
-    Array.from(files).forEach((file) => {
+    fileArray.forEach((file) => {
       if (!file.type.startsWith('image/')) {
-        toast.error(`${file.name} is not an image file`);
+        invalidFiles.push(file.name);
         return;
       }
 
@@ -109,12 +118,48 @@ export const UniformImageStylingWorkflow = ({ onBack }: UniformImageStylingWorkf
       });
     });
 
-    setUploadedImages(prev => [...prev, ...newImages]);
-    toast.success(`${newImages.length} image(s) added`);
+    if (invalidFiles.length > 0) {
+      toast.error(`${invalidFiles.length} file(s) skipped (not images)`);
+    }
+
+    if (newImages.length > 0) {
+      setUploadedImages(prev => [...prev, ...newImages]);
+      toast.success(`${newImages.length} image(s) added`);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    processFiles(files);
     
     // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processFiles(files);
     }
   };
 
@@ -133,6 +178,46 @@ export const UniformImageStylingWorkflow = ({ onBack }: UniformImageStylingWorkf
     setUploadedImages([]);
     setProcessedImages([]);
     setProcessingProgress(0);
+    // Clear reference elements
+    setReferenceName('');
+    setReferenceLogo(null);
+    setReferenceLogoFile(null);
+    setReferenceClothing(null);
+    setReferenceClothingFile(null);
+  };
+
+  const handleLogoSelect = async (file: File) => {
+    try {
+      const base64 = await fileToBase64(file);
+      setReferenceLogo(base64);
+      setReferenceLogoFile(file);
+      toast.success('Logo uploaded');
+    } catch (error) {
+      toast.error('Failed to upload logo');
+      console.error(error);
+    }
+  };
+
+  const handleClothingSelect = async (file: File) => {
+    try {
+      const base64 = await fileToBase64(file);
+      setReferenceClothing(base64);
+      setReferenceClothingFile(file);
+      toast.success('Reference clothing uploaded');
+    } catch (error) {
+      toast.error('Failed to upload reference clothing');
+      console.error(error);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setReferenceLogo(null);
+    setReferenceLogoFile(null);
+  };
+
+  const handleRemoveClothing = () => {
+    setReferenceClothing(null);
+    setReferenceClothingFile(null);
   };
 
   const getStylePrompt = () => {
@@ -187,13 +272,16 @@ export const UniformImageStylingWorkflow = ({ onBack }: UniformImageStylingWorkf
           // Add aspect ratio info
           fullPrompt += `, ${aspectRatio} aspect ratio`;
 
-          // Call API
+          // Call API with reference elements (already converted to base64 in handlers)
           const response = await uniformImageStyling({
             image: base64Image,
             stylePrompt: fullPrompt,
             aspectRatio,
             backgroundStyle,
             backgroundColor: backgroundStyle === 'solid' ? backgroundColor : undefined,
+            referenceName: referenceName.trim() || undefined,
+            referenceLogo: referenceLogo || undefined,
+            referenceClothing: referenceClothing || undefined,
           });
 
           if (response.error) {
@@ -268,10 +356,20 @@ export const UniformImageStylingWorkflow = ({ onBack }: UniformImageStylingWorkf
             {/* Upload Section */}
             <WorkflowCard
               title="Upload Images"
-              description="Upload multiple photos (employees, selfies, etc.)"
+              description="Upload multiple photos at once (employees, selfies, etc.)"
             >
               <div className="space-y-4">
-                <div className="border-2 border-dashed border-primary/30 rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={cn(
+                    "border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer",
+                    isDragging
+                      ? "border-primary bg-primary/10 scale-[1.02]"
+                      : "border-primary/30 hover:border-primary/50"
+                  )}
+                >
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -285,13 +383,24 @@ export const UniformImageStylingWorkflow = ({ onBack }: UniformImageStylingWorkf
                     htmlFor="image-upload"
                     className="cursor-pointer flex flex-col items-center gap-3"
                   >
-                    <div className="p-4 rounded-full bg-primary/10">
-                      <Upload className="w-8 h-8 text-primary" />
+                    <div className={cn(
+                      "p-4 rounded-full transition-all",
+                      isDragging ? "bg-primary/20 scale-110" : "bg-primary/10"
+                    )}>
+                      <Upload className={cn(
+                        "w-8 h-8 text-primary transition-transform",
+                        isDragging && "animate-bounce"
+                      )} />
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground">Click to upload images</p>
+                      <p className="font-semibold text-foreground">
+                        {isDragging ? "Drop images here" : "Click or drag to upload images"}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Supports multiple files (photos, selfies, portraits)
+                        Select multiple files at once (Ctrl+Click or Cmd+Click)
+                      </p>
+                      <p className="text-xs text-primary/70 mt-1 font-medium">
+                        ✓ Supports batch upload of multiple images
                       </p>
                     </div>
                   </label>
@@ -434,6 +543,84 @@ export const UniformImageStylingWorkflow = ({ onBack }: UniformImageStylingWorkf
                     />
                   </div>
                 )}
+
+                {/* Optional Reference Elements */}
+                <div className="pt-4 border-t border-accent/20 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    <Label className="text-sm font-semibold">Optional Reference Elements</Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Add optional references to include in all images. If not provided, the style prompt will be used.
+                  </p>
+
+                  {/* Reference Name */}
+                  <div className="space-y-2">
+                    <Label className="text-xs">Name/Text to Include (Optional)</Label>
+                    <Input
+                      value={referenceName}
+                      onChange={(e) => setReferenceName(e.target.value)}
+                      placeholder="e.g., 'John Smith', 'Kindergarten Staff', etc."
+                      className="bg-card/50 border-primary/30 text-sm"
+                    />
+                  </div>
+
+                  {/* Reference Logo */}
+                  <div className="space-y-2">
+                    <Label className="text-xs">Logo to Include (Optional)</Label>
+                    {!referenceLogo ? (
+                      <ImageUpload
+                        onImageSelect={handleLogoSelect}
+                        label="Upload Logo"
+                        description="Click or drag to upload logo image"
+                      />
+                    ) : (
+                      <div className="relative group">
+                        <img
+                          src={referenceLogo}
+                          alt="Reference logo"
+                          className="w-full h-24 object-contain rounded-lg border-2 border-primary/20 bg-background/50 p-2"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={handleRemoveLogo}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Reference Clothing/Dress */}
+                  <div className="space-y-2">
+                    <Label className="text-xs">Reference Clothing/Dress (Optional)</Label>
+                    {!referenceClothing ? (
+                      <ImageUpload
+                        onImageSelect={handleClothingSelect}
+                        label="Upload Reference Clothing"
+                        description="e.g., uniform, dress style, etc."
+                      />
+                    ) : (
+                      <div className="relative group">
+                        <img
+                          src={referenceClothing}
+                          alt="Reference clothing"
+                          className="w-full h-24 object-cover rounded-lg border-2 border-primary/20"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6 rounded-full bg-destructive/90 hover:bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={handleRemoveClothing}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 <Button
                   onClick={handleProcess}
